@@ -6,7 +6,7 @@ d3870437e1e95b67f8edbde964156c84a26503f560821d40c542441658934fba  https://get.he
 6524bd338177ed50d035d39354e12545e993bbeba2ecbddf0480c5b3a81d313f  https://github.com/astral-sh/uv/releases/download/0.12.23/uv-aarch64-unknown-linux-gnu.tar.gz
 960da44cb4b73685206ddd250b19e0a117fa41095710c1038f081f5cb613efb4  https://github.com/astral-sh/uv/releases/download/0.12.23/uv-x86_64-apple-darwin.tar.gz
 9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6  https://github.com/astral-sh/uv/releases/download/0.12.23/uv-x86_64-unknown-linux-gnu.tar.gz
-a85e12b8828271a152b338ca8109aa23493b57950987c8e6dff97ba492772ff3  https://github.com/bats-core/bats-core/archive/refs/tags/v1.13.0.tar.gz
+bb537b70b15b732f6d8827dd6578e3d8ce166636ce1f18ea9a074184fcce9177  https://github.com/bats-core/bats-core/archive/refs/tags/v1.14.0.tar.gz
 7f1a702d54a789cb818a636039a83df071f4179893133afafa4eba351a7e19ef  https://github.com/go-task/task/releases/download/v3.53.1/task_darwin_amd64.tar.gz
 85d2d96c2380b33d7855b07b3f7a20dc7ca0eda999a26efa0fb5f6f32b366cd7  https://github.com/go-task/task/releases/download/v3.53.1/task_darwin_arm64.tar.gz
 a54a408f6861ff921f6e87774180db31bacd8c1e7c944ca696db9fea49a82fc7  https://github.com/go-task/task/releases/download/v3.53.1/task_linux_amd64.tar.gz
