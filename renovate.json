@@ -100,7 +100,16 @@
       "groupSlug": "frontend",
       "matchManagers": [
         "npm"
-      ]
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "scripts/renovate/fix_frontend_lint.bash"
+        ],
+        "executionMode": "branch",
+        "fileFilters": [
+          "**/frontend/src/**"
+        ]
+      }
     },
     {
       "description": [
