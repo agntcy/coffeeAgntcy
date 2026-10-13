@@ -17,8 +17,8 @@
 # required workflow runs openspec or renovate, so CI skips the
 # node/openspec/renovate install and only bootstraps the lint binaries
 # (task, actionlint, shellcheck, shfmt) plus bats (needed by the bash test
-# suite, which does run under --lint-only) and uv (needed by the uv.lock
-# sync check).
+# suite, which does run under --lint-only), uv (needed by the uv.lock
+# sync check) and helm (needed by the Chart.lock sync check).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -127,6 +127,22 @@ else
     install "$TMP_DIR/uv-${TRIPLE_UV}/uv" "$BIN_DIR/uv"
     rm -rf "$TMP_DIR"
     echo "uv: installed ($("$BIN_DIR/uv" --version))"
+fi
+
+# helm ships as a tar.gz holding <os>-<arch>/helm. Installed unconditionally
+# (not gated behind --lint-only): `helm dependency update`, run by
+# update_chart_locks.bash, is what the Helm chart lock check in
+# check_all.bash re-runs to detect a stale Chart.lock.
+if [ -x "$BIN_DIR/helm" ] && version_matches "$("$BIN_DIR/helm" version --template '{{.Version}}')" "$HELM_VERSION"; then
+    echo "helm: already installed ($("$BIN_DIR/helm" version --template '{{.Version}}'))"
+else
+    echo "helm: installing $HELM_VERSION into $BIN_DIR ..."
+    TMP_DIR="$(mktemp -d)"
+    FETCH_VERIFIED "$(asset_url helm "$OS" "$ARCH_GNU")" >"$TMP_DIR/helm.tar.gz"
+    tar -xzf "$TMP_DIR/helm.tar.gz" -C "$TMP_DIR"
+    install "$TMP_DIR/${OS}-${ARCH_GNU}/helm" "$BIN_DIR/helm"
+    rm -rf "$TMP_DIR"
+    echo "helm: installed ($("$BIN_DIR/helm" version --template '{{.Version}}'))"
 fi
 
 # bats-core ships as a bin/+libexec/+lib/ tree, not a single relocatable

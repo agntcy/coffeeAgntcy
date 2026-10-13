@@ -37,6 +37,7 @@ new one (see `.agents/rules/formatting/organize-large-collections.md`).
 |-------|------|
 | Auditing pipeline exceptions | [.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md](.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md) |
 | Checking dashes | [.agents/skills/quality-checks/checking-dashes/SKILL.md](.agents/skills/quality-checks/checking-dashes/SKILL.md) |
+| Checking Helm chart locks | [.agents/skills/quality-checks/checking-helm-chart-locks/SKILL.md](.agents/skills/quality-checks/checking-helm-chart-locks/SKILL.md) - `task helm:check-locks`; fix with `task helm:update-locks` |
 | Checking Helm chart version bumps | [.agents/skills/quality-checks/checking-helm-chart-version-bumps/SKILL.md](.agents/skills/quality-checks/checking-helm-chart-version-bumps/SKILL.md) |
 | Checking markdown links | [.agents/skills/quality-checks/checking-markdown-links/SKILL.md](.agents/skills/quality-checks/checking-markdown-links/SKILL.md) |
 | Checking pinned references | [.agents/skills/quality-checks/checking-pinned-references/SKILL.md](.agents/skills/quality-checks/checking-pinned-references/SKILL.md) |
@@ -70,7 +71,7 @@ regenerates these) - not hand-authored like the skills above. See the
 ## Rules
 
 Grouped by concern, same reasoning as Skills above. `bash-script-testing`,
-`helm-chart-version-bump`, `markdown-link-integrity`, `no-em-en-dashes`,
+`helm-chart-lock-sync`, `helm-chart-version-bump`, `markdown-link-integrity`, `no-em-en-dashes`,
 `pinned-external-references`, `shell-script-linting`, `uv-lock-sync`,
 `workflow-file-linting`, and `workflow-least-privilege` are enforced in
 CI; the rest rely on being applied by judgment.
@@ -103,6 +104,7 @@ CI; the rest rely on being applied by judgment.
 | Topic | File |
 |-------|------|
 | Bash script testing | [.agents/rules/quality/bash-script-testing.md](.agents/rules/quality/bash-script-testing.md) |
+| Helm chart lock sync | [.agents/rules/quality/helm-chart-lock-sync.md](.agents/rules/quality/helm-chart-lock-sync.md) |
 | Helm chart version bump | [.agents/rules/quality/helm-chart-version-bump.md](.agents/rules/quality/helm-chart-version-bump.md) |
 | Markdown link integrity | [.agents/rules/quality/markdown-link-integrity.md](.agents/rules/quality/markdown-link-integrity.md) |
 | Pinned external references | [.agents/rules/quality/pinned-external-references.md](.agents/rules/quality/pinned-external-references.md) |

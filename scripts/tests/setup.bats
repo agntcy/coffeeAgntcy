@@ -81,6 +81,14 @@ build_fixture_assets() {
     chmod +x "$ASSETS/uv-src/$uv_dirname/uv"
     tar -czf "$ASSETS/uv.tar.gz" -C "$ASSETS/uv-src" "$uv_dirname"
 
+    # helm: tar.gz containing <os>-<arch>/helm, the directory computed by
+    # the same platform.sh setup.sh uses.
+    helm_dirname="$(detect_os)-$(detect_arch_gnu)"
+    mkdir -p "$ASSETS/helm-src/$helm_dirname"
+    printf '#!/usr/bin/env bash\necho "%s"\n' "$HELM_VERSION" >"$ASSETS/helm-src/$helm_dirname/helm"
+    chmod +x "$ASSETS/helm-src/$helm_dirname/helm"
+    tar -czf "$ASSETS/helm.tar.gz" -C "$ASSETS/helm-src" "$helm_dirname"
+
     # node: tar.gz containing node-vVERSION-OS-ARCH/bin/{node,npm} - the
     # directory name must match exactly what setup.sh itself computes at
     # runtime (real OS/arch, via the same platform.sh this test also
@@ -144,7 +152,7 @@ write_fixture_checksums() {
     arch="$(detect_arch_gnu)"
     local file tool
     : >"$FIXTURE_ROOT/scripts/lib/checksums.txt"
-    for tool in actionlint bats node shellcheck shfmt task uv; do
+    for tool in actionlint bats helm node shellcheck shfmt task uv; do
         case "$tool" in
             bats) file="$ASSETS/bats-core.tar.gz" ;;
             shfmt) file="$ASSETS/shfmt" ;;
@@ -170,6 +178,7 @@ case \"\$url\" in
     *shellcheck*) cat '$ASSETS/shellcheck.tar.gz' ;;
     *mvdan/sh*) cat '$ASSETS/shfmt' ;;
     *astral-sh/uv*) cat '$ASSETS/uv.tar.gz' ;;
+    *get.helm.sh*) cat '$ASSETS/helm.tar.gz' ;;
     *bats-core*) cat '$ASSETS/bats-core.tar.gz' ;;
     *nodejs.org*) cat '$ASSETS/node.tar.gz' ;;
     *) echo \"mock curl: unexpected URL: \$url\" >&2; exit 1 ;;
@@ -206,6 +215,10 @@ seed_all_installed_except() {
     [[ "$skip" == *" uv "* ]] || {
         printf '#!/usr/bin/env bash\necho "uv %s (fixture)"\n' "$UV_VERSION" >"$bin/uv"
         chmod +x "$bin/uv"
+    }
+    [[ "$skip" == *" helm "* ]] || {
+        printf '#!/usr/bin/env bash\necho "%s"\n' "$HELM_VERSION" >"$bin/helm"
+        chmod +x "$bin/helm"
     }
     [[ "$skip" == *" bats "* ]] || {
         mkdir -p "$bats_dir/bin"
@@ -247,6 +260,9 @@ seed_all_installed_except() {
     [ -x "$FIXTURE_ROOT/.tools/bin/uv" ]
     [[ "$("$FIXTURE_ROOT/.tools/bin/uv" --version)" == "uv $UV_VERSION"* ]]
 
+    [ -x "$FIXTURE_ROOT/.tools/bin/helm" ]
+    [ "$("$FIXTURE_ROOT/.tools/bin/helm" version --template '{{.Version}}')" = "$HELM_VERSION" ]
+
     [ -x "$FIXTURE_ROOT/.tools/bats/bin/bats" ]
     [ "$("$FIXTURE_ROOT/.tools/bats/bin/bats" --version)" = "Bats $BATS_VERSION" ]
 
@@ -275,6 +291,7 @@ seed_all_installed_except() {
     [[ "$output" == *"shellcheck: already installed"* ]]
     [[ "$output" == *"shfmt: already installed"* ]]
     [[ "$output" == *"uv: already installed"* ]]
+    [[ "$output" == *"helm: already installed"* ]]
     [[ "$output" == *"bats: already installed"* ]]
     [[ "$output" == *"node: already installed"* ]]
     [[ "$output" == *"openspec: already installed"* ]]

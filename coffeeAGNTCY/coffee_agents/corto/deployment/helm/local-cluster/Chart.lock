@@ -16,12 +16,12 @@ dependencies:
   version: 10.1.2
 - name: corto-exchange
   repository: file://../exchange
-  version: 0.1.0
+  version: 0.2.1
 - name: corto-farm
   repository: file://../farm
-  version: 0.1.0
+  version: 0.2.1
 - name: corto-ui
   repository: file://../corto-ui
-  version: 0.1.0
-digest: sha256:f6a34cf5aa0aeac13c6758ffd1d7f39e20eb186ff0b7ab63f33f50fa6775864e
-generated: "2026-06-22T15:05:16.738721+02:00"
+  version: 0.1.1
+digest: sha256:5349cb626b86e4a411fb4fe84920e9de0e18062512b4a45b97f6297793afd16a
+generated: "2026-10-12T12:09:57.767131+02:00"

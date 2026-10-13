@@ -1,26 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "helpers:pinGitHubActionDigestsToSemver",
-    ":semanticCommitTypeAll(chore)"
-  ],
   "configMigration": true,
-  "enabled": true,
-  "minimumReleaseAge": "14 days",
-  "schedule": [
-    "before 8am on Monday"
-  ],
-  "enabledManagers": [
-    "custom.regex",
-    "dockerfile",
-    "docker-compose",
-    "github-actions",
-    "gomod",
-    "helmv3",
-    "npm",
-    "pep621"
-  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -35,20 +15,43 @@
       ]
     }
   ],
+  "dependencyDashboardHeader": "",
+  "dependencyDashboardOSVVulnerabilitySummary": "all",
+  "draftPR": true,
+  "enabled": true,
+  "enabledManagers": [
+    "custom.regex",
+    "dockerfile",
+    "docker-compose",
+    "github-actions",
+    "gomod",
+    "helmv3",
+    "npm",
+    "pep621"
+  ],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":semanticCommitTypeAll(chore)"
+  ],
   "labels": [
     "dependencies"
   ],
+  "minimumReleaseAge": "14 days",
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
-      "matchCategories": [
-        "golang"
-      ],
       "description": [
         "Add go label to PRs which bumps go dependencies."
+      ],
+      "matchCategories": [
+        "golang"
       ]
     },
     {
+      "description": [
+        "Group Go dependency patch updates in single PR."
+      ],
       "groupName": "Go patches",
       "groupSlug": "go-patches",
       "matchDatasources": [
@@ -56,91 +59,98 @@
       ],
       "matchUpdateTypes": [
         "patch"
-      ],
-      "description": [
-        "Group Go dependency patch updates in single PR."
       ]
     },
     {
+      "description": [
+        "Group CI dependency updates in single PR."
+      ],
       "groupName": "Github Actions",
       "groupSlug": "github-actions",
       "matchManagers": [
         "github-actions"
-      ],
-      "description": [
-        "Group CI dependency updates in single PR."
       ]
     },
     {
+      "description": [
+        "Group Dockerfile and docker-compose dependency updates in single PR."
+      ],
       "groupName": "Docker",
       "groupSlug": "docker",
       "matchManagers": [
         "dockerfile",
         "docker-compose"
-      ],
-      "description": [
-        "Group Dockerfile and docker-compose dependency updates in single PR."
       ]
     },
     {
+      "description": [
+        "Group Helm chart dependency updates in single PR, and patch-bump the version of every chart whose dependencies changed (see .agents/rules/quality/helm-chart-version-bump.md)."
+      ],
+      "bumpVersion": "patch",
       "groupName": "Helm",
       "groupSlug": "helm",
       "matchManagers": [
         "helmv3"
-      ],
-      "description": [
-        "Group Helm chart dependency updates in single PR."
       ]
     },
     {
+      "description": [
+        "Group frontend (npm) dependency updates in single PR."
+      ],
       "groupName": "Frontend",
       "groupSlug": "frontend",
       "matchManagers": [
         "npm"
       ],
-      "description": [
-        "Group frontend (npm) dependency updates in single PR."
-      ]
+      "postUpgradeTasks": {
+        "commands": [
+          "scripts/renovate/fix_frontend_lint.bash"
+        ],
+        "executionMode": "branch",
+        "fileFilters": [
+          "**/frontend/src/**"
+        ]
+      }
     },
     {
+      "description": [
+        "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR.",
+        "Regenerate the pinned archive checksums (scripts/lib/checksums.txt) and the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json) once per branch, so the PR carries the new hashes and lockfile setup.sh verifies against. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
+      ],
       "groupName": "Toolchain",
       "groupSlug": "toolchain",
       "matchManagers": [
         "custom.regex"
-      ],
-      "description": [
-        "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR.",
-        "Regenerate the pinned archive checksums (scripts/lib/checksums.txt) and the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json) once per branch, so the PR carries the new hashes and lockfile setup.sh verifies against. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
       ],
       "postUpgradeTasks": {
         "commands": [
           "scripts/tools/update_checksums.bash",
           "scripts/tools/update_npm_lock.bash"
         ],
+        "executionMode": "branch",
         "fileFilters": [
           "scripts/lib/checksums.txt",
           "scripts/lib/npm-tools/package-lock.json"
-        ],
-        "executionMode": "branch"
+        ]
       }
     },
     {
+      "description": [
+        "Group Python (uv/pep621) dependency updates in single PR."
+      ],
       "groupName": "Python",
       "groupSlug": "python",
       "matchManagers": [
         "pep621"
-      ],
-      "description": [
-        "Group Python (uv/pep621) dependency updates in single PR."
       ]
     },
     {
-      "matchJsonata": [
-        "$exists(vulnerabilityFixVersion) or isVulnerabilityAlert = true"
-      ],
-      "enabled": true,
       "description": [
         "Always allow vulnerability/security fixes, even when other rules disable specific dependencies."
+      ],
+      "enabled": true,
+      "matchJsonata": [
+        "$exists(vulnerabilityFixVersion) or isVulnerabilityAlert = true"
       ]
     }
   ],
@@ -148,11 +158,15 @@
     "gomodTidy",
     "gomodUpdateImportPaths"
   ],
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}",
   "prConcurrentLimit": 20,
   "prHourlyLimit": 10,
   "printConfig": true,
   "rebaseWhen": "behind-base-branch",
   "reviewersFromCodeOwners": true,
+  "schedule": [
+    "before 8am on Monday"
+  ],
   "semanticCommits": "enabled",
   "timezone": "Etc/UTC",
   "vulnerabilityAlerts": {

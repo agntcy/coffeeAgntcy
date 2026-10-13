@@ -26,7 +26,7 @@ runs the repo-local `renovate` binary, installed into `.tools/bin/` by
 `scripts/setup.sh` at the version pinned in [scripts/lib/versions.sh](../../../../scripts/lib/versions.sh)
 (see the `manage-repo-tooling` skill to bump it). Behavior is driven
 entirely by [renovate.json](../../../../renovate.json) and the
-`RENOVATE_*` / `GITHUB_COM_TOKEN` environment variables the caller sets;
+`RENOVATE_*` environment variables the caller sets;
 neither the task nor the script adds any configuration of its own.
 
 A version bump in `scripts/lib/versions.sh` also needs a fresh
@@ -49,7 +49,7 @@ and it has no separate rule. See "Scheduled generative operations" in the
 ```
 - [ ] 1. Run: ./scripts/setup.sh, then source scripts/env.sh (puts the pinned renovate on PATH)
 - [ ] 2. To validate a config change without touching GitHub, run: renovate-config-validator renovate.json
-- [ ] 3. To run a sync for real, ask the user first: it creates and updates branches and PRs on the remote repo. Set the same RENOVATE_* variables .github/workflows/renovate.yaml sets (RENOVATE_PLATFORM, RENOVATE_TOKEN, GITHUB_COM_TOKEN, ...), then run: task renovate:sync
+- [ ] 3. To run a sync for real, ask the user first: it creates and updates branches and PRs on the remote repo. Set the same RENOVATE_* variables .github/workflows/renovate.yaml sets (RENOVATE_TOKEN, RENOVATE_AUTODISCOVER, ...), then run: task renovate:sync
 - [ ] 4. Prefer RENOVATE_DRY_RUN=full for a local run that only logs what it would do
 ```
 

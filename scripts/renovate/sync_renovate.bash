@@ -7,8 +7,8 @@
 # whatever's already on PATH so this still works without running setup.sh
 # first.
 #
-# Behavior is driven entirely by renovate.json and the RENOVATE_* /
-# GITHUB_COM_TOKEN environment variables the caller sets - see
+# Behavior is driven entirely by renovate.json and the RENOVATE_*
+# environment variables the caller sets - see
 # .github/workflows/renovate.yaml, the only caller today. Any arguments are
 # passed through to renovate unchanged.
 #

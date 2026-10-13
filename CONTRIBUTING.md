@@ -167,6 +167,18 @@ request. See
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
 
+#### Helm chart lockfiles
+
+Every Helm chart that declares `dependencies:` must have a `Chart.lock` that
+is in sync with them (`task helm:check-locks`): after changing a dependency
+in a chart's `Chart.yaml`, or bumping the version of a sibling chart it
+pulls in through a `file://` repository, run `task helm:update-locks` and
+commit the updated `Chart.lock` in the same pull request (and bump that
+chart's own version, as above). See
+[`.agents/rules/quality/helm-chart-lock-sync.md`](/.agents/rules/quality/helm-chart-lock-sync.md)
+for the full rule. Runs as part of `task check:all` and the `Checks`
+workflow.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

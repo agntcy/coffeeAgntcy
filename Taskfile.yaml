@@ -5,16 +5,17 @@ tasks:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
       lint, workflow lint, workflow permissions, markdown links, pinned
-      references, Helm chart version bumps, pipeline exceptions, uv.lock
-      sync, bash tests, bash test coverage), never failing fast
+      references, Helm chart version bumps, Helm chart lock sync, pipeline
+      exceptions, uv.lock sync, bash tests, bash test coverage), never
+      failing fast
       (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
       workflows:check-permissions, links:check, pins:check,
-      helm:check-versions, pipeline:check-exceptions, locks:check,
-      tests:bash, and tests:coverage together and reports a pass/fail
+      helm:check-versions, helm:check-locks, pipeline:check-exceptions,
+      locks:check, tests:bash, and tests:coverage together and reports a pass/fail
       table. What the "Checks" CI workflow runs after a single tooling
       bootstrap. See scripts/checks/check_all.bash.
     cmds:
@@ -70,6 +71,23 @@ tasks:
     cmds:
       - scripts/checks/fix_dashes.bash
 
+  helm:check-locks:
+    desc: >-
+      Check that every Helm chart with dependencies has a Chart.lock that is
+      in sync with its Chart.yaml
+      (see .agents/rules/quality/helm-chart-lock-sync.md).
+    summary: |
+      Usage:   task helm:check-locks
+      Example: task helm:check-locks
+      Re-runs `helm dependency update` in a scratch copy of every tracked
+      chart and compares each resulting Chart.lock with the committed one,
+      ignoring the generated timestamp; never changes a committed file.
+      Catches third-party and file:// sibling drift alike. Needs network
+      access to resolve. Fix a failure with `task helm:update-locks`. See
+      scripts/checks/check_helm_chart_locks.bash.
+    cmds:
+      - scripts/checks/check_helm_chart_locks.bash
+
   helm:check-versions:
     desc: >-
       Check that every Helm chart's version reflects its own latest
@@ -84,6 +102,23 @@ tasks:
       what counts as a missing bump.
     cmds:
       - scripts/checks/check_helm_chart_versions.bash
+
+  helm:update-locks:
+    desc: >-
+      Regenerate Chart.lock for every Helm chart that declares dependencies
+      (see .agents/rules/quality/helm-chart-lock-sync.md).
+    summary: |
+      Usage:   task helm:update-locks
+      Example: task helm:update-locks
+      Runs `helm dependency update` in every chart directory that declares
+      dependencies, resolving third-party and file:// sibling charts, and
+      removes the downloaded charts/ build output. Commit the changed
+      Chart.lock files together with the Chart.yaml change that caused
+      them, and bump that chart's version (see
+      .agents/rules/quality/helm-chart-version-bump.md). Needs network
+      access. See scripts/helm/update_chart_locks.bash.
+    cmds:
+      - scripts/helm/update_chart_locks.bash
 
   links:check:
     desc: >-
@@ -150,8 +185,8 @@ tasks:
       Runs the repo-local renovate binary (installed into .tools/bin by
       scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
       Behavior is driven entirely by renovate.json (including the
-      checksum-refreshing post-upgrade task) and the RENOVATE_*/
-      GITHUB_COM_TOKEN env vars set by the caller - see
+      checksum-refreshing post-upgrade task) and the RENOVATE_*
+      env vars set by the caller - see
       .github/workflows/renovate.yaml, the only caller today. See
       scripts/renovate/sync_renovate.bash.
     cmds:
@@ -160,7 +195,7 @@ tasks:
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
-      shellcheck, shfmt, bats, uv, node, openspec, renovate) to the pinned
+      shellcheck, shfmt, bats, uv, helm, node, openspec, renovate) to the pinned
       versions in scripts/lib/versions.sh.
     summary: |
       Usage:   task setup
@@ -168,8 +203,8 @@ tasks:
       Installs into .tools/bin/, .tools/bats/, .tools/node/ and .tools/npm/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate (bats is still installed). Every downloaded
-      archive is verified against the SHA-256 pinned in
+      node/openspec/renovate (bats, uv and helm are still installed). Every
+      downloaded archive is verified against the SHA-256 pinned in
       scripts/lib/checksums.txt. See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
