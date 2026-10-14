@@ -477,6 +477,55 @@ def agents_up(request, transport_config):
 # ---------------- http client ----------------
 
 
+async def _close_llm_http_clients():
+    """Close the LLM libraries' process-wide async HTTP clients (see the caller)."""
+    import gc
+
+    import httpx
+
+    try:
+        import litellm
+
+        await litellm.close_litellm_async_clients()
+        litellm.in_memory_llm_clients_cache.flush_cache()
+    except Exception:  # noqa: BLE001
+        pass
+
+    # langchain-openai (used when LITELLM_PROXY_* is set) caches default async
+    # httpx clients in an lru_cache that never closes them. The cache cannot be
+    # enumerated, so close every still-open client and clear the cache so the next
+    # test builds fresh ones instead of reusing closed ones.
+    try:
+        from langchain_openai.chat_models import _client_utils
+
+        _client_utils._cached_async_httpx_client.cache_clear()
+    except Exception:  # noqa: BLE001
+        pass
+    for obj in gc.get_objects():
+        if isinstance(obj, httpx.AsyncClient) and not obj.is_closed:
+            try:
+                await obj.aclose()
+            except Exception:  # noqa: BLE001
+                pass
+
+
+def _close_llm_clients_on_app_loop(client):
+    """Close the LLM HTTP clients on the TestClient's own event loop.
+
+    The supervisors make their LLM calls on the loop that ``TestClient`` runs in a
+    background thread, so the pooled connections to the LLM endpoint belong to that
+    loop, while the clients holding them live in process-wide caches (litellm,
+    langchain-openai) that outlive it. Left open, they surface at session end as
+    unclosed socket/transport ResourceWarnings (an error under
+    ``filterwarnings = ["error"]``). They must be closed on the loop that owns
+    them, i.e. before the ``TestClient`` context exits.
+    """
+    try:
+        client.portal.call(_close_llm_http_clients)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @pytest.fixture
 def auction_supervisor_client(transport_config, monkeypatch):
     for k, v in _base_env().items():
@@ -513,6 +562,7 @@ def auction_supervisor_client(transport_config, monkeypatch):
         with TestClient(app) as client:
             _wait_ready(client, "/ready")
             yield client
+            _close_llm_clients_on_app_loop(client)
     finally:
         _purge_modules(prefixes)
         _purge_farm_card_modules()
@@ -541,6 +591,7 @@ def logistics_supervisor_client(transport_config, monkeypatch):
         with TestClient(app) as client:
             _wait_ready(client, "/v1/health")
             yield client
+            _close_llm_clients_on_app_loop(client)
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
