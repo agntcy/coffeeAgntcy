@@ -282,6 +282,8 @@ services:
     environment:
       CLICKHOUSE_ADMIN_USER: admin
       CLICKHOUSE_ADMIN_PASSWORD: admin
+    volumes:
+      - ./config/docker/clickhouse/02-logger.xml:/bitnami/clickhouse/etc/config.d/02-logger.xml:ro
     ulimits:
       nofile:
         soft: 262144
@@ -323,6 +325,7 @@ services:
       - "3001:3000"
     environment:
       - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_LOG_LEVEL=warn
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=true
