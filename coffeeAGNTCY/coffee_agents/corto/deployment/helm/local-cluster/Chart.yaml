@@ -2,7 +2,7 @@ apiVersion: v2
 name: corto-local-cluster
 description: A Helm chart for deploying Corto services in a local cluster
 type: application
-version: 0.3.3
+version: 0.3.4
 appVersion: "1.0"
 dependencies:
   - name: slim
