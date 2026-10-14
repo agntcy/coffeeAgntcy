@@ -41,6 +41,12 @@ Key files:
 uv sync --extra dev
 ```
 
+   The `dev` extra is required: it installs `httpx2`, without which starlette's
+   `TestClient` raises a deprecation warning that pytest turns into an error
+   (`filterwarnings = ["error"]`). Plain `uv run pytest` keeps the extra once this
+   step has run; in a fresh environment, skip the step by passing it explicitly
+   (`uv run --extra dev pytest ...`).
+
 2. For LLM tests only, configure environment:
 
 ```bash
