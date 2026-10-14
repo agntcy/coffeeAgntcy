@@ -623,6 +623,8 @@ services:
       # /etc/zot/config.json). Without a volume it dies with the container while
       # the Postgres search index survives, leaving every indexed CID unpullable.
       - zot-storage:/var/lib/registry
+      # Same as the image's /etc/zot/config.json except log.level is warn instead of debug.
+      - ./config/docker/dir/zot-config.json:/etc/zot/config.json:ro
     deploy:
       mode: replicated
       replicas: 1
