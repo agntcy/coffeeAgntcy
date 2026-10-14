@@ -11,7 +11,7 @@
 # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.*)$
 ACTIONLINT_VERSION="1.7.12"
 # renovate: datasource=github-releases depName=bats-core/bats-core extractVersion=^v(?<version>.*)$
-BATS_VERSION="1.13.0" # bats-core git tag, installed from its own source tarball - not the npm "bats" package version
+BATS_VERSION="1.14.0" # bats-core git tag, installed from its own source tarball - not the npm "bats" package version
 # renovate: datasource=github-releases depName=helm/helm
 HELM_VERSION="v4.3.0"
 # renovate: datasource=node-version depName=node
