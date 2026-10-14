@@ -197,6 +197,14 @@ def _shutdown_otel_sdk():
         try:
             from ioa_observe.sdk.tracing.tracing import TracerWrapper
 
+            if hasattr(TracerWrapper, "instance"):
+                # ioa_observe registers exit_handler with atexit, which runs after the
+                # providers below are shut down: its session.end spans would hit a
+                # stopped batch processor and log into streams pytest has already
+                # closed ("--- Logging error ---"). Run it now, while the exporters
+                # are alive, and drop the atexit registration.
+                TracerWrapper.instance.exit_handler()
+                atexit.unregister(TracerWrapper.instance.exit_handler)
             if getattr(TracerWrapper, "endpoint", None) and hasattr(
                 TracerWrapper, "instance"
             ):
