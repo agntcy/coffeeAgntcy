@@ -1,7 +1,8 @@
 opentelemetry-collector:
   image:
     repository: otel/opentelemetry-collector-contrib
-    tag: latest
+    tag: 0.161.0
+    digest: sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
 
   mode: deployment
 

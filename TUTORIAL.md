@@ -370,7 +370,7 @@ share updates dynamically.
 ### 4. Inspect Traces in Grafana
 
 
-Observability works only when both the `observability` profile is defined (either in `COMPOSE_PROFILES`, or by the `--profile` switch) and if OTEL SDK is enabled (treated as enabled by default, but can be made explicit by `OTEL_SDK_DISABLED=false`).
+Observability works only when both the `observability` profile is defined (either in `COMPOSE_PROFILES`, or by the `--profile` switch) and if OTEL SDK is enabled (treated as enabled by default, but can be made explicit by `OTEL_SDK_DISABLED=false`). The `otel-collector` only stores traces when it is told to: by default it uses a `nop` exporter and discards everything, so Grafana stays empty. Set `OTELCOL_EXPORTERS_CFG_FILE=/etc/otel/cfg_exporters-2-clickhouse.yaml` and `OTELCOL_PIPELINES_CFG_FILE=/etc/otel/cfg_pipelines-2-clickhouse.yaml` in `.env` (see `.env.example`), then recreate the collector with `docker compose up -d --force-recreate otel-collector`.
 Once you’ve executed a few prompts:
 
 1. Go to [http://localhost:3001/](http://localhost:3001/)
