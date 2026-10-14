@@ -303,7 +303,7 @@ Before you begin, ensure the following tools are installed:
 
 Update your .env file with the provider model, credentials, and OTEL endpoint.
 
-**Observability:** To use the observability stack (Grafana, OTEL Collector, ClickHouse), set `COMPOSE_PROFILES` to include `observability` (or add them alternatively, e.g. listing `farms,logistics,recruiter,observability` for the `up` command, or add `--profile observability` to the `compose` command) and set `OTEL_SDK_DISABLED=false` (or leave unset). To run without the stack, omit `observability` from `COMPOSE_PROFILES` and set `OTEL_SDK_DISABLED=true`. Using the observability profile without enabling telemetry (`OTEL_SDK_DISABLED=true`) means the stack runs but no telemetry is sent; using telemetry (`OTEL_SDK_DISABLED=false`) without the observability profile can cause log noise and failed telemetry exports.
+**Observability:** To use the observability stack (Grafana, OTEL Collector, ClickHouse), set `COMPOSE_PROFILES` to include `observability` (or add them alternatively, e.g. listing `farms,logistics,recruiter,observability` for the `up` command, or add `--profile observability` to the `compose` command) and set `OTEL_SDK_DISABLED=false` (or leave unset). To run without the stack, omit `observability` from `COMPOSE_PROFILES` and set `OTEL_SDK_DISABLED=true`. Using the observability profile without enabling telemetry (`OTEL_SDK_DISABLED=true`) means the stack runs but no telemetry is sent; using telemetry (`OTEL_SDK_DISABLED=false`) without the observability profile can cause log noise and failed telemetry exports. To have traces stored in ClickHouse, also set the `OTELCOL_*` variables described in [Observability](#observability).
 
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 
@@ -512,7 +512,7 @@ For local development with individual components, follow these steps. Each servi
 
 To enable A2A communication over SLIM, you need to run the SLIM message bus gateway.
 
-When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. The `otel-collector` service is part of the default docker compose profile. Alternatively, start the stack explicitly:
+When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. The `otel-collector` service is part of the default docker compose profile; to have it store traces in ClickHouse, also set the `OTELCOL_*` variables described in [Observability](#observability). Alternatively, start the stack explicitly:
 
 ```sh
 docker compose up slim nats clickhouse-server otel-collector grafana
@@ -766,7 +766,7 @@ Detailed architecture, message flows (SLIM pubsub vs controller channels), servi
 
 ### Observability
 
-Observability requires both the `observability` profile (either in `COMPOSE_PROFILES`, or added through `--profile` switch) and an enabled OTEL SDK (it is enabled by default, but you can make it explicit by setting `OTEL_SDK_DISABLED=false`). Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
+Observability requires both the `observability` profile (either in `COMPOSE_PROFILES`, or added through `--profile` switch) and an enabled OTEL SDK (it is enabled by default, but you can make it explicit by setting `OTEL_SDK_DISABLED=false`). Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports. The `otel-collector` only stores traces when it is told to: by default it uses a `nop` exporter and discards everything, so Grafana stays empty. Set `OTELCOL_EXPORTERS_CFG_FILE=/etc/otel/cfg_exporters-2-clickhouse.yaml` and `OTELCOL_PIPELINES_CFG_FILE=/etc/otel/cfg_pipelines-2-clickhouse.yaml` in `.env` (see `.env.example`), then recreate the collector with `docker compose up -d --force-recreate otel-collector`.
 
 #### Trace Visualization via Grafana
 
