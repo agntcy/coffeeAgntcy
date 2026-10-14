@@ -60,4 +60,4 @@ dependencies:
   repository: file://../payment-mcp-server
   version: 0.1.2
 digest: sha256:0895921abeb3fbc30b42121834b64e7834063c181b4a6c6c9aa9a89a3d79062b
-generated: "2026-10-14T00:20:20.852312283Z"
+generated: "2026-10-14T12:01:09.60198+02:00"
