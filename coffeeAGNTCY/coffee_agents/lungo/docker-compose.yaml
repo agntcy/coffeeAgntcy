@@ -29,7 +29,7 @@ services:
       - "9999:9999"
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
   colombia-farm-server:
@@ -64,7 +64,7 @@ services:
       - "9998:9998"
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
   vietnam-farm-server:
@@ -99,19 +99,31 @@ services:
       - "9997:9997"
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
   nats:
-    image: nats:latest@sha256:cd3fcd4ecdda44e3a66728a5334af0a959bc3979b32810e033d1c547241cd0f4
+    image: nats:2.15.0-alpine@sha256:ac8f88a6494bffc2c2a5289a0ca61cb28a9145c11ba5677cf24265d07f46d8d4
     container_name: lungo-nats
     ports:
       - "4222:4222"
       - "4223:4223"
       - "6222:6222"
       - "8222:8222"
-    # No healthcheck: standard nats image has no healthcheck unless Alpine variant is used.
-    # Dependents use condition: service_started.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8222/healthz",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   slim:
     image: ghcr.io/agntcy/slim:1.4.0@sha256:7a7531cb81f1e24682f08364713da06a158411df3e90b687acf8d5836da5a78e
@@ -167,7 +179,7 @@ services:
       - "8000:8000"
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
 
@@ -239,7 +251,7 @@ services:
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
 
@@ -269,7 +281,7 @@ services:
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - farms
 
@@ -698,7 +710,7 @@ services:
       recruiter:
         condition: service_started
       nats:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - recruiter
 
