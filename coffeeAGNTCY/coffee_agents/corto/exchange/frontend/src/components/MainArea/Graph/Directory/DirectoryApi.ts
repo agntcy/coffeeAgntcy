@@ -25,7 +25,7 @@ export interface CustomNodeDataForSlug {
 }
 
 const getSlugFromNodeData = (
-  nodeData: CustomNodeDataForSlug | null | undefined
+  nodeData: CustomNodeDataForSlug | null | undefined,
 ): string => {
   if (!nodeData) {
     throw new Error("nodeData is required for slug resolution")
@@ -35,22 +35,18 @@ const getSlugFromNodeData = (
   }
   const label1 = nodeData.label1?.toLowerCase()
   const label2 = nodeData.label2?.toLowerCase()
-  if (
-    label1 === "supervisor agent" ||
-    (label2 && label2.includes("buyer"))
-  ) {
+  if (label1 === "supervisor agent" || (label2 && label2.includes("buyer"))) {
     return "exchange-supervisor-agent"
   }
-  if (
-    label1 === "grader agent" ||
-    (label2 && label2.includes("sommelier"))
-  ) {
+  if (label1 === "grader agent" || (label2 && label2.includes("sommelier"))) {
     return "flavor-profile-farm-agent"
   }
   throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
 }
 
-export type NodeDataForOasf = CustomNodeDataForSlug & { oasfRecord?: OasfRecord }
+export type NodeDataForOasf = CustomNodeDataForSlug & {
+  oasfRecord?: OasfRecord
+}
 
 export interface OasfApiError {
   message: string
@@ -58,7 +54,7 @@ export interface OasfApiError {
 }
 
 export const fetchOasfRecord = async (
-  nodeData: NodeDataForOasf | null | undefined
+  nodeData: NodeDataForOasf | null | undefined,
 ): Promise<OasfRecord> => {
   if (nodeData?.oasfRecord) {
     return nodeData.oasfRecord
@@ -70,7 +66,7 @@ export const fetchOasfRecord = async (
       {
         timeout: 10000,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     )
     return response.data
   } catch (error) {
@@ -79,8 +75,14 @@ export const fetchOasfRecord = async (
         (error.response?.data as { detail?: string })?.detail ||
         error.message ||
         "Failed to fetch OASF record"
-      logger.debug("OASF fetch error", { status: error.response?.status, errorMessage })
-      throw { message: errorMessage, status: error.response?.status } as OasfApiError
+      logger.debug("OASF fetch error", {
+        status: error.response?.status,
+        errorMessage,
+      })
+      throw {
+        message: errorMessage,
+        status: error.response?.status,
+      } as OasfApiError
     }
     throw {
       message: "An unexpected error occurred while fetching OASF record",

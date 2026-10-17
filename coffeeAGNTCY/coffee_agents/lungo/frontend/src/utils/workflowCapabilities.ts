@@ -10,10 +10,7 @@ import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 
 export type WorkflowChatTransport =
-  | "group_sse"
-  | "auction_stream"
-  | "recruiter_stream"
-  | "plain_post"
+  "group_sse" | "auction_stream" | "recruiter_stream" | "plain_post"
 
 export interface WorkflowCapabilities {
   transport: WorkflowChatTransport
