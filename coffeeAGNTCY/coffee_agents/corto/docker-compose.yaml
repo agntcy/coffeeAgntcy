@@ -26,7 +26,7 @@ services:
       - "9999:9999"
 
   nats:
-    image: nats:latest@sha256:cd3fcd4ecdda44e3a66728a5334af0a959bc3979b32810e033d1c547241cd0f4
+    image: nats:2.15.0-alpine@sha256:ac8f88a6494bffc2c2a5289a0ca61cb28a9145c11ba5677cf24265d07f46d8d4
     container_name: nats-corto
     ports:
       - "4222:4222"
