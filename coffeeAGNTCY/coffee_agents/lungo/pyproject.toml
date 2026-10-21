@@ -39,7 +39,7 @@ dependencies = [
     # Vulnerability fix for requests
     "langchain-core==1.6.2",
     "urllib3==2.8.0",
-    "aiohttp==3.14.3",
+    "aiohttp==3.14.4",
     "pyasn1==0.6.4",
     "pypdf==6.19.0",
     "filelock==3.29.0",
