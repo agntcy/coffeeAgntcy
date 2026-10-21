@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Ger</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M4 25 Q24 4 44 25 Z' fill='%231d4f7c'/%3E%3Crect x='8' y='25' width='32' height='15' rx='2' fill='%23f1e6d2'/%3E%3Crect x='20' y='29' width='8' height='11' rx='1' fill='%23c4272f'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #ffffff; --ink: #050505; --muted: #65676b; --line: #e4e6eb; --soft: #f0f2f5;
+    --brand: #1d4f7c; --brand-ink: #ffffff; --accent: #c4272f;
+    --safe: #1a7f3c; --safe-bg: #e7f5ec; --check: #946200; --check-bg: #fff4d9;
+    --danger: #c0251c; --danger-bg: #fdeceb;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+  svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+  .col { width: 100%; max-width: 760px; margin: 0 auto; }
+
+  /* Top bar */
+  .appbar { border-bottom: 1px solid var(--line); background: var(--bg); padding-top: env(safe-area-inset-top); }
+  .appbar .col { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
+  .who { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; flex: none; }
+  .avatar svg { width: 28px; height: 28px; }
+  .avatar.sm { width: 28px; height: 28px; } .avatar.sm svg { width: 20px; height: 20px; }
+  .who .name { font-weight: 700; font-size: 17px; line-height: 1.2; }
+  .who .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .who .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #31a24c; }
+  .spacer { flex: 1; }
+  .lang { display: flex; background: var(--soft); border-radius: 999px; padding: 3px; }
+  .lang button { border: 0; background: none; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; color: var(--muted); }
+  .lang button[aria-pressed="true"] { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .icon-btn { border: 0; background: none; color: var(--brand); padding: 6px; border-radius: 50%; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--soft); }
+
+  /* Scrolling area */
+  .screen { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .screen .col { padding: 16px 16px 12px; }
+
+  /* Chat */
+  .thread { display: flex; flex-direction: column; gap: 4px; }
+  .day { text-align: center; color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+  .row { display: flex; align-items: flex-end; gap: 8px; margin-top: 10px; }
+  .row.me { justify-content: flex-end; }
+  .row .avatar { margin-bottom: 2px; }
+  .bubble { max-width: min(78%, 520px); padding: 9px 13px; border-radius: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ger .bubble { background: var(--soft); border-bottom-left-radius: 6px; }
+  .me .bubble { background: var(--brand); color: var(--brand-ink); border-bottom-right-radius: 6px; }
+  .me .bubble.forward { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .fwd { font-size: 12px; color: var(--muted); margin: 0 4px 3px 0; text-align: right; }
+  .me .stack { display: flex; flex-direction: column; align-items: flex-end; max-width: min(78%, 520px); }
+  .me .stack .bubble { max-width: 100%; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 36px; }
+  .chips button { border: 1px solid var(--line); background: var(--bg); color: var(--brand); font-size: 14px; font-weight: 600;
+    padding: 6px 12px; border-radius: 999px; }
+  .chips button:hover { background: var(--soft); }
+
+  /* Ger's answer card */
+  .answer { max-width: min(85%, 560px); border-radius: 20px; border-bottom-left-radius: 6px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--bg); }
+  .answer .top { display: flex; gap: 10px; align-items: center; padding: 12px 14px; font-weight: 700; font-size: 18px; }
+  .answer .top .dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; }
+  .answer .top .dot svg { width: 18px; height: 18px; stroke-width: 2.4; }
+  .answer.safe .top { background: var(--safe-bg); color: var(--safe); } .answer.safe .dot { background: var(--safe); }
+  .answer.check_with_family .top { background: var(--check-bg); color: var(--check); } .answer.check_with_family .dot { background: var(--check); }
+  .answer.danger .top { background: var(--danger-bg); color: var(--danger); } .answer.danger .dot { background: var(--danger); }
+  .answer .part { padding: 10px 14px; border-top: 1px solid var(--line); }
+  .answer .label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+  .answer .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .answer .text.strong { font-weight: 600; }
+  .answer .text.secondary { color: var(--muted); font-size: 15px; margin-top: 4px; }
+  .answer .copy { margin-top: 8px; border: 0; background: var(--soft); color: var(--brand); font-weight: 600; font-size: 14px;
+    padding: 6px 12px; border-radius: 999px; }
+
+  /* Typing indicator */
+  .typing { display: flex; align-items: center; gap: 8px; }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+  .typing small { color: var(--muted); font-size: 13px; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+  .row, .answer { animation: rise .2s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+
+  /* Composer */
+  .composer { border-top: 1px solid var(--line); background: var(--bg); }
+  .composer .col { display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; }
+  .composer textarea { flex: 1; font: inherit; font-size: 17px; line-height: 1.35; padding: 9px 14px; border: 0; border-radius: 20px;
+    background: var(--soft); color: var(--ink); resize: none; max-height: 140px; min-height: 40px; }
+  .composer textarea:focus { outline: none; }
+  .send { width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: var(--brand); display: grid; place-items: center; flex: none; }
+  .send svg { width: 26px; height: 26px; fill: currentColor; stroke: none; }
+  .send:disabled { color: var(--line); cursor: default; }
+
+  /* Bottom tabs */
+  .tabbar { border-top: 1px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar .col { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .tabbar button { position: relative; border: 0; background: none; padding: 8px 4px 9px; font-size: 12px; font-weight: 600;
+    color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tabbar button[aria-current="page"] { color: var(--brand); }
+  .tabbar button[aria-current="page"] svg.i { stroke-width: 2.2; }
+  .badge { position: absolute; top: 3px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+    background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; border: 2px solid var(--bg); box-sizing: content-box; }
+
+  /* Login */
+  .login { max-width: 380px; margin: 0 auto; padding: 8vh 20px 30px; }
+  .login .logo { width: 84px; height: 84px; margin: 0 auto 10px; display: block; }
+  .login h1 { text-align: center; font-size: 34px; margin: 0; letter-spacing: -.02em; }
+  .login .tagline { text-align: center; color: var(--muted); margin: 4px 0 28px; }
+  .login input { width: 100%; font: inherit; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--soft); margin-bottom: 10px; color: var(--ink); }
+  .login input:focus { outline: none; border-color: var(--brand); background: var(--bg); }
+  .login label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .primary { width: 100%; margin-top: 6px; font-size: 17px; font-weight: 700; padding: 13px; border: 0; border-radius: 12px;
+    background: var(--brand); color: var(--brand-ink); }
+  .login .hint { text-align: center; color: var(--muted); font-size: 14px; margin-top: 18px; }
+  .login .error { color: var(--danger); font-weight: 600; text-align: center; margin: 12px 0 0; font-size: 15px; }
+
+  /* Family */
+  .page-title { font-size: 26px; font-weight: 800; margin: 2px 0 2px; letter-spacing: -.01em; }
+  .page-sub { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
+  .section { font-size: 13px; font-weight: 700; color: var(--muted); margin: 22px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: 0; }
+  .item .mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; }
+  .item .mark svg { width: 20px; height: 20px; stroke-width: 2.4; }
+  .mark.safe { background: var(--safe); } .mark.check_with_family { background: var(--check); } .mark.danger { background: var(--danger); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .head { display: flex; gap: 8px; align-items: baseline; }
+  .item .head b { font-size: 16px; }
+  .item .head .time { margin-left: auto; color: var(--muted); font-size: 13px; flex: none; }
+  .item .msg { color: var(--muted); font-size: 15px; overflow-wrap: anywhere; margin-top: 1px; }
+  .note { margin-top: 8px; padding: 10px 12px; border-radius: 12px; font-size: 14px; }
+  .note.disagree { background: var(--check-bg); } .note.agree { background: var(--safe-bg); color: var(--safe); font-weight: 600; }
+  .note b { display: block; margin-bottom: 2px; }
+  ul.plain { margin: 2px 0 0; padding-left: 18px; }
+  details { margin-top: 6px; font-size: 14px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+  .agent { padding: 8px 0 0; overflow-wrap: anywhere; }
+  .agent b { display: flex; gap: 6px; align-items: center; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; letter-spacing: .02em; }
+  .pill.safe, .pill.OK, .pill.SAFE { background: var(--safe-bg); color: var(--safe); }
+  .pill.check_with_family, .pill.SUSPICIOUS, .pill.DRIFT, .pill.MINOR { background: var(--check-bg); color: var(--check); }
+  .pill.danger, .pill.SCAM, .pill.DOWN { background: var(--danger-bg); color: var(--danger); }
+  .empty { color: var(--muted); padding: 18px 0; font-size: 15px; }
+
+  /* "How Ger decided": the agents and where they disagreed */
+  .how { margin-top: 8px; border: 0; background: var(--soft); color: var(--brand); font-weight: 600; font-size: 14px;
+    padding: 6px 12px; border-radius: 999px; }
+  .diagram { width: 100%; max-width: 520px; display: block; margin: 4px auto 0; font-family: inherit; }
+  .diagram .node rect { stroke-width: 1.5; }
+  .diagram .n-safe rect { fill: var(--safe-bg); stroke: var(--safe); }
+  .diagram .n-warn rect { fill: var(--check-bg); stroke: var(--check); }
+  .diagram .n-bad rect { fill: var(--danger-bg); stroke: var(--danger); }
+  .diagram .n-info rect { fill: var(--soft); stroke: #bcc0c4; }
+  .diagram .n-down rect { fill: #f5f5f5; stroke: #9a9a9a; stroke-dasharray: 4 3; }
+  .diagram .n-msg rect { fill: var(--bg); stroke: var(--line); }
+  .diagram .t-name { font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .diagram .t-say { font-size: 11px; font-weight: 600; }
+  .diagram .t-small { font-size: 10px; fill: var(--muted); }
+  .diagram .n-safe .t-say { fill: var(--safe); } .diagram .n-warn .t-say { fill: var(--check); }
+  .diagram .n-bad .t-say { fill: var(--danger); } .diagram .n-info .t-say, .diagram .n-down .t-say { fill: var(--muted); }
+  .diagram .edge { stroke: #c9ccd1; stroke-width: 1.5; fill: none; }
+  .diagram .edge.down { stroke-dasharray: 3 4; }
+  .diagram .fight { stroke: var(--danger); stroke-width: 2.5; fill: none; stroke-dasharray: 6 4; animation: march 1s linear infinite; }
+  .diagram .fight.minor { stroke: var(--check); stroke-width: 1.8; animation: none; }
+  .diagram .fight-label rect { fill: var(--danger); } .diagram .fight-label.minor rect { fill: var(--check); }
+  .diagram .fight-label text { fill: #fff; font-size: 10px; font-weight: 800; letter-spacing: .03em; }
+  .diagram .decide rect { stroke-width: 2.5; }
+  .diagram .decide .t-name { font-size: 14px; }
+  .diagram .node, .diagram .edge { animation: pop .35s ease-out backwards; }
+  @keyframes march { to { stroke-dashoffset: -20; } }
+  @keyframes pop { from { opacity: 0; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .legend .l-safe::before { background: var(--safe); } .legend .l-warn::before { background: var(--check); }
+  .legend .l-bad::before { background: var(--danger); } .legend .l-down::before { background: #9a9a9a; }
+  .legend .l-fight::before { width: 16px; height: 0; border-top: 2.5px dashed var(--danger); border-radius: 0; vertical-align: 3px; }
+  .card-diagram { border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 10px; margin-top: 4px; }
+  .diagram .t-lap { font-size: 11px; font-weight: 700; fill: var(--muted); }
+  .diagram .t-head { font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .diagram .changed { stroke: var(--brand); stroke-width: 2; fill: none; }
+  .diagram .changed-label { font-size: 10px; font-weight: 700; fill: var(--brand); }
+  .diagram .t-base { font-size: 11px; fill: var(--muted); }
+  .says { margin: 8px 4px 0; padding: 0; list-style: none; font-size: 13px; }
+  .says li { padding: 5px 0; border-top: 1px solid var(--line); }
+  .says li:first-child { border-top: 0; }
+  .says .agent-name { font-weight: 700; }
+  .says .moved { color: var(--brand); font-weight: 700; }
+
+
+  .contact { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .contact:last-child { border-bottom: 0; }
+  .contacts label, .contact .label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .locked { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; background: var(--soft);
+    overflow-wrap: anywhere; }
+  .locked svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
+  .locked .unset { color: var(--muted); font-style: italic; }
+  .contacts input { width: 100%; font: inherit; padding: 11px 14px; border: 1px solid var(--brand); border-radius: 12px;
+    background: var(--bg); color: var(--ink); }
+  .contacts input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .save-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; }
+  .save, .change, .cancel { border-radius: 999px; font-size: 15px; font-weight: 700; padding: 7px 18px; }
+  .save { border: 0; background: var(--brand); color: var(--brand-ink); }
+  .change, .cancel { border: 1px solid var(--line); background: var(--bg); color: var(--brand); }
+  .change:hover, .cancel:hover { background: var(--soft); }
+  .contact-status { font-size: 14px; font-weight: 600; }
+  .contact-status.ok { color: var(--safe); } .contact-status.bad { color: var(--danger); }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="col">
+      <div class="who app-only hidden">
+        <div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#ger"/></svg></div>
+        <div><div class="name">Ger</div><div class="status" data-i18n="online">Your family's helper</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="lang">
+        <button id="lang-en" aria-pressed="true" title="Interface in English">EN</button>
+        <button id="lang-mn" aria-pressed="false" title="Монгол хэлээр">МН</button>
+      </div>
+      <button id="logout" class="icon-btn app-only hidden" title="Log out" aria-label="Log out">
+        <svg class="i" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="screen" id="screen">
+    <!-- Demo login: one built-in account -->
+    <section id="login" class="login hidden">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use href="#ger"/></svg>
+      <h1>Ger</h1>
+      <p class="tagline" data-i18n="tagline">Help from home, in your language</p>
+      <form id="form-login">
+        <label for="login-username" data-i18n="username">Username</label>
+        <input type="text" id="login-username" autocomplete="username" autocapitalize="none" required data-i18n-placeholder="username">
+        <label for="login-password" data-i18n="password">Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" required data-i18n-placeholder="password">
+        <button class="primary" type="submit" data-i18n="loginBtn">Log in</button>
+        <p id="login-error" class="error hidden" role="alert" data-i18n="wrongLogin">Wrong username or password.</p>
+      </form>
+      <p class="hint" data-i18n="demoHint">Demo account: grandma / demo123</p>
+    </section>
+
+    <!-- Chats with Ger: one for messages she got, one for replies she writes -->
+    <section id="explain" class="hidden"><div class="col"><div class="thread" id="thread-explain"></div></div></section>
+    <section id="reply" class="hidden"><div class="col"><div class="thread" id="thread-reply"></div></div></section>
+
+    <!-- Family: alerts, and how the helpers decided -->
+    <section id="family" class="hidden"><div class="col">
+      <div class="page-title" data-i18n="familyTitle">Family</div>
+      <p class="page-sub" data-i18n="familySub">When the helpers disagree or something looks risky, Ger asks you instead of guessing.</p>
+      <div class="section" data-i18n="contactsTitle">Family contacts</div>
+      <div id="contacts" class="contacts"></div>
+      <div class="section" data-i18n="latest">Latest check</div>
+      <div id="decision"></div>
+      <div class="section" data-i18n="alertsTitle">Alerts</div>
+      <div id="alerts"></div>
+    </div></section>
+  </main>
+
+  <form class="composer app-only hidden" id="composer">
+    <div class="col">
+      <textarea id="input" rows="1" required></textarea>
+      <button class="send" id="send" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6l.02 6.53L15 12 3.42 13.87z"/></svg>
+      </button>
+    </div>
+  </form>
+
+  <nav class="tabbar app-only hidden" aria-label="Main">
+    <div class="col">
+      <button id="nav-explain"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 12h.01M12 12h.01M15 12h.01"/></svg><span data-i18n="navCheck">Check</span></button>
+      <button id="nav-reply"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span data-i18n="navReply">Reply</span></button>
+      <button id="nav-family"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.4 5 2.8 5 5.8"/></svg><span data-i18n="navFamily">Family</span>
+        <span class="badge hidden" id="badge"></span></button>
+    </div>
+  </nav>
+</div>
+
+<!-- The Ger logo: a ger (yurt) with a red door. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ger" viewBox="0 0 48 48">
+    <path d="M4 25 Q24 4 44 25 Z" fill="#1d4f7c"/>
+    <circle cx="24" cy="13" r="2.4" fill="#f1e6d2"/>
+    <rect x="8" y="25" width="32" height="15" rx="2" fill="#f1e6d2" stroke="#1d4f7c" stroke-width="1.5"/>
+    <path d="M8 30 H40" stroke="#c4272f" stroke-width="1.5"/>
+    <rect x="20" y="29" width="8" height="11" rx="1" fill="#c4272f"/>
+  </symbol>
+  <symbol id="ic-safe" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="ic-check_with_family" viewBox="0 0 24 24"><path d="M12 7v6M12 17h.01"/></symbol>
+  <symbol id="ic-danger" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
+</svg>
+
+<script>
+const API = "";  // same origin as the helper API
+let lang = "en";  // interface language; grandma uses "mn"
+let view = "login";
+let last = null;  // latest result, for the family screen
+let seenAlerts = 0, alertCount = 0;
+// Each chat is a list of turns: {who: "me"|"ger", kind, text|data}.
+const threads = { explain: [], reply: [] };
+const busy = { explain: false, reply: false };
+const drafts = { explain: "", reply: "" };
+
+const EXAMPLES = {
+  explain: [
+    ["USPS scam", "USPS: Your package could not be delivered. Update your address within 24 hours at usps-redelivery-help.com"],
+    ["Grandkid scam", "Hi grandma it's me, I lost my phone so this is my new number. I'm in trouble and need money for bail. Please send $2000 in gift cards and don't tell mom."],
+    ["Pharmacy", "CVS Pharmacy: Your prescription is ready for pickup at 123 Main St. Reply STOP to opt out."],
+    ["Customer note", "Hi, please leave the package at the side gate, code 4512. Don't ring the bell, baby is sleeping. Thanks!"],
+  ],
+  reply: [
+    ["Delivery reply", "Сайн байна уу, таны илгээмжийг хажуугийн хаалганы дэргэд тавьчихлаа. Баярлалаа!"],
+  ],
+};
+
+const STRINGS = {
+  en: {
+    tagline: "Help from home, in your language", online: "Your family's helper",
+    helloExplain: "Hi! Paste any message you got. I'll tell you what it says, if it's safe, and what to do.",
+    helloReply: "Write your reply in Mongolian. I'll turn it into English and double-check it before you send it.",
+    placeholderExplain: "Paste a message...", placeholderReply: "Write in Mongolian...",
+    forwarded: "Message you got", working: "Translator, scam checker and advisor are checking",
+    workingReply: "Translating and double-checking",
+    inMongolian: "In Mongolian", whatToDo: "What to do",
+    english: "In English", copy: "Copy", copied: "Copied",
+    error: "Something went wrong. Please try again.",
+    navCheck: "Check", navReply: "Reply", navFamily: "Family",
+    familyTitle: "Family", familySub: "When the helpers disagree or something looks risky, Ger asks you instead of guessing.",
+    latest: "Latest check", alertsTitle: "Alerts",
+    contactsTitle: "Family contacts", contactPrimary: "Family member email",
+    contactSecondary: "Secondary contact email (optional)", saveContacts: "Save",
+    saved: "Saved", badEmail: "Please check the email address.",
+    change: "Change", add: "Add", cancel: "Cancel", notSet: "Not added yet",
+    needPrimary: "Add the family member email first.",
+    username: "Username", password: "Password", loginBtn: "Log in", logout: "Log out",
+    wrongLogin: "Wrong username or password.", demoHint: "Demo account: grandma / demo123",
+  },
+  mn: {
+    // Pending native-speaker review (all strings in this block).
+    tagline: "Гэрээсээ тусламж, өөрийн хэлээр", online: "Гэр бүлийн тань туслах",
+    helloExplain: "Сайн байна уу! Ирсэн мессежээ энд хуулж тавина уу. Юу гэж бичсэн, аюулгүй эсэх, юу хийхийг хэлж өгнө.",
+    helloReply: "Хариугаа монголоор бичнэ үү. Би англи руу орчуулж, илгээхийн өмнө шалгаж өгнө.",
+    placeholderExplain: "Мессежээ тавина уу...", placeholderReply: "Монголоор бичнэ үү...",
+    forwarded: "Танд ирсэн мессеж", working: "Орчуулагч, залилан шалгагч, зөвлөх шалгаж байна",
+    workingReply: "Орчуулж, шалгаж байна",
+    inMongolian: "Монголоор", whatToDo: "Юу хийх вэ",
+    english: "Англиар", copy: "Хуулах", copied: "Хуулсан",
+    error: "Алдаа гарлаа. Дахин оролдоно уу.",
+    navCheck: "Шалгах", navReply: "Хариу", navFamily: "Гэр бүл",
+    familyTitle: "Гэр бүл", familySub: "Туслахууд санал зөрөх эсвэл эрсдэлтэй үед Ger таамаглахын оронд гэр бүлээсээ асууна.",
+    latest: "Сүүлийн шалгалт", alertsTitle: "Анхааруулга",
+    contactsTitle: "Гэр бүлийн холбоо барих", contactPrimary: "Гэр бүлийн гишүүний имэйл",
+    contactSecondary: "Нэмэлт холбоо барих имэйл (заавал биш)", saveContacts: "Хадгалах",
+    saved: "Хадгалсан", badEmail: "Имэйл хаягаа шалгана уу.",
+    change: "Өөрчлөх", add: "Нэмэх", cancel: "Болих", notSet: "Оруулаагүй байна",
+    needPrimary: "Эхлээд гэр бүлийн гишүүний имэйлийг нэмнэ үү.",
+    username: "Хэрэглэгчийн нэр", password: "Нууц үг", loginBtn: "Нэвтрэх", logout: "Гарах",
+    wrongLogin: "Нэр эсвэл нууц үг буруу байна.", demoHint: "Демо бүртгэл: grandma / demo123",
+  },
+};
+const t = (key) => STRINGS[lang][key];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = (status) => `<svg class="i" viewBox="0 0 24 24"><use href="#ic-${status}"/></svg>`;
+const gerAvatar = `<div class="avatar sm"><svg viewBox="0 0 48 48"><use href="#ger"/></svg></div>`;
+
+const AGENT_NAMES = {
+  translator: "Translator", translation_checker: "Translation checker",
+  scam_checker: "Scam checker", advisor: "Advisor",
+};
+const STATUS_TEXT = { safe: "Safe", check_with_family: "Ask family", danger: "Danger" };
+
+function setLang(next) {
+  lang = next;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  $("lang-en").setAttribute("aria-pressed", lang === "en");
+  $("lang-mn").setAttribute("aria-pressed", lang === "mn");
+  if (view === "explain" || view === "reply") { renderThread(view); $("input").placeholder = t(view === "explain" ? "placeholderExplain" : "placeholderReply"); }
+  if (view === "family") { renderFamily(); renderContacts(); }
+}
+
+// Views: "login", "explain", "reply", "family".
+function setView(next) {
+  if (view === "explain" || view === "reply") drafts[view] = $("input").value;
+  view = next;
+  const loggedIn = next !== "login";
+  const chat = next === "explain" || next === "reply";
+  document.querySelectorAll(".app-only").forEach((el) => el.classList.toggle("hidden", !loggedIn));
+  $("composer").classList.toggle("hidden", !chat);
+  for (const id of ["login", "explain", "reply", "family"]) $(id).classList.toggle("hidden", id !== next);
+  for (const id of ["explain", "reply", "family"]) {
+    if (id === next) $(`nav-${id}`).setAttribute("aria-current", "page");
+    else $(`nav-${id}`).removeAttribute("aria-current");
+  }
+  if (chat) {
+    $("input").value = drafts[next];
+    $("input").placeholder = t(next === "explain" ? "placeholderExplain" : "placeholderReply");
+    autosize();
+    renderThread(next);
+  }
+  if (next === "family") { loadContacts(); renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
+}
+
+// ---- "How Ger decided": every helper's opinion, and where they disagreed ----
+const ORDER = ["translator", "translation_checker", "scam_checker", "advisor"];
+
+function opinion(key, o) {
+  if (o.error) return { cls: "n-down", say: "✕ Down", small: "no answer" };
+  if (key === "translator") return { cls: "n-info", say: "Translated", small: "" };
+  if (key === "translation_checker") return {
+    OK: { cls: "n-safe", say: "Same meaning", small: "back-translated" },
+    MINOR: { cls: "n-info", say: "Minor wording", small: "not escalated" },
+    DRIFT: { cls: "n-bad", say: "Meaning changed", small: "back-translated" },
+  }[o.verdict];
+  if (key === "scam_checker") {
+    const small = o.rule_verdict !== o.llm_verdict
+      ? `rules ${o.rule_verdict.toLowerCase()} · AI ${o.llm_verdict.toLowerCase()}`
+      : (o.red_flags.slice(0, 2).join(", ") || "no red flags");
+    return { SAFE: { cls: "n-safe", say: "Safe", small }, SUSPICIOUS: { cls: "n-warn", say: "Suspicious", small },
+      SCAM: { cls: "n-bad", say: "Scam!", small } }[o.verdict];
+  }
+  if (key === "advisor") return o.follows_link
+    ? { cls: "n-warn", say: "Use the link", small: o.topic || "" }
+    : { cls: "n-info", say: "Gave advice", small: o.topic || "" };
+  return { cls: "n-info", say: "", small: "" };
+}
+
+// Pairs of helpers that contradicted each other: [a, b, "major"|"minor"].
+function fights(a) {
+  const out = [];
+  const tc = a.translation_checker, scam = a.scam_checker, adv = a.advisor;
+  if (tc && !tc.error && tc.verdict === "DRIFT") out.push(["translator", "translation_checker", "major"]);
+  if (tc && !tc.error && tc.verdict === "MINOR") out.push(["translator", "translation_checker", "minor"]);
+  if (scam && adv && !scam.error && !adv.error && adv.follows_link && scam.verdict !== "SAFE")
+    out.push(["scam_checker", "advisor", "major"]);
+  return out;
+}
+
+function decisionRule(mode, d) {
+  const f = d.family;
+  const down = Object.values(d.agents).some((o) => o && o.error);
+  if (d.status === "danger") return "Scam is a red line";
+  if (d.status === "safe") return mode === "explain" ? "All helpers agree" : "Translation checked";
+  if (down) return "A helper is down, so ask family";
+  if (mode === "reply" || !f.safety_concern) return "Translation unsure, so ask family";
+  return "Helpers disagree, so ask family";
+}
+
+function diagram(mode, d, text) {
+  const keys = ORDER.filter((k) => d.agents[k]);
+  const W = 400, nw = 86, nh = 58, ay = 84, dy = 216, dw = 200, dh = 50;
+  const cx = (i) => (W / keys.length) * (i + 0.5);
+  const at = Object.fromEntries(keys.map((k, i) => [k, cx(i)]));
+  const statusCls = { safe: "n-safe", check_with_family: "n-warn", danger: "n-bad" }[d.status];
+  const snippet = text.length > 46 ? `${text.slice(0, 44)}...` : text;
+  let svg = "";
+  // Edges: message to each helper, each helper to Ger's decision.
+  keys.forEach((k, i) => {
+    const down = d.agents[k].error ? " down" : "";
+    svg += `<path class="edge${down}" style="animation-delay:${i * 80}ms" d="M${W / 2},44 C${W / 2},64 ${at[k]},60 ${at[k]},${ay}"/>`;
+    svg += `<path class="edge${down}" style="animation-delay:${300 + i * 80}ms" d="M${at[k]},${ay + nh} C${at[k]},${dy - 24} ${W / 2},${dy - 30} ${W / 2},${dy}"/>`;
+  });
+  // The message.
+  svg += `<g class="node n-msg"><rect x="${W / 2 - 150}" y="6" width="300" height="38" rx="12"/>
+    <text class="t-small" x="${W / 2}" y="21" text-anchor="middle">${mode === "explain" ? "Message she got" : "Her reply"}</text>
+    <text class="t-name" x="${W / 2}" y="36" text-anchor="middle">${esc(snippet)}</text></g>`;
+  // The helpers.
+  keys.forEach((k, i) => {
+    const o = opinion(k, d.agents[k]);
+    const x = at[k] - nw / 2;
+    svg += `<g class="node ${o.cls}" style="animation-delay:${150 + i * 80}ms">
+      <rect x="${x}" y="${ay}" width="${nw}" height="${nh}" rx="12"/>
+      <text class="t-name" x="${at[k]}" y="${ay + 17}" text-anchor="middle">${AGENT_SHORT[k]}</text>
+      <text class="t-say" x="${at[k]}" y="${ay + 34}" text-anchor="middle">${esc(o.say)}</text>
+      <text class="t-small" x="${at[k]}" y="${ay + 49}" text-anchor="middle">${esc(o.small.length > 18 ? o.small.slice(0, 17) + "." : o.small)}</text></g>`;
+  });
+  // Disagreements: a marching red line under the two helpers, with a label.
+  for (const [a, b, level] of fights(d.agents)) {
+    if (at[a] === undefined || at[b] === undefined) continue;
+    const x1 = Math.min(at[a], at[b]) + 18, x2 = Math.max(at[a], at[b]) - 18, mid = (x1 + x2) / 2, y = ay + nh;
+    const label = level === "major" ? "DISAGREE" : "MINOR";
+    const lw = level === "major" ? 66 : 46;
+    svg += `<path class="fight ${level}" d="M${x1},${y} Q${mid},${y + 44} ${x2},${y}"/>
+      <g class="fight-label ${level}"><rect x="${mid - lw / 2}" y="${y + 13}" width="${lw}" height="18" rx="9"/>
+      <text x="${mid}" y="${y + 25.5}" text-anchor="middle">${label}</text></g>`;
+  }
+  // Ger's decision.
+  svg += `<g class="node decide ${statusCls}" style="animation-delay:600ms">
+    <rect x="${W / 2 - dw / 2}" y="${dy}" width="${dw}" height="${dh}" rx="14"/>
+    <text class="t-name" x="${W / 2}" y="${dy + 21}" text-anchor="middle">Ger: ${STATUS_TEXT[d.status].toUpperCase()}</text>
+    <text class="t-small" x="${W / 2}" y="${dy + 38}" text-anchor="middle">${esc(decisionRule(mode, d))}</text></g>`;
+  return `<svg class="diagram" viewBox="0 0 ${W} ${dy + dh + 6}" role="img"
+      aria-label="How Ger decided: each helper's opinion and where they disagreed">${svg}</svg>
+    <div class="legend"><span class="l-safe">safe / agrees</span><span class="l-warn">unsure</span>
+      <span class="l-bad">scam / wrong</span><span class="l-down">down</span><span class="l-fight">disagreement</span></div>`;
+}
+
+const POS_CLS = { SAFE: "n-safe", ASK_FAMILY: "n-warn", DANGER: "n-bad" };
+const POS_TEXT = { SAFE: "Safe", ASK_FAMILY: "Ask family", DANGER: "Danger" };
+
+// The safety council: one row per lap, one column per agent, who changed their mind.
+function councilDiagram(d) {
+  const c = d.council, turns = c.transcript;
+  const ring = c.ring;
+  const laps = Math.max(1, ...turns.map((t) => t.lap));
+  const W = 400, colX = (i) => 112 + i * 108, bw = 92, bh = 34, y0 = 34, rowH = 56;
+  const rowY = (lap) => y0 + (lap - 1) * rowH;
+  const at = {};
+  for (const t of turns) at[`${t.agent}:${t.lap}`] = t;
+  let svg = "";
+  ring.forEach((a, i) => {
+    svg += `<text class="t-head" x="${colX(i)}" y="18" text-anchor="middle">${AGENT_SHORT[a]}</text>`;
+  });
+  for (let lap = 1; lap <= laps; lap++) {
+    svg += `<text class="t-lap" x="8" y="${rowY(lap) + bh / 2 + 4}">LAP ${lap}</text>`;
+    ring.forEach((a, i) => {
+      const t = at[`${a}:${lap}`];
+      if (!t) return;
+      const x = colX(i) - bw / 2, y = rowY(lap);
+      if (t.unreachable) {
+        svg += `<g class="node n-down" style="animation-delay:${lap * 200 + i * 80}ms"><rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10"/>
+          <text class="t-say" x="${colX(i)}" y="${y + 21}" text-anchor="middle">✕ Down</text></g>`;
+        return;
+      }
+      svg += `<g class="node ${POS_CLS[t.position]}" style="animation-delay:${lap * 200 + i * 80}ms">
+        <rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10"/>
+        <text class="t-say" x="${colX(i)}" y="${y + 21}" text-anchor="middle">${POS_TEXT[t.position]}${t.firm ? " · firm" : ""}</text></g>`;
+      if (t.changed_from) {
+        const yTop = rowY(lap - 1) + bh;
+        svg += `<path class="changed" d="M${colX(i)},${yTop + 2} L${colX(i)},${y - 3}" marker-end="url(#chg)"/>
+          <text class="changed-label" x="${colX(i) + 6}" y="${(yTop + y) / 2 + 4}">changed</text>`;
+      }
+    });
+  }
+  const o = c.outcome, fy = rowY(laps) + bh + 22, fh = 40;
+  const how = { consensus: "everyone agreed" }[o.how] || o.how;
+  svg += `<g class="node decide ${POS_CLS[o.decision]}" style="animation-delay:${laps * 200 + 300}ms">
+    <rect x="${W / 2 - 150}" y="${fy}" width="300" height="${fh}" rx="12"/>
+    <text class="t-name" x="${W / 2}" y="${fy + 17}" text-anchor="middle">Council: ${POS_TEXT[o.decision].toUpperCase()}</text>
+    <text class="t-small" x="${W / 2}" y="${fy + 32}" text-anchor="middle">${esc(how)}, lap ${o.lap} · no supervisor decided</text></g>`;
+  const base = d.baseline ? STATUS_TEXT[d.baseline.status] : null;
+  if (base) svg += `<text class="t-base" x="${W / 2}" y="${fy + fh + 18}" text-anchor="middle">Baseline (fixed rules) would say: ${base}</text>`;
+  const H = fy + fh + (base ? 26 : 8);
+  const said = turns.filter((t) => !t.unreachable && (t.lap === 1 || t.changed_from)).map((t) => `
+    <li><span class="agent-name">${AGENT_SHORT[t.agent]}</span> ${t.changed_from
+      ? `<span class="moved">changed ${POS_TEXT[t.changed_from]} to ${POS_TEXT[t.position]}:</span>`
+      : `(${POS_TEXT[t.position]}):`} ${esc(t.reason)}</li>`).join("");
+  return `<svg class="diagram" viewBox="0 0 ${W} ${H}" role="img" aria-label="How the safety council negotiated">
+      <defs><marker id="chg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0 0L10 5L0 10z" fill="var(--brand)"/></marker></defs>${svg}</svg>
+    <div class="legend"><span class="l-safe">safe</span><span class="l-warn">ask family</span>
+      <span class="l-bad">danger</span><span class="l-down">down</span></div>
+    <ul class="says">${said}</ul>`;
+}
+
+const AGENT_SHORT = {
+  translator: "Translator", translation_checker: "Checker", scam_checker: "Scam check", advisor: "Advisor",
+};
+
+function answerCard(mode, d, turnIndex, open) {
+  const g = d.grandma;
+  const en = lang === "en";
+  // The fixed headlines start with their own emoji; the card has its own icon.
+  const headline = (en ? g.headline_en : g.headline).replace(/^\S+\s/, "");
+  let parts = "";
+  if (mode === "explain") {
+    const advice = en ? g.advice_en : g.advice;
+    if (advice) parts += `<div class="part"><div class="label">${t("whatToDo")}</div>
+      <div class="text strong">${esc(advice)}</div>
+      ${en && g.advice ? `<div class="text secondary">${esc(g.advice)}</div>` : ""}</div>`;
+    if (g.translation) parts += `<div class="part"><div class="label">${t("inMongolian")}</div>
+      <div class="text">${esc(g.translation)}</div></div>`;
+  } else if (d.english) {
+    parts += `<div class="part"><div class="label">${t("english")}</div>
+      <div class="text">${esc(d.english)}</div>
+      <button class="copy" type="button" data-copy="${esc(d.english)}">${t("copy")}</button></div>`;
+  }
+  parts += `<div class="part"><button class="how" type="button" data-how="${turnIndex}">
+    ${open ? "Hide" : "How Ger decided"}</button>
+    ${open ? (d.council ? councilDiagram(d) : diagram(mode, d, threads[mode][turnIndex].text)) : ""}</div>`;
+  return `<div class="answer ${d.status}">
+    <div class="top"><span class="dot">${icon(d.status)}</span>${esc(headline)}</div>${parts}</div>`;
+}
+
+function renderThread(mode, toBottom = true) {
+  const hello = t(mode === "explain" ? "helloExplain" : "helloReply");
+  let html = `<div class="row ger">${gerAvatar}<div class="bubble">${esc(hello)}</div></div>`;
+  if (!threads[mode].length) {
+    html += `<div class="chips">${EXAMPLES[mode].map(([name], i) =>
+      `<button type="button" data-example="${i}">${esc(name)}</button>`).join("")}</div>`;
+  }
+  threads[mode].forEach((turn, i) => {
+    if (turn.who === "me" && mode === "explain") html += `<div class="row me"><div class="stack">
+      <div class="fwd">↪ ${t("forwarded")}</div><div class="bubble forward">${esc(turn.text)}</div></div></div>`;
+    else if (turn.who === "me") html += `<div class="row me"><div class="bubble">${esc(turn.text)}</div></div>`;
+    else if (turn.kind === "typing") html += `<div class="row ger">${gerAvatar}<div class="bubble typing">
+      <span class="dots"><span></span><span></span><span></span></span>
+      <small>${t(mode === "explain" ? "working" : "workingReply")}</small></div></div>`;
+    else if (turn.kind === "error") html += `<div class="row ger">${gerAvatar}<div class="bubble">${t("error")}</div></div>`;
+    else html += `<div class="row ger">${gerAvatar}${answerCard(mode, turn.data, i, turn.open)}</div>`;
+  });
+  const el = $(`thread-${mode}`);
+  el.innerHTML = html;
+  el.querySelectorAll("[data-example]").forEach((b) => b.onclick = () => {
+    $("input").value = EXAMPLES[mode][b.dataset.example][1];
+    autosize(); $("input").focus();
+  });
+  el.querySelectorAll("[data-how]").forEach((b) => b.onclick = () => {
+    const turn = threads[mode][b.dataset.how];
+    turn.open = !turn.open;
+    const y = $("screen").scrollTop;
+    renderThread(mode, false);
+    $("screen").scrollTop = y;
+  });
+  el.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = t("copied"); } catch {}
+  });
+  if (toBottom) requestAnimationFrame(() => { $("screen").scrollTop = $("screen").scrollHeight; });
+}
+
+async function send(mode, text) {
+  if (!text || busy[mode]) return;
+  busy[mode] = true;
+  threads[mode].push({ who: "me", text });
+  const typing = { who: "ger", kind: "typing" };
+  threads[mode].push(typing);
+  if (view === mode) renderThread(mode);
+  let reply;
+  try {
+    const res = await fetch(`${API}/${mode}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (res.status === 401) { threads[mode].splice(-2); busy[mode] = false; return setView("login"); }
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    last = { mode, text, data };
+    reply = { who: "ger", kind: "answer", data, text };
+    refreshAlerts();
+  } catch (e) {
+    reply = { who: "ger", kind: "error" };
+  }
+  threads[mode][threads[mode].indexOf(typing)] = reply;
+  busy[mode] = false;
+  if (view === mode) renderThread(mode);
+}
+
+function autosize() {
+  const el = $("input");
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  $("send").disabled = !el.value.trim();
+}
+
+function agentRow(key, o) {
+  if (!o) return "";
+  const name = AGENT_NAMES[key] || key;
+  if (o.error) return `<div class="agent"><b>${name} <span class="pill DOWN">DOWN</span></b>${esc(o.error)}</div>`;
+  if (key === "scam_checker") return `<div class="agent"><b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
+      Rules: ${esc(o.rule_verdict)} · AI: ${esc(o.llm_verdict)} · Red flags: ${esc(o.red_flags.join(", ") || "none")}<br>${esc(o.reason)}</div>`;
+  if (key === "translation_checker") return `<div class="agent"><b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
+      <i>Back-translation:</i> ${esc(o.back_translation)}${o.differences ? `<br>${esc(o.differences)}` : ""}</div>`;
+  if (key === "advisor") return `<div class="agent"><b>${name}</b>${esc(o.summary)}<br><i>Suggests:</i> ${esc(o.action)}</div>`;
+  return `<div class="agent"><b>${name}</b>${esc(o.translation)}</div>`;
+}
+
+function renderDecision() {
+  if (!last) return `<div class="empty">Nothing checked yet.</div>`;
+  const d = last.data, f = d.family;
+  return `<div class="item"><div class="mark ${d.status}">${icon(d.status)}</div><div class="body">
+    <div class="head"><b>${STATUS_TEXT[d.status]}</b><span class="pill ${d.status}">${last.mode === "explain" ? "message she got" : "her reply"}</span></div>
+    <div class="msg">${esc(last.text)}</div>
+    ${d.english ? `<div class="msg"><b>English:</b> ${esc(d.english)}</div>` : ""}
+    ${d.council ? `<div class="card-diagram">${councilDiagram(d)}</div>` : ""}
+    <div class="card-diagram">${diagram(last.mode, d, last.text)}</div>
+    ${f.disagreements.length
+      ? `<div class="note disagree"><b>The helpers disagreed</b><ul class="plain">
+          ${f.disagreements.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`
+      : `<div class="note agree">All helpers agreed.</div>`}
+    ${f.reasons.length ? `<details><summary>Why this outcome</summary><ul class="plain">
+      ${f.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
+    <details><summary>What each helper said</summary>
+      ${Object.entries(d.agents).map(([k, o]) => agentRow(k, o)).join("")}</details>
+  </div></div>`;
+}
+
+async function fetchAlerts() {
+  const res = await fetch(`${API}/family/alerts`);
+  if (res.status === 401) { setView("login"); return null; }
+  return res.json();
+}
+
+function updateBadge() {
+  const unseen = Math.max(0, alertCount - seenAlerts);
+  $("badge").textContent = unseen;
+  $("badge").classList.toggle("hidden", unseen === 0 || view === "family");
+}
+
+async function refreshAlerts() {
+  try {
+    const alerts = await fetchAlerts();
+    if (!alerts) return;
+    alertCount = alerts.length;
+    if (view === "family") seenAlerts = alertCount;
+    updateBadge();
+  } catch {}
+}
+
+// Family contacts: each email is shown locked; "Change" opens just that one for editing.
+let contacts = { primary: "", secondary: "" };
+let editing = null, draft = "", notice = null;  // notice: {key, ok, text}
+const lockIcon = `<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+
+function renderContacts() {
+  $("contacts").innerHTML = ["primary", "secondary"].map((key) => {
+    const label = t(key === "primary" ? "contactPrimary" : "contactSecondary");
+    const status = notice && notice.key === key
+      ? `<span class="contact-status ${notice.ok ? "ok" : "bad"}" role="status">${esc(notice.text)}</span>` : "";
+    if (editing === key) return `<form class="contact" id="contact-form">
+      <label for="contact-input">${label}</label>
+      <input type="email" id="contact-input" autocomplete="email" placeholder="name@example.com" value="${esc(draft)}">
+      <div class="save-row"><button class="save" type="submit">${t("saveContacts")}</button>
+        <button class="cancel" type="button" id="contact-cancel">${t("cancel")}</button>${status}</div></form>`;
+    const value = contacts[key] ? esc(contacts[key]) : `<span class="unset">${t("notSet")}</span>`;
+    return `<div class="contact"><div class="label">${label}</div>
+      <div class="locked">${lockIcon}<span>${value}</span></div>
+      <div class="save-row"><button class="change" type="button" data-change="${key}">${t(contacts[key] ? "change" : "add")}</button>${status}</div></div>`;
+  }).join("");
+  $("contacts").querySelectorAll("[data-change]").forEach((b) => b.onclick = () => {
+    editing = b.dataset.change; draft = contacts[editing]; notice = null;
+    renderContacts(); $("contact-input").focus();
+  });
+  if (!editing) return;
+  $("contact-input").oninput = (e) => { draft = e.target.value; };
+  $("contact-cancel").onclick = () => { editing = null; notice = null; renderContacts(); };
+  $("contact-form").onsubmit = saveContact;
+}
+
+async function saveContact(e) {
+  e.preventDefault();
+  const key = editing;
+  const next = { ...contacts, [key]: draft.trim() };
+  if (key === "secondary" && !contacts.primary) {
+    notice = { key, ok: false, text: t("needPrimary") };
+    return renderContacts();
+  }
+  const res = await fetch(`${API}/family/contacts`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next),
+  });
+  if (res.status === 401) return setView("login");
+  if (!res.ok) notice = { key, ok: false, text: t("badEmail") };
+  else { contacts = await res.json(); editing = null; notice = { key, ok: true, text: t("saved") }; }
+  renderContacts();
+}
+
+async function loadContacts() {
+  editing = null; notice = null;
+  try {
+    const res = await fetch(`${API}/family/contacts`);
+    if (res.ok) contacts = await res.json();
+  } catch {}
+  renderContacts();
+}
+
+async function renderFamily() {
+  $("decision").innerHTML = renderDecision();
+  try {
+    const alerts = await fetchAlerts();
+    if (!alerts) return;
+    alertCount = seenAlerts = alerts.length;
+    updateBadge();
+    $("alerts").innerHTML = alerts.length ? alerts.map((a) => `
+      <div class="item"><div class="mark ${a.status}">${icon(a.status)}</div><div class="body">
+        <div class="head"><b>${STATUS_TEXT[a.status]}</b>
+          <span class="pill ${a.status}">${a.kind === "reply" ? "her reply" : "message she got"}</span>
+          <span class="time">${esc(new Date(a.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}</span></div>
+        <div class="msg">${esc(a.message)}</div>
+        <details><summary>Why</summary><ul class="plain">
+          ${[...a.reasons, ...a.disagreements].map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details></div></div>`).join("")
+      : `<div class="empty">No alerts. All quiet.</div>`;
+  } catch {
+    $("alerts").innerHTML = `<div class="empty">Could not load alerts.</div>`;
+  }
+}
+
+$("form-login").onsubmit = async (e) => {
+  e.preventDefault();
+  const res = await fetch(`${API}/login`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: $("login-username").value, password: $("login-password").value }),
+  });
+  $("login-error").classList.toggle("hidden", res.ok);
+  if (!res.ok) return;
+  $("login-password").value = "";
+  setView("explain");
+  refreshAlerts();
+};
+$("logout").onclick = async () => {
+  await fetch(`${API}/logout`, { method: "POST" });
+  last = null;
+  threads.explain = []; threads.reply = [];
+  drafts.explain = drafts.reply = "";
+  setView("login");
+};
+
+$("lang-en").onclick = () => setLang("en");
+$("lang-mn").onclick = () => setLang("mn");
+$("nav-explain").onclick = () => setView("explain");
+$("nav-reply").onclick = () => setView("reply");
+$("nav-family").onclick = () => setView("family");
+$("input").oninput = autosize;
+$("input").onkeydown = (e) => {
+  // Enter sends (like Messenger); Shift+Enter adds a new line.
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("composer").requestSubmit(); }
+};
+$("composer").onsubmit = (e) => {
+  e.preventDefault();
+  const text = $("input").value.trim();
+  if (!text) return;
+  $("input").value = ""; drafts[view] = ""; autosize();
+  send(view, text);
+};
+
+// Keep the family badge fresh while the app is open.
+setInterval(() => { if (view !== "login") refreshAlerts(); }, 15000);
+
+setLang("en");
+// Start on the check screen if already logged in, otherwise on the login screen.
+fetch(`${API}/me`).then((res) => { setView(res.ok ? "explain" : "login"); if (res.ok) refreshAlerts(); },
+  () => setView("login"));
+</script>
+</body>
+</html>
