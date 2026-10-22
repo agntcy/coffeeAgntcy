@@ -18,10 +18,16 @@ NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
 # to 6s, which expires before an LLM-backed agent can answer.
 SLIM_REQUEST_TIMEOUT_SECONDS = int(os.getenv("SLIM_REQUEST_TIMEOUT_SECONDS", "20"))
 
-if os.getenv("SLIM_SHARED_SECRET") is None:
-    os.environ["SLIM_SHARED_SECRET"] = (
-        "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
-    )
+# When true, the A2A servers may start their SLIM interfaces with the app SDK's
+# public placeholder secret if SLIM_SHARED_SECRET is unset or is the placeholder.
+# Local demos only: without it the SDK refuses to start those interfaces.
+SLIM_ALLOW_PLACEHOLDER_SECRET = os.getenv(
+    "SLIM_ALLOW_PLACEHOLDER_SECRET", "false"
+).strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST", "localhost")
 FARM_AGENT_PORT = int(os.getenv("FARM_AGENT_PORT", "9999"))
