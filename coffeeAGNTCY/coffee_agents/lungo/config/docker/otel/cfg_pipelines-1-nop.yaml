@@ -1,3 +1,6 @@
+logs:
+  receivers: [otlp]
+  exporters: [nop]
 metrics:
   receivers: [otlp]
   exporters: [nop]
