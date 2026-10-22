@@ -47,7 +47,7 @@ jobs:
       run:
         shell: bash
     env:
-      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml", ".github/workflows/test-subprojects-reusable.yaml", ".github/actions/check-paths-have-changes", ".dockerignore"]'
+      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml", ".github/workflows/test-subprojects-reusable.yaml", ".github/actions/check-paths-have-changes", ".github/actions/apply-container-overrides", ".github/actions/apply-uv-overrides", ".dockerignore"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
