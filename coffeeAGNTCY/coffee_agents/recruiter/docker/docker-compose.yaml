@@ -1,6 +1,6 @@
 services:
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v1.0.0@sha256:94ed80c0a6531c1cca5842457aa442e3fd441de95067cde8750442ce0a4d90dc
+    image: ghcr.io/agntcy/dir-apiserver:v1.8.0@sha256:6b49d53c22e049b16d25d588b1f022c92cf573872f19ae55636d52252eb5522e
     env_file:
       - path: ./configs/dir/apiserver.env
         required: true
@@ -16,17 +16,14 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP.
-    # # Future healthcheck will be available via grpc-health-probe on 8888 when dir v1.1.0 is integrated. Fix was merged in https://github.com/agntcy/dir/pull/1017.
-    # healthcheck:
-    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8888/healthz/ready || exit 1
-    #   interval: 10s
-    #   retries: 60
-    #   start_period: 10s
-    # Until then dependents should use condition: service_started so they start once this container is running.
+    healthcheck:
+      test: ["CMD", "/bin/grpc-health-probe", "-addr=127.0.0.1:8888"]
+      interval: 10s
+      retries: 60
+      start_period: 60s
 
   dir-mcp-server:
-    image: ghcr.io/agntcy/dir-ctl:v1.0.0@sha256:46bccabf156643ff58308d71c4a58d74d38cf5f4d847e128eb93bb21e367b7a0
+    image: ghcr.io/agntcy/dir-ctl:v1.8.0@sha256:a6cd66961f89ee0b4cc768996b6f621d6424a7059c8571c8faa2489c55218c4e
     container_name: dir-mcp-server
     stdin_open: true
     tty: true
@@ -37,7 +34,7 @@ services:
       DIRECTORY_CLIENT_TLS_SKIP_VERIFY: "true"
     depends_on:
       dir-api-server:
-        condition: service_started
+        condition: service_healthy
 
   postgres:
     image: docker.io/library/postgres:16.6-bookworm@sha256:557fea37a744d5f4c8faab304b0a90858b53ab119735a88c131fd19dab802f36
