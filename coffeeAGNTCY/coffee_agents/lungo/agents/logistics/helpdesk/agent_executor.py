@@ -8,9 +8,8 @@ from typing import Optional
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.types import Task, UnsupportedOperationError
-from a2a.utils import new_agent_text_message
-from a2a.utils.errors import ServerError
+from a2a.helpers import new_text_message
+from a2a.utils.errors import UnsupportedOperationError
 
 from agents.logistics.helpdesk.card import AGENT_CARD
 from agents.logistics.helpdesk.store.base import OrderEventStore
@@ -118,8 +117,6 @@ class HelpdeskAgentExecutor(AgentExecutor):
     def __init__(self, store: OrderEventStore | None = None):
         self.store = store or InMemoryOrderEventStore()
         self.agent = HelpdeskAgent(self.store)
-        # Static card snapshot for protocol usage.
-        self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
     async def execute(
         self,
@@ -130,14 +127,14 @@ class HelpdeskAgentExecutor(AgentExecutor):
         Execute a single agent invocation and enqueue textual result.
         """
         result = await self.agent.invoke(context)
-        await event_queue.enqueue_event(new_agent_text_message(result))
+        await event_queue.enqueue_event(new_text_message(result))
 
     async def cancel(
         self,
         request: RequestContext,
         event_queue: EventQueue,
-    ) -> Task | None:
+    ) -> None:
         """
         Cancel is not supported for this simple agent.
         """
-        raise ServerError(error=UnsupportedOperationError())
+        raise UnsupportedOperationError()

@@ -19,13 +19,12 @@ AUCTION_SUPERVISOR_SKILL = AgentSkill(
 
 AUCTION_SUPERVISOR_CARD = AgentCard(
     name="Auction Supervisor agent",
-    id="auction-supervisor-agent",
     description="An AI agent that supervises and reports on coffee auctions.",
-    url="",
     version="1.0.0",
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AUCTION_SUPERVISOR_SKILL],
-    supportsAuthenticatedExtendedCard=False,
+    # Caller identity only: this supervisor serves no A2A interface.
+    supported_interfaces=[],
 )

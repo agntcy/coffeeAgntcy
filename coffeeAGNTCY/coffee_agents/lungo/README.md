@@ -93,10 +93,10 @@ The auction supervisor decides whether a prompt should:
 
 There is no separate broadcast topic. Every call goes through the same shared `a2a_client_factory` (`agents/supervisors/auction/graph/shared.py`), built once with `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`:
 
-- Unicast tools (`get_farm_yield_inventory`, `create_order`, `get_order_details`) deep-copy the target farm's card, set `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()`, and call `a2a_client_factory.create(card, ...)`.
+- Unicast tools (`get_farm_yield_inventory`, `create_order`, `get_order_details`) copy the target farm's card, move the interface matching `DEFAULT_MESSAGE_TRANSPORT` to the front with `prefer_transport` (`common/a2a_helpers.py`), and call `a2a_client_factory.create(card, ...)`.
 - Broadcast tools (`get_all_farms_yield_inventory`, `get_all_farms_yield_inventory_streaming`) build a `recipients` list from every card in the farm registry (`agents/farms/{brazil,colombia,vietnam}/card.py`) via `get_agent_identifier(...)`, then call `client.broadcast_message(request, recipients=recipients, context=ctx)` or `broadcast_message_streaming(...)`.
 
-Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.additional_interfaces` (`slim`, `nats`, `jsonrpc`) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic.
+Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.supported_interfaces` (`slimpatterns`, `natspatterns`, `jsonrpc`; the first entry is the preferred transport) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic.
 
 The Colombia farm is the only one wired to external MCP services, both reached over the same configured transport as the auction services:
 
@@ -184,7 +184,7 @@ Every agent card in Lungo builds its SLIM URL from the same pattern: `slim://{SL
 For the auction flow:
 
 - `agents/supervisors/auction/graph/shared.py` builds one process-wide `A2AClientFactory` via `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`, so both SLIM and NATS transport configs are available to it.
-- `agents/supervisors/auction/graph/tools.py` sets `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()` on a copy of the target farm card(s) before calling `a2a_client_factory.create(card, ...)`; the factory negotiates the actual connection from that preference plus the transports the farm's card advertises.
+- `agents/supervisors/auction/graph/tools.py` reorders `supported_interfaces` on a copy of the target farm card(s) with `prefer_transport(card, DEFAULT_MESSAGE_TRANSPORT)` before calling `a2a_client_factory.create(card, ...)`; the factory negotiates the actual connection from that order plus the transports the farm's card advertises. Order creation follows `DEFAULT_MESSAGE_TRANSPORT`; order-detail lookup (`get_order_details`) explicitly prefers SLIM.
 - Unicast calls create a client for one farm's card. Broadcast calls (`get_all_farms_yield_inventory[_streaming]`) instead pass `recipients=[...]` (built from every registered farm card) to `client.broadcast_message(...)` / `broadcast_message_streaming(...)` - there is no dedicated broadcast topic or `FARM_BROADCAST_TOPIC` constant in the current code.
 - `docker-compose.yaml` passes `DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}` through with no fallback of its own; the actual default comes from `.env.example` (`DEFAULT_MESSAGE_TRANSPORT=SLIM`, with `DEFAULT_MESSAGE_TRANSPORT=NATS` left commented out as the documented way to switch) and from `config/config.py`'s `os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")` fallback. So auction defaults to **SLIM**, not NATS.
 
@@ -197,7 +197,7 @@ For the logistics flow:
 
 For the recruiter flow:
 
-- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against `RECRUITER_AGENT_CARD.url` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`).
+- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against the first `supported_interfaces` URL of `RECRUITER_AGENT_CARD` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`). The card declares `protocol_version="0.3"` so the a2a-sdk 1.x client speaks A2A v0.3 JSON-RPC to the recruiter service, which has not moved to a2a-sdk 1.x.
 - That supervisor-to-recruiter hop is plain HTTP-based A2A rather than App SDK transport/topic routing.
 - After agent selection, the dynamic workflow forwards the user task to the chosen remote A2A endpoint advertised by the recruited agent.
 
@@ -395,13 +395,16 @@ OAUTH2_APP_KEY=<your_app_key> #optional
    DEFAULT_MESSAGE_TRANSPORT=SLIM
    SLIM_SERVER=127.0.0.1:46357
    NATS_SERVER=127.0.0.1:4222
-   SLIM_SHARED_SECRET=my_shared_secret_for_mls
+   SLIM_SHARED_SECRET=<random-string-of-at-least-32-characters>
+   SLIM_ALLOW_PLACEHOLDER_SECRET=false
    ```
 
    - `DEFAULT_MESSAGE_TRANSPORT`: `SLIM` or `NATS` (Docker Compose defaults to **SLIM**).
    - `SLIM_SERVER`: Host and port for the SLIM dataplane only (no `http://` prefix); used in agent cards and RPC URLs.
    - `NATS_SERVER`: Host and port for NATS; cards reference `nats://{NATS_SERVER}/...`.
-   - `SLIM_SHARED_SECRET`: Shared secret for the SLIM gateway.
+   - `SLIM_SHARED_SECRET`: Secret the SLIM peers (agents) use to authenticate each other; the SLIM server itself does not check it. At least 32 characters, the same value for every peer.
+   - `SLIM_ALLOW_PLACEHOLDER_SECRET`: Local development only. When `SLIM_SHARED_SECRET` is unset, empty or the app-sdk placeholder, the farm and logistics agents refuse to start their SLIM interfaces unless this is `true`; with it they use the public placeholder and log a warning. Defaults to `false` in code; Docker Compose, `.env.example` and the Helm `local-cluster` set it to `true`, the per-agent Helm charts leave it `false`. Only the farm and logistics A2A servers refuse to start. The supervisors, the MCP clients and the weather and payment MCP servers do not read it: they keep using the public placeholder after logging a warning, so a missing secret there does not stop startup, and their SLIM sessions fail if the peer uses a real secret.
+   - Upgrading an existing `.env`: an older `.env.example` set `SLIM_SHARED_SECRET="slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"`. The agents still accept that value without `SLIM_ALLOW_PLACEHOLDER_SECRET`, because it is not the app-sdk placeholder, so it is fine for the local demo. It is public, though: if you use lungo beyond a demo, replace it with your own random secret of at least 32 characters, otherwise the secret stays public.
 
    For backward compatibility and tooling, you can still set `TRANSPORT_SERVER_ENDPOINT` (for example `http://localhost:46357` when using SLIM, or `nats://localhost:4222` when using NATS). Prefer keeping it consistent with `SLIM_SERVER` / `NATS_SERVER` and `DEFAULT_MESSAGE_TRANSPORT`.
 

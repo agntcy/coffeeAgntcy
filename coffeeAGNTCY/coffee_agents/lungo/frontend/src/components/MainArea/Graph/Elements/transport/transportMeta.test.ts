@@ -87,6 +87,51 @@ describe("transportMeta", () => {
     ])
   })
 
+  it("reads ordered v1 supported interfaces and uses the first as preferred", () => {
+    const record = {
+      modules: [
+        {
+          data: {
+            card_data: {
+              supportedInterfaces: [
+                {
+                  protocolBinding: "slimpatterns",
+                  url: "slim://slim:46357/lungo/agents/brazil",
+                },
+                {
+                  protocolBinding: "natspatterns",
+                  url: "nats://nats:4222/lungo/agents/brazil",
+                },
+                {
+                  protocolBinding: "JSONRPC",
+                  url: "http://0.0.0.0:9999",
+                },
+              ],
+            },
+          },
+        },
+      ],
+    } satisfies OasfRecord
+
+    expect(extractA2aTransportsFromOasf(record)).toEqual([
+      {
+        name: "slim",
+        url: "slim://slim:46357/lungo/agents/brazil",
+        preferred: true,
+      },
+      {
+        name: "nats",
+        url: "nats://nats:4222/lungo/agents/brazil",
+        preferred: false,
+      },
+      {
+        name: "jsonrpc",
+        url: "http://0.0.0.0:9999",
+        preferred: false,
+      },
+    ])
+  })
+
   it("returns an empty list for records without A2A interfaces", () => {
     expect(extractA2aTransportsFromOasf({ modules: [] })).toEqual([])
     expect(

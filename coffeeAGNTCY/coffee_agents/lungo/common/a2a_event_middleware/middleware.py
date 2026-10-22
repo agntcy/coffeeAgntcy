@@ -3,8 +3,10 @@
 
 """A2A client middleware for emitting workflow topology events.
 
-This module contains outbound interceptor and inbound consumer logic
-for A2A transport. Shared event builders and sinks live in workflow_utils.
+This module contains the A2A client interceptor: ``before`` emits the
+outbound topology event and ``after`` the inbound one, once per response
+(once per event for streams). Shared event builders and sinks live in
+workflow_utils.
 """
 
 from __future__ import annotations
@@ -13,12 +15,19 @@ import logging
 from time import monotonic
 from typing import Any, Literal, Mapping
 
-from a2a.client import ClientEvent
-from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
-from a2a.types import AgentCard, Message, Task, TaskState
+from a2a.client import ClientCallContext
+from a2a.client.interceptors import AfterArgs, BeforeArgs, ClientCallInterceptor
+from a2a.types import AgentCard
+from google.protobuf.json_format import MessageToDict
 from opentelemetry import trace as _otel_trace
 from pydantic import ValidationError
 
+from common.a2a_helpers import (
+    message_metadata,
+    primary_transport,
+    response_message,
+    task_state_label,
+)
 from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from common.workflow_utils.builders import build_event, make_edge, make_node
 from common.workflow_utils.node_types import AGENT, TRANSPORT
@@ -42,6 +51,10 @@ from schema.types import (
 )
 
 logger = logging.getLogger("lungo.common.event_middleware")
+
+# Interceptor method names (a2a-sdk BaseClient and the app-sdk patterns
+# client) for the calls that carry a message; other methods emit nothing.
+_MESSAGE_METHODS = frozenset({"send_message", "send_message_streaming"})
 
 
 def _is_valid_instance_id(value: str) -> bool:
@@ -110,8 +123,9 @@ async def _bind_outbound_interaction_state(
 ) -> RuntimeIdAllocator:
     """Persist outbound interaction state and return a trace-stable allocator.
 
-    This bridges interceptor context to consumer callbacks, which do not
-    receive ClientCallContext.
+    This bridges the outbound call to its inbound ``after`` callbacks, which
+    are correlated through the trace (broadcast and group chat replies arrive
+    without the per-call state).
     """
     return await upsert_in_flight_state(
         trace_id=trace_id,
@@ -298,7 +312,14 @@ async def _inbound_topology(
 
 
 class EventEmittingInterceptor(ClientCallInterceptor):
-    """Emit outbound topology discovery events for A2A calls."""
+    """Emit outbound and inbound topology events for A2A calls.
+
+    ``before`` emits the outbound discovery event; ``after`` emits the inbound
+    update for every response (every event of a stream, every broadcast or
+    group chat reply). Neither raises: the app-sdk patterns client turns an
+    ``after`` failure into a failed broadcast reply, so emission errors are
+    logged and swallowed.
+    """
 
     def __init__(
         self,
@@ -329,14 +350,40 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         else:
             self._event_sink = WorkflowAPIEventSink()
 
-    async def intercept(
+    async def before(self, args: BeforeArgs) -> None:
+        """Emit the outbound topology event for a message call."""
+        if args.method not in _MESSAGE_METHODS:
+            return
+        try:
+            await self._emit_outbound(args.method, args.agent_card, args.context)
+        except Exception:
+            logger.exception(
+                "EventEmittingInterceptor [%s]: outbound event emission failed for method '%s'.",
+                self._source,
+                args.method,
+            )
+
+    async def after(self, args: AfterArgs) -> None:
+        """Emit the inbound topology event for one response or stream event."""
+        if args.method not in _MESSAGE_METHODS:
+            return
+        if self._delegation_mode == "edge_only":
+            return
+        try:
+            await self._emit_inbound(args.result, args.agent_card)
+        except Exception:
+            logger.exception(
+                "EventEmittingInterceptor [%s]: inbound event emission failed for method '%s'.",
+                self._source,
+                args.method,
+            )
+
+    async def _emit_outbound(
         self,
         method_name: str,
-        request_payload: dict[str, Any],
-        http_kwargs: dict[str, Any],
         agent_card: AgentCard | None,
         context: ClientCallContext | None,
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
+    ) -> None:
         t_intercept_start = monotonic()
 
         # 1) Validate call context and resolve workflow identity.
@@ -347,7 +394,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 self._source,
                 method_name,
             )
-            return request_payload, http_kwargs
+            return
         if context is None:
             logger.warning(
                 "EventEmittingInterceptor [%s]: Missing context for method '%s'. Context is required for full event emission but will proceed with limited information.",
@@ -361,7 +408,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         if trace_ctx.trace_id is None:
             logger.warning(
                 "EventEmittingInterceptor [%s]: no active OTel span for method '%s'. "
-                "Falling back to random correlation IDs; consumer callbacks will not "
+                "Falling back to random correlation IDs; inbound (after) callbacks will not "
                 "correlate. Ensure ioa_observe is instrumenting the caller.",
                 self._source,
                 method_name,
@@ -383,7 +430,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 propagated_name,
                 method_name,
             )
-            return request_payload, http_kwargs
+            return
 
         if not propagated_instance_id or not _is_valid_instance_id(
             propagated_instance_id
@@ -395,7 +442,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 propagated_instance_id,
                 method_name,
             )
-            return request_payload, http_kwargs
+            return
 
         workflow_name = metadata.name
         instance_id = propagated_instance_id
@@ -416,7 +463,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         # 2) Build/update trace-scoped state and topology fragment.
         remote_agent_ids = _collect_remote_agent_ids(ctx_state, agent_card)
 
-        active_transport = agent_card.preferred_transport or "Transport"
+        active_transport = primary_transport(agent_card) or "Transport"
 
         allocator = await _bind_outbound_interaction_state(
             trace_id=trace_ctx.trace_id,
@@ -493,84 +540,12 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 monotonic() - t_intercept_start,
             )
 
-        return request_payload, http_kwargs
-
-
-def _extract_task_from_client_event(event: ClientEvent | Message) -> Task | None:
-    """Best-effort extraction of Task from a ClientEvent payload."""
-    if isinstance(event, Message):
-        return None
-
-    candidate: Any | None = None
-
-    if isinstance(event, tuple):
-        candidate = event[0] if event else None
-    elif hasattr(event, "task"):
-        candidate = getattr(event, "task", None)
-    elif hasattr(event, "__getitem__"):
-        try:
-            candidate = event[0]  # type: ignore[index]
-        except Exception:
-            candidate = None
-
-    return candidate if isinstance(candidate, Task) else None
-
-
-def _extract_remote_agent_id_from_event(
-    event: ClientEvent | Message,
-) -> str | None:
-    """Extract remote agent ID from response metadata when available."""
-    metadata: dict[str, Any] | None = None
-
-    if isinstance(event, Message):
-        metadata = event.metadata  # type: ignore[assignment]
-    else:
-        task_obj = _extract_task_from_client_event(event)
-        if task_obj and task_obj.metadata:
-            metadata = task_obj.metadata  # type: ignore[assignment]
-
-    if metadata and isinstance(metadata, dict):
-        agent_id = metadata.get("name")
-        if isinstance(agent_id, str):
-            stripped = agent_id.strip()
-            if stripped and stripped not in {"None", "null"}:
-                return stripped
-
-    return None
-
-
-def make_event_emitting_consumer(
-    *,
-    caller_card: AgentCard,
-    agent_call_graph_layer: int = 0,
-    delegation_mode: Literal["full", "edge_only"] = "full",
-):
-    """Create consumer callback that emits inbound topology updates."""
-    if not EMIT_WORKFLOW_EVENTS:
-        logger.warning(
-            "make_event_emitting_consumer [%s]: EMIT_WORKFLOW_EVENTS is false, consumer will not emit events.",
-            _slugify_source(caller_card),
-        )
-        event_sink = None
-    else:
-        event_sink = WorkflowAPIEventSink()
-
-    caller_agent_id = caller_card.name
-    _source = _slugify_source(caller_card)
-
-    async def event_emitting_consumer(
-        event: ClientEvent | Message,
-        agent_card: AgentCard,
-    ) -> None:
-        """Emit a StateProgressUpdate for an inbound response."""
-
-        if delegation_mode == "edge_only":
-            return
-
+    async def _emit_inbound(self, result: Any, agent_card: AgentCard | None) -> None:
+        """Emit a StateProgressUpdate for one inbound response."""
         t_receive_start = monotonic()
 
         agent_id = agent_id_from_card(agent_card) or "unknown"
-        active_transport = agent_card.preferred_transport or "Transport"
+        active_transport = primary_transport(agent_card) or "Transport"
 
         trace_id_int = current_trace_id()
         span_id_int = (
@@ -581,12 +556,12 @@ def make_event_emitting_consumer(
 
         # 1) Resolve remote identity and correlated interaction state.
 
-        remote_agent_id = _extract_remote_agent_id_from_event(event) or agent_id
+        remote_agent_id = _remote_agent_id_from_response(result) or agent_id
 
         consumer_state = resolve_consumer_state(
             trace_id=trace_id_int,
             remote_agent_id=remote_agent_id,
-            source=_source,
+            source=self._source,
         )
         if consumer_state is None:
             return
@@ -595,31 +570,26 @@ def make_event_emitting_consumer(
         identity = lookup_workflow(workflow_name)
         if identity is None:
             logger.warning(
-                "event_emitting_consumer [%s]: no catalog match for workflow_name=%r; "
-                "skipping event emission.",
-                _source,
+                "EventEmittingInterceptor [%s]: no catalog match for workflow_name=%r; "
+                "skipping inbound event emission.",
+                self._source,
                 workflow_name,
             )
             return
 
-        response_status: TaskState | None = None
-        task_obj = _extract_task_from_client_event(event)
-        if task_obj and task_obj.status and task_obj.status.state:
-            response_status = task_obj.status.state
-
         # 2) Build inbound topology update and event payload.
         topology = await _inbound_topology(
-            caller_agent_id,
+            self._caller_agent_id,
             remote_agent_id,
             transport_label=active_transport,
-            layer_index=agent_call_graph_layer,
+            layer_index=self._agent_call_graph_layer,
             allocator=allocator,
         )
 
-        status_label = response_status.value if response_status else "unknown"
+        status_label = task_state_label(_response_task_state(result))
 
         event_obj = build_event(
-            source=_source,
+            source=self._source,
             identity=identity,
             instance_id=instance_id,
             topology=topology,
@@ -630,17 +600,54 @@ def make_event_emitting_consumer(
         )
 
         # 3) Emit event and optionally log payload.
-        if event_sink:
-            await event_sink.emit(event_obj)
+        if self._event_sink:
+            await self._event_sink.emit(event_obj)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                "event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
-                _source,
+                "EventEmittingInterceptor [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
+                self._source,
                 remote_agent_id,
                 status_label,
                 monotonic() - t_receive_start,
                 event_obj.model_dump_json(indent=2, exclude_none=True),
             )
 
-    return event_emitting_consumer
+
+def _payload(result: Any) -> str | None:
+    """Selected ``payload`` oneof of a SendMessageResponse/StreamResponse."""
+    which = getattr(result, "WhichOneof", None)
+    return which("payload") if which else None
+
+
+def _response_task_state(result: Any) -> int | None:
+    """Task state carried by a response, or ``None`` for a plain message."""
+    which = _payload(result)
+    if which == "task":
+        return result.task.status.state
+    if which == "status_update":
+        return result.status_update.status.state
+    return None
+
+
+def _response_metadata(result: Any) -> dict[str, Any]:
+    """Metadata of a response: the task or update metadata, else the message's."""
+    which = _payload(result)
+    holder = None
+    if which == "task":
+        holder = result.task
+    elif which == "status_update":
+        holder = result.status_update
+    if holder is not None and holder.HasField("metadata"):
+        return MessageToDict(holder.metadata)
+    return message_metadata(response_message(result))
+
+
+def _remote_agent_id_from_response(result: Any) -> str | None:
+    """Extract the remote agent ID (``metadata.name``) from a response."""
+    agent_id = _response_metadata(result).get("name")
+    if isinstance(agent_id, str):
+        stripped = agent_id.strip()
+        if stripped and stripped not in {"None", "null"}:
+            return stripped
+    return None

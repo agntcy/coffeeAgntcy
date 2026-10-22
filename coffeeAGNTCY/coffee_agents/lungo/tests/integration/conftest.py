@@ -104,6 +104,10 @@ def _base_env():
         ),
         "SLIM_SERVER": "127.0.0.1:46357",
         "NATS_SERVER": "127.0.0.1:4222",
+        # CI has no SLIM_SHARED_SECRET; let the agents fall back to the placeholder.
+        "SLIM_ALLOW_PLACEHOLDER_SECRET": os.environ.get(
+            "SLIM_ALLOW_PLACEHOLDER_SECRET", "true"
+        ),
     }
 
 
