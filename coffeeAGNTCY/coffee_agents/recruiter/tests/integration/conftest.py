@@ -36,7 +36,7 @@ ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
 # already on a dev's PATH, or already cached at LOCAL_DIRCTL from a previous
 # run, is only accepted if `_meets_minimum_version` (below) confirms it is at
 # least this new - see `_dirctl_version`/`_meets_minimum_version`/`ensure_dirctl`.
-DIRCTL_VERSION = "v1.5.0"
+DIRCTL_VERSION = "v1.8.0"
 BIN_DIR = RECRUITER_DIR / "bin"
 LOCAL_DIRCTL = BIN_DIR / "dirctl"
 
