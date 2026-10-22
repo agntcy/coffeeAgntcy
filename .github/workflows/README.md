@@ -123,7 +123,7 @@ Orchestrates pytest for each changed agent project (`corto`, `lungo`, `recruiter
 | Input | Description |
 |-------|-------------|
 | `test_corto`, `test_lungo`, `test_recruiter` | Subproject toggles (workflow_call / dispatch only) |
-| `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides |
+| `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides; a `<project>:` line prefix scopes a line to one demo |
 
 <!-- alphabetize-exempt: reusable-workflow inputs list required inputs first, then optional ones, not alphabetical -->
 
@@ -135,6 +135,7 @@ Runs `pytest` via `uv` for a single project directory and explicit path list.
 |-------|-------------|
 | `project_dir` | Path to the project directory to test (required) |
 | `test_paths` | Space-separated pytest directory arguments and flags, e.g. `tests --ignore=tests/integration/llm` (required) |
+| `project_name` | Short project name (`corto`, `lungo`, `recruiter`) that selects `<project>:`-prefixed override lines (required) |
 | `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
 | `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
@@ -153,8 +154,10 @@ jobs:
       pip_constraints: |
         grpcio<1.65
       docker_overrides: |
-        slim=ghcr.io/agntcy/slim:1.4.0
+        lungo:slim=ghcr.io/agntcy/slim:2.2.0
 ```
+
+Override lines apply to every demo that declares the service (compose) or package (`pyproject.toml`). Prefix a line with `<project>:` (`corto`, `lungo`, `recruiter`) to apply it to one demo only, for example when demos are on different SLIM major versions. A project without a root `docker-compose.yaml` (recruiter) skips image overrides.
 
 ## fe-ci
 

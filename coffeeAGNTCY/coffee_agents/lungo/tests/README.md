@@ -127,6 +127,8 @@ The reusable test workflow [`test.yaml`](../../../../.github/workflows/test.yaml
 - `pip_constraints` (constraint lines)
 - `docker_overrides` (service=image[:tag] mappings applied to the demo docker-compose)
 
+A line applies to every demo that declares the service (compose) or package (`pyproject.toml`). Prefix a line with `<project>:` (`corto`, `lungo`, `recruiter`) to apply it to one demo only, for example when demos are on different SLIM major versions.
+
 Minimal invocation pattern:
 
 ```yaml
@@ -142,5 +144,5 @@ jobs:
       pip_constraints: |
         grpcio<1.65
       docker_overrides: |
-        slim=ghcr.io/agntcy/slim:1.4.0
+        lungo:slim=ghcr.io/agntcy/slim:2.2.0
 ```
