@@ -97,14 +97,16 @@ services:
       - "3000:3000"
 
   clickhouse-server:
-    image: clickhouse/clickhouse-server:latest@sha256:a73b5c0fb6f88e02357aead0906ad53882b07e4d202327489798844ba745e64d
+    image: bitnamilegacy/clickhouse:25.7.5-debian-12-r0@sha256:2261b50861e29ad3a15d427db96ebf23aabb3be5b12b870192862777246cb349
     container_name: clickhouse-server-corto
     ports:
       - "9000:9000"
       - "8123:8123"
     environment:
-      CLICKHOUSE_USER: admin
-      CLICKHOUSE_PASSWORD: admin
+      CLICKHOUSE_ADMIN_USER: admin
+      CLICKHOUSE_ADMIN_PASSWORD: admin
+    volumes:
+      - ./config/docker/clickhouse/02-logger.xml:/bitnami/clickhouse/etc/config.d/02-logger.xml:ro
     ulimits:
       nofile:
         soft: 262144
@@ -113,11 +115,9 @@ services:
       test:
         [
           "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8123/ping",
+          "bash",
+          "-c",
+          "exec 3<>/dev/tcp/127.0.0.1/8123 && printf 'GET /ping HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '^Ok\\.' <&3",
         ]
       interval: 5s
       timeout: 3s
@@ -125,7 +125,7 @@ services:
       start_period: 10s
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
+    image: otel/opentelemetry-collector-contrib:0.161.0@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
     container_name: otel-collector-corto
     restart: unless-stopped
     ports:
@@ -145,8 +145,11 @@ services:
       - "3001:3000"
     environment:
       - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_LOG_LEVEL=warn
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./config/docker/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
     depends_on:
       clickhouse-server:
         condition: service_healthy
