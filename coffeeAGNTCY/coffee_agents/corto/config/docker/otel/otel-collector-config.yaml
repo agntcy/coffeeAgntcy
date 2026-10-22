@@ -20,6 +20,10 @@ exporters:
 
 service:
   pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [clickhouse]
+
     metrics:
       receivers: [otlp]
       exporters: [clickhouse]
