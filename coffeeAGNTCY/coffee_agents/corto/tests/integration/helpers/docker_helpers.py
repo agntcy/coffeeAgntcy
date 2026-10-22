@@ -39,11 +39,12 @@ def _run(cmd: List[str]):
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}\n")
 
-        # 1. Show resolved compose config dynamically using the same file set
-        print("\n--- docker compose config ---")
+        # 1. Show the services of the same file set. Never print the full resolved
+        #    config: it expands the process environment and .env, including credentials.
+        print("\n--- docker compose config --services ---")
         subprocess.run(
             _compose_cmd([f for f in cmd if f.endswith((".yaml", ".yml"))])
-            + ["config"],
+            + ["config", "--services"],
             check=False,
             cwd=PROJECT_DIR,
         )
