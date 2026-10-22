@@ -2,7 +2,7 @@ apiVersion: v2
 name: lungo-local-cluster
 description: A Helm chart for deploying Lungo services in a local cluster
 type: application
-version: 0.7.1
+version: 0.7.2
 appVersion: "1.0"
 dependencies:
   - name: slim
@@ -33,7 +33,7 @@ dependencies:
     version: "0.3.0"
     repository: "file://../colombia-farm"
   - name: weather-mcp-server
-    version: "0.1.2"
+    version: "0.2.0"
     repository: "file://../weather-mcp-server"
   - name: logistics-farm
     version: "0.2.0"
@@ -63,5 +63,5 @@ dependencies:
     version: "0.1.4"
     repository: "file://../agentic-workflows-api"
   - name: payment-mcp-server
-    version: "0.1.2"
+    version: "0.2.0"
     repository: "file://../payment-mcp-server"

@@ -44,6 +44,11 @@ spec:
         {{- end }}
         - name: OTLP_HTTP_ENDPOINT
           value: "{{ .Values.otlpHttpEndpoint }}"
+        {{- if .Values.externalSecrets }}
+        envFrom:
+          - secretRef:
+              name: {{ .Values.appName }}-secrets
+        {{- end }}
         {{ if .Values.resources.enabled }}
         resources:
           requests:

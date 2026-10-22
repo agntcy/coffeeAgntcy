@@ -28,7 +28,7 @@ dependencies:
   version: 0.3.0
 - name: weather-mcp-server
   repository: file://../weather-mcp-server
-  version: 0.1.2
+  version: 0.2.0
 - name: logistics-farm
   repository: file://../logistics-farm
   version: 0.2.0
@@ -58,6 +58,6 @@ dependencies:
   version: 0.1.4
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
-  version: 0.1.2
-digest: sha256:92ad230ccfaf657b0d734ba553e16e274e5236eff3476ab88a53e48529f44cbd
-generated: "2026-10-22T22:02:59.176628+02:00"
+  version: 0.2.0
+digest: sha256:454b4af526f890e2d6e32557060a4bd90ba0a229316a84e3f2da0d37b64d1161
+generated: "2026-10-22T22:03:14.840561+02:00"

@@ -27,8 +27,7 @@ weather-mcp-server:
   defaultMessageTransport: "NATS"
   slimServer: "lungo-local-cluster-slim:46357"
   natsServer: "lungo-local-cluster-nats:4222"
-  # Set via CI/helmfile or leave empty if using image default from config.config for dev only.
-  slimSharedSecret: "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
+  # SLIM_SHARED_SECRET comes from my-local-secret through externalSecrets (config-overrides.yaml.gotmpl).
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
 agentic-workflows-api:

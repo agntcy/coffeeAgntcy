@@ -140,6 +140,26 @@ recruiter:
           key: my-local-secret
           property: SLIM_SHARED_SECRET
 
+weather-mcp-server:
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
+
+payment-mcp-server:
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
+
 agentic-workflows-api:
   environment: local
 
