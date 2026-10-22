@@ -2,7 +2,7 @@
 
 This guide demonstrates how to integrate **coffeeAgntcy lungo** with **[agntcy dir](https://github.com/agntcy/dir)** for automated agent discovery and management.
 
-Stack versions follow **[AGNTCY Directory v1.0.0](https://docs.agntcy.org/dir/getting-started/)** (`ghcr.io/agntcy/dir-apiserver:v1.0.0`, `ghcr.io/agntcy/dir-ctl:v1.0.0`, PostgreSQL for metadata, Zot `v2.1.15` for OCI storage).
+Stack versions follow **[AGNTCY Directory v1.8.0](https://docs.agntcy.org/dir/getting-started/)** (`ghcr.io/agntcy/dir-apiserver:v1.8.0`, `ghcr.io/agntcy/dir-ctl:v1.8.0`, PostgreSQL for metadata, Zot `v2.1.15` for OCI storage).
 
 ## Overview
 
@@ -21,8 +21,8 @@ docker compose --profile recruiter up -d postgres zot dir-api-server dir-mcp-ser
 This starts:
 
 - `postgres`: PostgreSQL backing store for the directory API server
-- `dir-api-server`: Directory API (`ghcr.io/agntcy/dir-apiserver:v1.0.0`)
-- `dir-mcp-server`: MCP bridge (`ghcr.io/agntcy/dir-ctl:v1.0.0`, `mcp serve` with open stdin)
+- `dir-api-server`: Directory API (`ghcr.io/agntcy/dir-apiserver:v1.8.0`)
+- `dir-mcp-server`: MCP bridge (`ghcr.io/agntcy/dir-ctl:v1.8.0`, `mcp serve` with open stdin)
 - `zot`: OCI-compliant registry (`ghcr.io/project-zot/zot:v2.1.15`) for agent artifacts
 
 To stop, use the same service list for `down`, e.g. `docker compose --profile recruiter down` or `docker compose --profile '*' down`.
@@ -60,7 +60,7 @@ This script will:
 After publishing, you can:
 
 1. **View published records**: Check the generated `published_cids.json` file for CIDs of your published agents
-2. **Interact with directory**: Use the `dirctl` CLI tool (v1.0.0) to query and manage directory records
+2. **Interact with directory**: Use the `dirctl` CLI tool (v1.8.0) to query and manage directory records
 
 
 ```
