@@ -7,6 +7,7 @@ from a2a.types import (
     AgentInterface,
     AgentSkill,
 )
+from agntcy_app_sdk.semantic.a2a.transport_types import InterfaceTransport
 from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT, NATS_SERVER, SLIM_SERVER
 
 AGENT_ID = "flavor-profile-farm-agent"
@@ -26,27 +27,24 @@ AGENT_SKILL = AgentSkill(
 
 AGENT_CARD = AgentCard(
     name="Coffee Farm Flavor Agent",
-    id=AGENT_ID,
     description="An AI agent that estimates the flavor profile of coffee beans using growing conditions like season and altitude.",
     version="1.0.0",
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
-    supportsAuthenticatedExtendedCard=False,
-    preferred_transport="slim",
-    url=f"slim://{SLIM_SERVER}/{SLIM_TOPIC}",
-    additional_interfaces=[
+    # Ordered by preference: clients negotiate in this order.
+    supported_interfaces=[
         AgentInterface(
-            transport="slim",
+            protocol_binding=InterfaceTransport.SLIM_PATTERNS,
             url=f"slim://{SLIM_SERVER}/{SLIM_TOPIC}",
         ),
         AgentInterface(
-            transport="jsonrpc",
+            protocol_binding=InterfaceTransport.JSONRPC,
             url=f"http://{FARM_AGENT_HOST}:{FARM_AGENT_PORT}/",
         ),
         AgentInterface(
-            transport="nats",
+            protocol_binding=InterfaceTransport.NATS_PATTERNS,
             url=f"nats://{NATS_SERVER}/{SLIM_TOPIC}",
         ),
     ],

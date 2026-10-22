@@ -1,11 +1,12 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from a2a.types import Message, Part, Role, TextPart
+from a2a.types import Message, Part, Role, SendMessageRequest, StreamResponse
 from exchange.errors import (
     RemoteAgentNoResponseError,
     TransportTimeoutError,
@@ -14,12 +15,14 @@ from exchange.errors import (
 )
 
 
-def _make_success_response(text: str = "expected response") -> Message:
-    """Real Message so _extract_text_from_events() accepts the mock response."""
-    return Message(
-        messageId=str(uuid4()),
-        role=Role.user,
-        parts=[Part(root=TextPart(text=text))],
+def _make_success_response(text: str = "expected response") -> StreamResponse:
+    """Real StreamResponse so _extract_text_from_events() accepts the mock response."""
+    return StreamResponse(
+        message=Message(
+            message_id=str(uuid4()),
+            role=Role.ROLE_AGENT,
+            parts=[Part(text=text)],
+        )
     )
 
 
@@ -63,6 +66,16 @@ def _side_effect_for(scenario_id: str):
             ]
         )
         return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_timeout_then_success":
+        calls = iter(
+            [
+                _raising_async_iter(SlimError.Timeout()),
+                _async_iter([_make_success_response("recovered")]),
+            ]
+        )
+        return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_timeout_exhausted":
+        return lambda *a, **kw: _raising_async_iter(SlimError.Timeout())
     if scenario_id == "slim_deadline_then_success":
         # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
         calls = iter(
@@ -100,6 +113,16 @@ def _timeout_error_exception(scenario_id: str):
         return e
     if scenario_id == "slim_deadline":
         return TimeoutError("No SLIM reply from farm within 20s.")
+    if scenario_id == "asyncio_timeout":
+        return asyncio.TimeoutError()
+    if scenario_id == "slim_timeout":
+        from slim_bindings import SlimError
+
+        return SlimError.Timeout()
+    if scenario_id == "slim_session_error":
+        from slim_bindings import SlimError
+
+        return SlimError.SessionError("receive timeout")
     if scenario_id == "plain_value_error":
         return ValueError("bad")
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
@@ -131,6 +154,22 @@ _A2A_SCENARIOS = [
         3,
         True,
         id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "slim_timeout_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="slim_timeout_then_success",
+    ),
+    pytest.param(
+        "slim_timeout_exhausted",
+        None,
+        TransportTimeoutError,
+        3,
+        True,
+        id="slim_timeout_exhausted",
     ),
     pytest.param(
         "slim_deadline_then_success",
@@ -219,10 +258,18 @@ async def test_a2a_send_message_scenarios(
             assert result == expected_result
 
         assert mock_client.send_message.call_count == expected_call_count
-        if scenario_id in ("timeout_then_timeout", "slim_deadline_exhausted"):
+        if scenario_id in (
+            "timeout_then_timeout",
+            "slim_timeout_exhausted",
+            "slim_deadline_exhausted",
+        ):
             assert mock_sleep.await_count == 2
             assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
-        elif scenario_id in ("timeout_then_success", "slim_deadline_then_success"):
+        elif scenario_id in (
+            "timeout_then_success",
+            "slim_timeout_then_success",
+            "slim_deadline_then_success",
+        ):
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
 
@@ -232,6 +279,9 @@ async def test_a2a_send_message_scenarios(
     [
         ("session_error_in_context", True),
         ("slim_deadline", True),
+        ("asyncio_timeout", True),
+        ("slim_timeout", True),
+        ("slim_session_error", True),
         ("plain_value_error", False),
     ],
 )
@@ -244,4 +294,57 @@ def test_is_timeout_error(scenario_id, expected):
     [("no_payload_attribute", True), ("other_attribute_error", False)],
 )
 def test_is_no_payload_error(scenario_id, expected):
+    # Classification only: the current SDK raises on a missing SLIM reply
+    # instead of returning None, so this path is a backstop for older SDKs.
     assert _is_no_payload_error(_no_payload_exception(scenario_id)) is expected
+
+
+async def test_send_wraps_message_in_send_message_request(mock_client):
+    """a2a-sdk 1.x Client.send_message takes a SendMessageRequest, not a Message."""
+    import exchange.agent as agent_module
+
+    mock_client.send_message = MagicMock(
+        side_effect=lambda *a, **kw: _async_iter([_make_success_response("ok")])
+    )
+    with patch.object(
+        agent_module.a2a_client_factory,
+        "create",
+        new_callable=AsyncMock,
+        return_value=mock_client,
+    ):
+        result = await agent_module.ExchangeAgent().a2a_client_send_message("hi")
+
+    assert result == "ok"
+    (request,), _kwargs = mock_client.send_message.call_args
+    assert isinstance(request, SendMessageRequest)
+    assert request.message.role == Role.ROLE_USER
+    assert request.message.parts[0].text == "hi"
+
+
+async def test_task_status_message_text_is_returned(mock_client):
+    """A reply that arrives as a task carries its text in the status message."""
+    import exchange.agent as agent_module
+    from a2a.types import Task, TaskState, TaskStatus
+
+    task = Task(
+        id="t",
+        context_id="c",
+        status=TaskStatus(
+            state=TaskState.TASK_STATE_COMPLETED,
+            message=Message(
+                message_id="m", role=Role.ROLE_AGENT, parts=[Part(text="from task")]
+            ),
+        ),
+    )
+    mock_client.send_message = MagicMock(
+        side_effect=lambda *a, **kw: _async_iter([StreamResponse(task=task)])
+    )
+    with patch.object(
+        agent_module.a2a_client_factory,
+        "create",
+        new_callable=AsyncMock,
+        return_value=mock_client,
+    ):
+        result = await agent_module.ExchangeAgent().a2a_client_send_message("hi")
+
+    assert result == "from task"
