@@ -66,7 +66,7 @@ case and the other a more complex MAS:
 - [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.11
 - [Observe SDK](https://github.com/agntcy/observe) = Lungo: 1.0.49; Corto: 1.0.41
 - [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
-- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.8.0
 
 ---
 
