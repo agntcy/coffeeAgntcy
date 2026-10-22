@@ -5,7 +5,7 @@ description = ""
 authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "a2a-sdk==1.1.0",
+    "a2a-sdk==1.2.3",
     "click==8.4.1",
     "coloredlogs==15.0.1",
     "dotenv==0.9.9",
@@ -31,7 +31,7 @@ dependencies = [
     "llama-index-core==0.14.9",
     "griffe==1.15.0",  # banks/llama-index import griffe 1.x API; 2.x is a meta-package without it
     "litellm==1.88.6",
-    "google-adk==2.8.0",
+    "google-adk",
     "slima2a==0.8.0",
     "slim-bindings==2.2.0",
     "agntcy-app-sdk==0.6.0",
@@ -61,7 +61,7 @@ dev = [
     "coloredlogs==15.0.1",
     "langchain-openai==1.3.4",
     "sentence-transformers==5.7.0",
-    "agntcy-dir==1.0.0",
+    "agntcy-dir==1.8.1",
     "openapi-spec-validator==0.9.0",
     "prance==25.4.8.0",
     "pyyaml==6.0.3",
@@ -89,7 +89,10 @@ constraint-dependencies = [
 # CVE fixes (notably CVE-2026-102268, a critical asymmetric-key confusion
 # bypass). Forced past that cap; see tests/unit/common/test_spiffe_jwt_compat.py
 # for the compatibility contract this relies on.
-override-dependencies = ["pyjwt[crypto]==2.15.1"]
+override-dependencies = ["pyjwt[crypto]==2.15.1", "a2a-sdk[sqlite,telemetry]==1.2.3"]
+
+[tool.uv.sources]
+google-adk = { git = "https://github.com/google/adk-python", rev = "facd7ddafe0e23715e079e50971ad27b251e2e98" } # FIXME: When new release after v2.10.0 is done, use the pypi package again
 
 [tool.uv.exclude-newer-package]
 pyjwt = "2026-10-01T00:00:00Z"
@@ -98,6 +101,12 @@ pyjwt = "2026-10-01T00:00:00Z"
 # 2026-10-13). Both are inside the 14-day window.
 agntcy-app-sdk = "2026-10-22T00:00:00Z"
 slima2a = "2026-10-14T00:00:00Z"
+google-genai = "2026-10-23T00:00:00Z"
+authlib = "2026-10-23T00:00:00Z"
+a2a-sdk = "2026-10-23T00:00:00Z"
+agntcy-dir = "2026-10-23T00:00:00Z"
+agntcy-dir-grpc-python = "2026-10-23T00:00:00Z"
+agntcy-dir-protocolbuffers-python = "2026-10-23T00:00:00Z"
 
 [build-system]
 requires = ["hatchling"]
