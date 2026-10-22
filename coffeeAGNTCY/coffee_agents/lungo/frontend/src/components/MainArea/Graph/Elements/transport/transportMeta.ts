@@ -46,6 +46,8 @@ export const TRANSPORT_META: Record<
 
 interface AgentInterfaceWire {
   transport?: unknown
+  protocolBinding?: unknown
+  protocol_binding?: unknown
   url?: unknown
 }
 
@@ -54,6 +56,8 @@ interface A2aCardDataWire {
   additional_interfaces?: unknown
   preferredTransport?: unknown
   preferred_transport?: unknown
+  supportedInterfaces?: unknown
+  supported_interfaces?: unknown
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -61,7 +65,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizeTransportName(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : ""
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : ""
+  if (normalized === "slimpatterns" || normalized === "slim") return "slim"
+  if (normalized === "natspatterns" || normalized === "nats") return "nats"
+  if (normalized === "jsonrpc") return "jsonrpc"
+  return normalized
 }
 
 export function transportMetaFor(name: string | undefined): TransportMeta {
@@ -93,6 +101,15 @@ function readCardData(record: OasfRecord): A2aCardDataWire | null {
 }
 
 function readInterfaces(cardData: A2aCardDataWire): AgentInterfaceWire[] {
+  const supported =
+    cardData.supportedInterfaces ?? cardData.supported_interfaces
+  if (Array.isArray(supported)) {
+    return supported.filter(isRecord).map((entry) => ({
+      transport: entry.protocolBinding ?? entry.protocol_binding,
+      url: entry.url,
+    }))
+  }
+
   const interfaces =
     cardData.additionalInterfaces ?? cardData.additional_interfaces
   if (!Array.isArray(interfaces)) return []
@@ -105,14 +122,17 @@ export function extractA2aTransportsFromOasf(
   const cardData = readCardData(record)
   if (!cardData) return []
 
-  const preferred = normalizeTransportName(
+  const interfaces = readInterfaces(cardData)
+  const configuredPreferred = normalizeTransportName(
     cardData.preferredTransport ?? cardData.preferred_transport,
   )
+  const preferred =
+    configuredPreferred || normalizeTransportName(interfaces[0]?.transport)
   const seen = new Set<string>()
 
   const transports: AgentTransport[] = []
 
-  for (const entry of readInterfaces(cardData)) {
+  for (const entry of interfaces) {
     const name = normalizeTransportName(entry.transport)
     if (!name || seen.has(name)) continue
     seen.add(name)

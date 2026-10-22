@@ -5,6 +5,8 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from a2a.types import Message, Part, Role, SendMessageRequest
+
 # _is_timeout_error and _is_no_payload_error are implementation details of a2a_retry; tested here for correctness.
 from agents.supervisors.auction.graph.a2a_retry import (
     send_a2a_with_retry,
@@ -73,6 +75,22 @@ def _side_effect_for(scenario_id: str):
             ]
         )
         return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_timeout_then_success":
+        if SlimError is None:
+            pytest.skip("slim_bindings required for timeout scenarios")
+        calls = iter(
+            [
+                _raising_async_iter(SlimError.Timeout()),
+                _async_iter([_make_event("recovered")]),
+            ]
+        )
+        return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_timeout_exhausted":
+        if SlimError is None:
+            pytest.skip("slim_bindings required for timeout scenarios")
+        return lambda *a, **kw: _raising_async_iter(
+            SlimError.Timeout()
+        )
     if scenario_id == "slim_deadline_then_success":
         # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
         calls = iter(
@@ -130,6 +148,20 @@ def _timeout_error_exception(scenario_id: str):
         return e
     if scenario_id == "slim_deadline":
         return TimeoutError("No SLIM reply from farm within 20s.")
+    if scenario_id == "asyncio_timeout":
+        return asyncio.TimeoutError()
+    if scenario_id == "slim_timeout":
+        try:
+            from slim_bindings import SlimError
+        except ImportError:
+            pytest.skip("slim_bindings required")
+        return SlimError.Timeout()
+    if scenario_id == "slim_session_error":
+        try:
+            from slim_bindings import SlimError
+        except ImportError:
+            pytest.skip("slim_bindings required")
+        return SlimError.SessionError("receive timeout")
     if scenario_id == "plain_value_error":
         return ValueError("bad")
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
@@ -170,6 +202,22 @@ _A2A_SCENARIOS = [
         3,
         True,
         id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "slim_timeout_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="slim_timeout_then_success",
+    ),
+    pytest.param(
+        "slim_timeout_exhausted",
+        None,
+        TransportTimeoutError,
+        3,
+        True,
+        id="slim_timeout_exhausted",
     ),
     pytest.param(
         "slim_deadline_then_success",
@@ -258,7 +306,7 @@ def test_send_a2a_with_retry_scenarios(
     expected_call_count,
     check_cause,
 ):
-    message = MagicMock()
+    message = Message(message_id="m", role=Role.ROLE_USER, parts=[Part(text="hi")])
     with patch(
         "agents.supervisors.auction.graph.a2a_retry.asyncio.sleep",
         new_callable=AsyncMock,
@@ -293,6 +341,9 @@ def test_send_a2a_with_retry_scenarios(
     [
         ("session_error_in_context", True),
         ("slim_deadline", True),
+        ("asyncio_timeout", True),
+        ("slim_timeout", True),
+        ("slim_session_error", True),
         ("plain_value_error", False),
     ],
 )
@@ -309,5 +360,23 @@ def test_is_timeout_error(scenario_id, expected):
     ],
 )
 def test_is_no_payload_error(scenario_id, expected):
+    # Classification only: the current SDK raises on a missing SLIM reply
+    # instead of returning None, so this path is a backstop for older SDKs.
     exc = _no_payload_exception(scenario_id)
     assert _is_no_payload_error(exc) is expected
+
+
+def test_send_wraps_message_in_send_message_request(mock_client):
+    """a2a-sdk 1.x Client.send_message takes a SendMessageRequest, not a Message."""
+    message = Message(message_id="m", role=Role.ROLE_USER, parts=[Part(text="hi")])
+    context = object()
+    mock_client.send_message = MagicMock(
+        side_effect=lambda *a, **kw: _async_iter([_make_event("ok")])
+    )
+
+    asyncio.run(send_a2a_with_retry(mock_client, message, context=context))
+
+    (request,), kwargs = mock_client.send_message.call_args
+    assert isinstance(request, SendMessageRequest)
+    assert request.message == message
+    assert kwargs == {"context": context}

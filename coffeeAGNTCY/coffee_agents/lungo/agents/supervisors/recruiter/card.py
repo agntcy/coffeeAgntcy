@@ -20,16 +20,15 @@ RECRUITER_SUPERVISOR_SKILL = AgentSkill(
 
 RECRUITER_SUPERVISOR_CARD = AgentCard(
     name="Recruiter Supervisor",
-    id="recruiter-supervisor-agent",
     description=(
         "An AI supervisor that recruits agents from the AGNTCY directory "
         "and dynamically delegates tasks to them."
     ),
-    url="",
     version="1.0.0",
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[RECRUITER_SUPERVISOR_SKILL],
-    supportsAuthenticatedExtendedCard=False,
+    # Caller identity only: this supervisor serves no A2A interface.
+    supported_interfaces=[],
 )

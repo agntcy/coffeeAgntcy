@@ -6,13 +6,13 @@ import logging
 from os import getenv
 
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
-from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
 from agents.logistics.farm.agent_executor import FarmAgentExecutor
 from agents.logistics.farm.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
+from agntcy_app_sdk import A2AServerConfig
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a import (
     ClientConfig,
@@ -20,12 +20,16 @@ from agntcy_app_sdk.semantic.a2a import (
 )
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
 from common.cors import get_cors_allowed_origins
+from common.slim_placeholder_secret import (
+    apply_placeholder_secret_policy,
+    start_builder,
+)
 from config.config import (
     OTEL_SDK_DISABLED,
     SLIM_SERVER,
 )
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.routing import Route
@@ -51,10 +55,7 @@ async def liveness_probe(request):
         slim_config=SlimTransportConfig(
             endpoint=f"http://{SLIM_SERVER}",
             name="lungo/agents/farm_agent",
-            shared_secret_identity=getenv(
-                "SLIM_SHARED_SECRET",
-                "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS",
-            ),
+            shared_secret_identity=getenv("SLIM_SHARED_SECRET") or None,
         ),
     )
 
@@ -76,10 +77,10 @@ async def liveness_probe(request):
         return JSONResponse({"error": f"Error occurred: {e!s}"}, status_code=500)
 
 
-def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
+def build_http_server(a2a_app: A2AServerConfig) -> Starlette:
     cors_origins = get_cors_allowed_origins()
     logger.info("CORS allow_origins: %s", cors_origins)
-    app_ = a2a_app.build()
+    app_ = a2a_app.build_app()
     app_.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
@@ -91,15 +92,14 @@ def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
     return app_
 
 
-def create_app() -> FastAPI:
+def create_app() -> Starlette:
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
+        agent_card=AGENT_CARD,
     )
 
-    server = A2AStarletteApplication(
-        agent_card=AGENT_CARD, http_handler=request_handler
-    )
+    server = A2AServerConfig(agent_card=AGENT_CARD, request_handler=request_handler)
 
     return build_http_server(server)
 
@@ -108,9 +108,9 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-async def run_http_server(server):
-    # Add the liveness route to the FastAPI app
-    app_ = server.build()
+async def run_http_server(server: A2AServerConfig):
+    # Add the liveness route to the Starlette app
+    app_ = server.build_app()
     app_.router.routes.append(Route("/v1/health", liveness_probe, methods=["GET"]))
 
     try:
@@ -128,14 +128,13 @@ async def serve_all_a2a_interfaces(
     """Serve the Tatooine Farm agent across all A2A transports defined in its AgentCard.
 
     Creates an AgntcyFactory application session and registers every transport
-    interface declared in the card's ``additional_interfaces``, which include:
+    interface declared in the card's ``supported_interfaces``, which include:
 
-    - **slim** - SLIM-based group messaging transport
-    - **slimrpc** - point-to-point transport for direct client-agent communication
+    - **slimpatterns** - SLIM-based group messaging transport
 
-    The card's ``preferred_transport`` (slim) determines the primary ``url``
-    advertised to callers.  The session runs without keep-alive so it can be
-    composed alongside the optional HTTP server via ``asyncio.gather``.
+    The first entry of ``supported_interfaces`` is the preferred transport.
+    The session runs without keep-alive so it can be composed alongside the
+    optional HTTP server via ``asyncio.gather``.
 
     Args:
         request_handler: The A2A request handler wired to the
@@ -145,7 +144,10 @@ async def serve_all_a2a_interfaces(
     """
 
     session = factory.create_app_session()
-    await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
+    builder = apply_placeholder_secret_policy(
+        session.add_a2a_card(agent_card, request_handler)
+    )
+    await start_builder(builder, keep_alive=False)
     logger.info("Agent ready")
 
 
@@ -153,11 +155,10 @@ async def main():
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
+        agent_card=AGENT_CARD,
     )
 
-    server = A2AStarletteApplication(
-        agent_card=AGENT_CARD, http_handler=request_handler
-    )
+    server = A2AServerConfig(agent_card=AGENT_CARD, request_handler=request_handler)
 
     # run the agent on all A2A interfaces defined in the card and always serve the HTTP health endpoint
     tasks = [asyncio.create_task(serve_all_a2a_interfaces(request_handler, AGENT_CARD))]
@@ -173,3 +174,4 @@ if __name__ == "__main__":
         logger.info("Shutting down gracefully on keyboard interrupt.")
     except Exception as e:
         logger.error(f"Error occurred: {e}")
+        raise SystemExit(1) from e

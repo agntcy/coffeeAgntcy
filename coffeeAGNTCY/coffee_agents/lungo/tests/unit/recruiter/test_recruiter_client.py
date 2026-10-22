@@ -6,15 +6,17 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from a2a.helpers import new_data_part
 from a2a.types import (
-    DataPart,
     Message,
     Part,
     Role,
+    SendMessageRequest,
+    StreamResponse,
     Task,
     TaskState,
     TaskStatus,
-    TextPart,
+    TaskStatusUpdateEvent,
 )
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
@@ -23,6 +25,48 @@ from agents.supervisors.recruiter.models import (
 from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_context_prop import WorkflowContext
 from common.workflow_utils.inflight import TraceContext
+
+
+def _data_part(data, part_type: str | None = None) -> Part:
+    part = new_data_part(data)
+    if part_type is not None:
+        part.metadata.update({"type": part_type})
+    return part
+
+
+def _agent_message(*parts: Part, message_id: str = "msg-1") -> Message:
+    return Message(role=Role.ROLE_AGENT, message_id=message_id, parts=list(parts))
+
+
+def _drain_queue(recruiter_client_mod) -> list:
+    queue = recruiter_client_mod.get_a2a_event_queue()
+    items = []
+    while not queue.empty():
+        items.append(queue.get_nowait())
+    return items
+
+
+def _patched_client(recruiter_client_mod, events, sent: list | None = None):
+    """Patch httpx + ClientFactory so ``send_message`` yields ``events``."""
+    mock_client = AsyncMock()
+
+    async def fake_send_message(request, context=None):
+        if sent is not None:
+            sent.append(request)
+        for event in events:
+            yield event
+
+    mock_client.send_message = fake_send_message
+    mock_factory = MagicMock()
+    mock_factory.create.return_value = mock_client
+    return (
+        patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
+        patch(
+            "agents.supervisors.recruiter.recruiter_client.ClientFactory",
+            return_value=mock_factory,
+        ),
+    )
+
 
 # ---------------------------------------------------------------------------
 # _parse_dict_values
@@ -78,52 +122,28 @@ class TestParseDictValues:
 
 class TestExtractParts:
     def test_text_only(self, recruiter_client_mod):
-        parts = [Part(root=TextPart(text="Hello world"))]
+        parts = [Part(text="Hello world")]
         result = recruiter_client_mod._extract_parts(parts)
         assert result.text == "Hello world"
         assert result.agent_records == {}
         assert result.evaluation_results == {}
 
     def test_agent_records(self, recruiter_client_mod):
-        parts = [
-            Part(
-                root=DataPart(
-                    data={"cid1": {"name": "Agent A"}},
-                    metadata={"type": "found_agent_records"},
-                )
-            ),
-        ]
+        parts = [_data_part({"cid1": {"name": "Agent A"}}, "found_agent_records")]
         result = recruiter_client_mod._extract_parts(parts)
         assert result.text is None
         assert "cid1" in result.agent_records
 
     def test_evaluation_results(self, recruiter_client_mod):
-        parts = [
-            Part(
-                root=DataPart(
-                    data={"cid1": {"score": 0.95}},
-                    metadata={"type": "evaluation_results"},
-                )
-            ),
-        ]
+        parts = [_data_part({"cid1": {"score": 0.95}}, "evaluation_results")]
         result = recruiter_client_mod._extract_parts(parts)
-        assert "cid1" in result.evaluation_results
+        assert result.evaluation_results == {"cid1": {"score": 0.95}}
 
     def test_all_parts_combined(self, recruiter_client_mod):
         parts = [
-            Part(root=TextPart(text="Found 1 agent")),
-            Part(
-                root=DataPart(
-                    data={"cid1": {"name": "Agent A"}},
-                    metadata={"type": "found_agent_records"},
-                )
-            ),
-            Part(
-                root=DataPart(
-                    data={"cid1": {"score": 0.9}},
-                    metadata={"type": "evaluation_results"},
-                )
-            ),
+            Part(text="Found 1 agent"),
+            _data_part({"cid1": {"name": "Agent A"}}, "found_agent_records"),
+            _data_part({"cid1": {"score": 0.9}}, "evaluation_results"),
         ]
         result = recruiter_client_mod._extract_parts(parts)
         assert result.text == "Found 1 agent"
@@ -131,11 +151,37 @@ class TestExtractParts:
         assert "cid1" in result.evaluation_results
 
     def test_data_part_without_metadata(self, recruiter_client_mod):
-        parts = [Part(root=DataPart(data={"key": "val"}, metadata=None))]
+        parts = [_data_part({"key": "val"})]
         result = recruiter_client_mod._extract_parts(parts)
         assert result.text is None
         assert result.agent_records == {}
         assert result.evaluation_results == {}
+
+    def test_non_dict_data_part_is_skipped(self, recruiter_client_mod):
+        parts = [_data_part(["a", "list"], "found_agent_records")]
+        result = recruiter_client_mod._extract_parts(parts)
+        assert result.agent_records == {}
+
+    def test_integral_numbers_survive_the_struct_round_trip(
+        self, recruiter_client_mod
+    ):
+        """Struct stores numbers as doubles; OASF ids must come back as ints."""
+        record = {"name": "Agent A", "skills": [{"id": 10201}], "score": 0.5}
+        parts = [_data_part({"cid1": record}, "found_agent_records")]
+        result = recruiter_client_mod._extract_parts(parts)
+        restored = result.agent_records["cid1"]
+        assert restored == record
+        assert isinstance(restored["skills"][0]["id"], int)
+
+    def test_integral_floats_outside_id_stay_floats(self, recruiter_client_mod):
+        """A score of 1.0 is a genuine float and must not become the int 1."""
+        results = {"cid1": {"score": 1.0, "details": [{"weight": 2.0, "id": 7}]}}
+        parts = [_data_part(results, "evaluation_results")]
+        restored = recruiter_client_mod._extract_parts(parts).evaluation_results
+        assert restored == results
+        assert isinstance(restored["cid1"]["score"], float)
+        assert isinstance(restored["cid1"]["details"][0]["weight"], float)
+        assert isinstance(restored["cid1"]["details"][0]["id"], int)
 
     def test_empty_parts(self, recruiter_client_mod):
         result = recruiter_client_mod._extract_parts([])
@@ -153,208 +199,201 @@ class TestRecruitAgents:
     async def test_recruit_agents_stores_in_state(self, recruiter_client_mod):
         """recruit_agents should merge results into tool_context.state."""
         agent_records = {"cid_abc": {"name": "Agent A", "url": "http://a:9000"}}
-
-        # Build a fake A2A response (Message with text + data parts)
-        response_message = Message(
-            role=Role.agent,
-            message_id="msg-1",
-            parts=[
-                Part(root=TextPart(text="Found 1 agent")),
-                Part(
-                    root=DataPart(
-                        data=agent_records,
-                        metadata={"type": "found_agent_records"},
-                    )
-                ),
-            ],
+        event = StreamResponse(
+            message=_agent_message(
+                Part(text="Found 1 agent"),
+                _data_part(agent_records, "found_agent_records"),
+            )
         )
-
-        # Mock the A2A client to yield our fake message
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        patch.object(
-            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
-        )
-
-        async def fake_send_message(msg, context=None):
-            yield response_message
-
-        mock_client.send_message = fake_send_message
-
-        mock_factory = MagicMock()
-        mock_factory.create.return_value = mock_client
-
-        # Mock ToolContext with a dict-like state
+        sent: list = []
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with (
-            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
-            patch(
-                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-                return_value=mock_factory,
-            ),
-        ):
+        httpx_patch, factory_patch = _patched_client(
+            recruiter_client_mod, [event], sent
+        )
+        with httpx_patch, factory_patch:
             result = await recruiter_client_mod.recruit_agents(
                 "find accounting agents", tool_context
             )
 
-        assert STATE_KEY_RECRUITED_AGENTS in tool_context.state
-        assert "cid_abc" in tool_context.state[STATE_KEY_RECRUITED_AGENTS]
+        assert tool_context.state[STATE_KEY_RECRUITED_AGENTS] == agent_records
         assert "Found 1 agent" in result
+        [request] = sent
+        assert isinstance(request, SendMessageRequest)
+        assert request.message.role == Role.ROLE_USER
+        assert request.message.parts[0].text == "find accounting agents"
+        assert _drain_queue(recruiter_client_mod) == [None]
 
     @pytest.mark.asyncio
     async def test_recruit_agents_merges_with_existing(self, recruiter_client_mod):
         """recruit_agents should merge new results with pre-existing state."""
         new_records = {"cid_new": {"name": "New Agent", "url": "http://new:9000"}}
-
-        response_message = Message(
-            role=Role.agent,
-            message_id="msg-2",
-            parts=[
-                Part(root=TextPart(text="Found another")),
-                Part(
-                    root=DataPart(
-                        data=new_records,
-                        metadata={"type": "found_agent_records"},
-                    )
-                ),
-            ],
+        event = StreamResponse(
+            message=_agent_message(
+                Part(text="Found another"),
+                _data_part(new_records, "found_agent_records"),
+                message_id="msg-2",
+            )
         )
-
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        patch.object(
-            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
-        )
-
-        async def fake_send_message(msg, context=None):
-            yield response_message
-
-        mock_client.send_message = fake_send_message
-
-        mock_factory = MagicMock()
-        mock_factory.create.return_value = mock_client
-
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_RECRUITED_AGENTS: {"cid_old": {"name": "Old Agent"}},
             STATE_KEY_EVALUATION_RESULTS: {},
         }
 
-        with (
-            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
-            patch(
-                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-                return_value=mock_factory,
-            ),
-        ):
+        httpx_patch, factory_patch = _patched_client(recruiter_client_mod, [event])
+        with httpx_patch, factory_patch:
             await recruiter_client_mod.recruit_agents("find more", tool_context)
 
         state_agents = tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "cid_old" in state_agents
         assert "cid_new" in state_agents
+        _drain_queue(recruiter_client_mod)
 
     @pytest.mark.asyncio
     async def test_recruit_agents_no_results(self, recruiter_client_mod):
         """recruit_agents should return a message when no agents are found."""
-        response_message = Message(
-            role=Role.agent,
-            message_id="msg-3",
-            parts=[Part(root=TextPart(text="No matching agents found."))],
+        event = StreamResponse(
+            message=_agent_message(
+                Part(text="No matching agents found."), message_id="msg-3"
+            )
         )
-
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        patch.object(
-            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
-        )
-
-        async def fake_send_message(msg, context=None):
-            yield response_message
-
-        mock_client.send_message = fake_send_message
-
-        mock_factory = MagicMock()
-        mock_factory.create.return_value = mock_client
-
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with (
-            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
-            patch(
-                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-                return_value=mock_factory,
-            ),
-        ):
+        httpx_patch, factory_patch = _patched_client(recruiter_client_mod, [event])
+        with httpx_patch, factory_patch:
             result = await recruiter_client_mod.recruit_agents("find xyz", tool_context)
 
         assert "No matching agents found" in result
+        _drain_queue(recruiter_client_mod)
 
     @pytest.mark.asyncio
-    async def test_recruit_agents_handles_task_tuple_response(
+    async def test_recruit_agents_streams_status_then_completed_task(
         self,
         recruiter_client_mod,
     ):
-        """recruit_agents should handle (Task, update) tuple responses from A2A."""
+        """Working updates go to the side-channel; the completed task is the result."""
         agent_records = {"cid_task": {"name": "Task Agent", "url": "http://t:9000"}}
-
-        task = Task(
-            id="task-1",
-            contextId="ctx-1",
-            status=TaskStatus(
-                state=TaskState.completed,
-                message=Message(
-                    role=Role.agent,
-                    message_id="msg-4",
-                    parts=[
-                        Part(root=TextPart(text="Task completed")),
-                        Part(
-                            root=DataPart(
-                                data=agent_records,
-                                metadata={"type": "found_agent_records"},
-                            )
-                        ),
-                    ],
+        working = StreamResponse(
+            status_update=TaskStatusUpdateEvent(
+                task_id="task-1",
+                context_id="ctx-1",
+                status=TaskStatus(
+                    state=TaskState.TASK_STATE_WORKING,
+                    message=Message(
+                        role=Role.ROLE_AGENT,
+                        message_id="s1",
+                        parts=[Part(text="Searching directory")],
+                        metadata={"author": "recruiter", "event_type": "search"},
+                    ),
                 ),
-            ),
+            )
         )
-
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
-        patch.object(
-            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
+        completed = StreamResponse(
+            task=Task(
+                id="task-1",
+                context_id="ctx-1",
+                status=TaskStatus(
+                    state=TaskState.TASK_STATE_COMPLETED,
+                    message=_agent_message(
+                        Part(text="Task completed"),
+                        _data_part(agent_records, "found_agent_records"),
+                        message_id="msg-4",
+                    ),
+                ),
+            )
         )
-
-        async def fake_send_message(msg, context=None):
-            yield (task, None)
-
-        mock_client.send_message = fake_send_message
-
-        mock_factory = MagicMock()
-        mock_factory.create.return_value = mock_client
-
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with (
-            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
-            patch(
-                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-                return_value=mock_factory,
-            ),
-        ):
+        httpx_patch, factory_patch = _patched_client(
+            recruiter_client_mod, [working, completed]
+        )
+        with httpx_patch, factory_patch:
             result = await recruiter_client_mod.recruit_agents(
                 "find task agents", tool_context
             )
 
         assert "cid_task" in tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "Task completed" in result
+        assert _drain_queue(recruiter_client_mod) == [
+            {
+                "event_type": "status_update",
+                "message": "Searching directory",
+                "state": "working",
+                "author": "recruiter",
+                "a2a_event_type": "search",
+            },
+            None,
+        ]
+
+
+# ---------------------------------------------------------------------------
+# _handle_stream_event / _forward_status_update
+# ---------------------------------------------------------------------------
+
+
+def _status_update(state, text: str | None = "progress") -> StreamResponse:
+    status = TaskStatus(state=state)
+    if text is not None:
+        status.message.CopyFrom(
+            Message(role=Role.ROLE_AGENT, message_id="s", parts=[Part(text=text)])
+        )
+    return StreamResponse(
+        status_update=TaskStatusUpdateEvent(
+            task_id="t", context_id="c", status=status
+        )
+    )
+
+
+class TestHandleStreamEvent:
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "state",
+        [
+            TaskState.TASK_STATE_COMPLETED,
+            TaskState.TASK_STATE_FAILED,
+            TaskState.TASK_STATE_CANCELED,
+            TaskState.TASK_STATE_REJECTED,
+        ],
+    )
+    async def test_terminal_status_update_is_not_forwarded(
+        self, recruiter_client_mod, state
+    ):
+        _drain_queue(recruiter_client_mod)
+        await recruiter_client_mod._handle_stream_event(_status_update(state), "t")
+        assert _drain_queue(recruiter_client_mod) == []
+
+    @pytest.mark.asyncio
+    async def test_status_update_without_message_is_not_forwarded(
+        self, recruiter_client_mod
+    ):
+        _drain_queue(recruiter_client_mod)
+        event = _status_update(TaskState.TASK_STATE_WORKING, text=None)
+        assert await recruiter_client_mod._handle_stream_event(event, "t") is None
+        assert _drain_queue(recruiter_client_mod) == []
+
+    @pytest.mark.asyncio
+    async def test_completed_status_update_carries_the_result(
+        self, recruiter_client_mod
+    ):
+        _drain_queue(recruiter_client_mod)
+        event = _status_update(TaskState.TASK_STATE_COMPLETED, text="done")
+        result = await recruiter_client_mod._handle_stream_event(event, "t")
+        assert result is not None and result.text == "done"
+
+    @pytest.mark.asyncio
+    async def test_working_task_snapshot_is_not_a_result(self, recruiter_client_mod):
+        event = StreamResponse(
+            task=Task(
+                id="t",
+                context_id="c",
+                status=TaskStatus(state=TaskState.TASK_STATE_WORKING),
+            )
+        )
+        assert await recruiter_client_mod._handle_stream_event(event, "t") is None
 
 
 # ---------------------------------------------------------------------------

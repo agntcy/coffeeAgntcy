@@ -154,26 +154,26 @@ def patch_emit_events(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# AgentCard stand-in
+# AgentCard builder
 # ---------------------------------------------------------------------------
-
-@dataclass
-class _FakeAgentCard:
-    """Minimal duck-typed ``AgentCard`` for interceptor/consumer tests.
-
-    Only the attributes read by the middleware are populated.
-    """
-    name: str
-    preferred_transport: str | None = "JSONRPC"
-
 
 def make_agent_card(
     name: str = "Test Caller Agent",
-    preferred_transport: str | None = "JSONRPC",
+    protocol_binding: str | None = "JSONRPC",
 ) -> Any:
-    """Build a minimal agent card. Typed as Any so tests can pass it where an
-    ``a2a.types.AgentCard`` is expected without pulling the real schema in."""
-    return _FakeAgentCard(name=name, preferred_transport=preferred_transport)
+    """Build a minimal a2a-sdk 1.x ``AgentCard``.
+
+    The middleware reads ``name`` and the first ``supported_interfaces``
+    binding; ``protocol_binding=None`` builds a card with no interfaces.
+    """
+    from a2a.types import AgentCard, AgentInterface
+
+    interfaces = []
+    if protocol_binding is not None:
+        interfaces.append(
+            AgentInterface(protocol_binding=protocol_binding, url="http://remote:9999")
+        )
+    return AgentCard(name=name, supported_interfaces=interfaces)
 
 
 @pytest.fixture

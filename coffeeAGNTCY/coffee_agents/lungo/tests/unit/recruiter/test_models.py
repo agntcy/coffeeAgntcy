@@ -74,14 +74,28 @@ class TestAgentRecord:
         assert isinstance(record.card, AgentCard)
 
     def test_from_record_data_preserves_transport_and_interfaces(self):
-        """The full card is kept so the client factory can negotiate transport."""
+        """A legacy v0.3 card is converted with every interface kept, preferred first."""
         record = AgentRecord.from_record_data("abc", SAMPLE_CARD)
-        assert record.card.preferred_transport == "slimrpc"
-        assert record.card.additional_interfaces is not None
-        assert {i.transport for i in record.card.additional_interfaces} == {
-            "slimrpc",
-            "jsonrpc",
+        interfaces = list(record.card.supported_interfaces)
+        assert interfaces[0].protocol_binding == "slimrpc"
+        assert interfaces[0].url == "slim://slim:46357/lungo/agents/test"
+        assert {i.protocol_binding for i in interfaces} == {"slimrpc", "jsonrpc"}
+        assert "http://0.0.0.0:9999" in {i.url for i in interfaces}
+
+    def test_from_record_data_accepts_v1_card(self):
+        """A card already in the a2a-sdk 1.x shape is parsed as is."""
+        v1_card = {
+            "name": "V1 Agent",
+            "description": "desc",
+            "version": "1.0.0",
+            "supportedInterfaces": [
+                {"protocolBinding": "JSONRPC", "url": "http://farm:9999"}
+            ],
         }
+        record = AgentRecord.from_record_data("abc", v1_card)
+        [interface] = record.card.supported_interfaces
+        assert interface.protocol_binding == "JSONRPC"
+        assert interface.url == "http://farm:9999"
 
     def test_from_record_data_reads_protocol(self):
         record = AgentRecord.from_record_data("abc", {**SAMPLE_CARD, "protocol": "a2a"})
@@ -145,8 +159,15 @@ class TestAgentRecordFromRecord:
         card = AgentRecord.from_record("cid-1", record).to_agent_card()
 
         assert isinstance(card, AgentCard)
-        assert card.url == expected_url
-        assert card.preferred_transport == expected_transport
+        primary = card.supported_interfaces[0]
+        assert primary.url == expected_url
+        assert primary.protocol_binding == expected_transport
+
+    def test_to_agent_card_returns_a_copy(self):
+        record = AgentRecord.from_record("cid-1", {"name": "A", "url": "http://a:1"})
+        card = record.to_agent_card()
+        card.supported_interfaces[0].url = "http://changed:2"
+        assert record.card.supported_interfaces[0].url == "http://a:1"
 
     @pytest.mark.parametrize(
         "case,record,expected_message",

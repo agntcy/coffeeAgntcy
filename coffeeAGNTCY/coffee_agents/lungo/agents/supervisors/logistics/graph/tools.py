@@ -10,13 +10,12 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Sequence
 from uuid import uuid4
 
+from a2a.helpers import get_message_text
 from a2a.types import (
     Message,
-    MessageSendParams,
     Part,
     Role,
     SendMessageRequest,
-    TextPart,
 )
 from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
@@ -25,19 +24,36 @@ from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.supervisors.logistics.card import LOGISTICS_SUPERVISOR_CARD
 from agents.supervisors.logistics.graph.shared import a2a_client_factory
 from agntcy_app_sdk import get_agent_identifier
-from common.a2a_event_middleware import (
-    EventEmittingInterceptor,
-    make_event_emitting_consumer,
-)
+from common.a2a_event_middleware import EventEmittingInterceptor
+from common.a2a_helpers import message_metadata, response_message, response_text
 from common.logistics_states import LogisticsStatus
 from fastapi import HTTPException
 
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 
-# A2A middleware singletons that capture outbound and inbound calls.
+# A2A middleware singleton that captures outbound and inbound calls.
 _event_interceptor = EventEmittingInterceptor(caller_card=LOGISTICS_SUPERVISOR_CARD)
-_event_consumer = make_event_emitting_consumer(caller_card=LOGISTICS_SUPERVISOR_CARD)
+
+
+def _order_request(text: str) -> SendMessageRequest:
+    """Build the group chat's initial user message."""
+    return SendMessageRequest(
+        message=Message(
+            message_id=str(uuid4()),
+            role=Role.ROLE_USER,
+            parts=[Part(text=text)],
+        )
+    )
+
+
+def _reply_name_and_text(response: Any) -> tuple[str, str] | None:
+    """``(metadata.name, text)`` of a group chat reply, or None without a message."""
+    msg = response_message(response)
+    if msg is None:
+        return None
+    name = message_metadata(msg).get("name") or "Unknown"
+    return str(name), get_message_text(msg).strip()
 
 
 async def create_order(farm: str, quantity: int, price: float) -> str:
@@ -70,25 +86,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         client = await a2a_client_factory.create(
             SHIPPER_CARD,
             interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
         )
 
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(
-                message=Message(
-                    messageId=str(uuid4()),
-                    role=Role.user,
-                    parts=[
-                        Part(
-                            TextPart(
-                                # Note the status must be included to trigger the logistic flow
-                                text=f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
-                            )
-                        )
-                    ],
-                )
-            ),
+        # Note the status must be included to trigger the logistic flow
+        request = _order_request(
+            f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
         )
     except Exception as e:
         logger.error("Failed to create A2A client or message request: %s", e)
@@ -190,27 +192,13 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
         client = await a2a_client_factory.create(
             SHIPPER_CARD,
             interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )  # slim is set as preferred transport in these cards
+        )  # slim is the first (preferred) interface in these cards
         order_id = str(uuid4())
         logger.debug(f"Sending order {order_id} to agent: {farm}")
 
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(
-                message=Message(
-                    messageId=str(uuid4()),
-                    role=Role.user,
-                    parts=[
-                        Part(
-                            TextPart(
-                                # Note the status must be included to trigger the logistic flow
-                                text=f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {order_id} with price {price} and quantity {quantity}."
-                            )
-                        )
-                    ],
-                )
-            ),
+        # Note the status must be included to trigger the logistic flow
+        request = _order_request(
+            f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {order_id} with price {price} and quantity {quantity}."
         )
     except Exception as e:
         logger.error("Failed to create A2A client or message request: %s", e)
@@ -243,8 +231,7 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
         async for response in responses:
             logger.debug("Streaming response: %s", response)
             # Skip idle messages
-            response_text = str(response).lower()
-            if "idle" not in response_text:
+            if "idle" not in response_text(response).lower():
                 # Parse the response into structured format
                 parsed_event = _parse_order_event(response)
                 if parsed_event:
@@ -276,17 +263,10 @@ def _summarize_a2a_responses(responses: Sequence[Any]) -> str:
 
     for response in responses:
         try:
-            msg = response.root.result  # Underlying message object
-            name = (msg.metadata or {}).get("name", "Unknown")
-            parts = msg.parts or []
-            text = next(
-                (
-                    getattr(getattr(p, "root", p), "text", "").strip()
-                    for p in parts
-                    if getattr(getattr(p, "root", p), "text", "").strip()
-                ),
-                "",
-            )
+            reply = _reply_name_and_text(response)
+            if reply is None:
+                continue
+            name, text = reply
             if not text or "idle" in text.lower():
                 continue
 
@@ -323,35 +303,30 @@ def _summarize_a2a_responses(responses: Sequence[Any]) -> str:
 
 def _parse_order_event(response: Any) -> Optional[Dict[str, str]]:
     """
-    Parse a SendMessageSuccessResponse and extract order event details.
+    Parse a group chat reply (StreamResponse or SendMessageResponse) and
+    extract order event details.
 
     Returns:
       Dict with order_id, sender, receiver, message, state, timestamp
     """
     try:
-        # Extract the text from the response
-        response_str = str(response)
-
-        # Extract metadata name (sender)
-        sender_match = re.search(r"metadata=\{'name': '([^']+)'\}", response_str)
-        if sender_match:
-            sender_raw = sender_match.group(1)
-            # Map agent names to their role names
-            # "Shipping agent" -> "Shipper", "Tatooine Farm agent" -> "Tatooine Farm", etc.
-            if "Shipping" in sender_raw or "Shipper" in sender_raw:
-                sender = "Shipper"
-            else:
-                # Remove " agent" suffix for other agents
-                sender = sender_raw.replace(" agent", "")
-        else:
-            sender = "Unknown"
-
-        # Extract the text part which contains the message
-        text_match = re.search(r"text='([^']+)'", response_str)
-        if not text_match:
+        reply = _reply_name_and_text(response)
+        if reply is None:
             return None
+        sender_raw, text = reply
 
-        text = text_match.group(1)
+        # Map agent names to their role names
+        # "Shipping agent" -> "Shipper", "Tatooine Farm agent" -> "Tatooine Farm", etc.
+        if sender_raw == "Unknown":
+            sender = "Unknown"
+        elif "Shipping" in sender_raw or "Shipper" in sender_raw:
+            sender = "Shipper"
+        else:
+            # Remove " agent" suffix for other agents
+            sender = sender_raw.replace(" agent", "")
+
+        if not text:
+            return None
 
         # Parse the text: "STATE | Sender -> Receiver: Message"
         parts = text.split("|", 1)
