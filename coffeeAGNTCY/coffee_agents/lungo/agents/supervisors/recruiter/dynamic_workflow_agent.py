@@ -14,8 +14,9 @@ from uuid import uuid4
 from a2a.types import (
     AgentCard,
     Message,
+    Part,
     Role,
-    TextPart,
+    SendMessageRequest,
 )
 from google.adk.agents import BaseAgent
 from google.adk.agents.invocation_context import InvocationContext
@@ -31,10 +32,8 @@ from agents.supervisors.recruiter.models import (
     AgentRecord,
 )
 from agents.supervisors.recruiter.shared import a2a_client_factory
-from common.a2a_event_middleware import (
-    EventEmittingInterceptor,
-    make_event_emitting_consumer,
-)
+from common.a2a_event_middleware import EventEmittingInterceptor
+from common.a2a_helpers import response_text
 from common.stable_agent_id import stable_agent_id_for_name
 from config.config import DISCOVERED_AGENT_HOST
 
@@ -48,10 +47,6 @@ _event_interceptor = EventEmittingInterceptor(
     caller_card=RECRUITER_SUPERVISOR_CARD,
     delegation_mode="edge_only",
     delegation_anchor_stable_agent_id=_RECRUITER_ANCHOR_STABLE_AGENT_ID,
-)
-_event_consumer = make_event_emitting_consumer(
-    caller_card=RECRUITER_SUPERVISOR_CARD,
-    delegation_mode="edge_only",
 )
 
 # Hosts an agent advertises for its own bind address; these are not routable
@@ -99,9 +94,9 @@ class DynamicWorkflowAgent(BaseAgent):
         message_id = str(uuid4())
 
         a2a_message = Message(
-            messageId=message_id,
-            role=Role.user,
-            parts=[TextPart(text=message)],
+            message_id=message_id,
+            role=Role.ROLE_USER,
+            parts=[Part(text=message)],
         )
 
         logger.info(
@@ -111,37 +106,25 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         try:
-            # negotiate and create the client based on the card's preferred transport
+            # negotiate and create the client in the order of the card's supported_interfaces
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
             result_text = None
-            async for response in client.send_message(a2a_message):
+            async for response in client.send_message(
+                SendMessageRequest(message=a2a_message)
+            ):
                 logger.info(
                     "[agent:dynamic_workflow] Response received from %s: %s",
                     agent_name,
                     response,
                 )
 
-                if isinstance(response, Message):
-                    for part in response.parts:
-                        part_root = part.root
-                        if hasattr(part_root, "text"):
-                            result_text = part_root.text.strip()
-                elif isinstance(response, tuple):
-                    task_update, event = response
-                    if (
-                        hasattr(task_update, "status")
-                        and task_update.status
-                        and task_update.status.message
-                    ):
-                        for part in task_update.status.message.parts:
-                            part_root = part.root
-                            if hasattr(part_root, "text"):
-                                result_text = part_root.text.strip()
+                text = response_text(response).strip()
+                if text:
+                    result_text = text
 
             if result_text:
                 return result_text
@@ -260,16 +243,15 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
+        # to_agent_card() returns a fresh card, so rewriting its URLs is safe.
         agent_card = record.to_agent_card()
-        agent_card.url = _reachable_url(agent_card.url)
-        if agent_card.additional_interfaces:
-            for interface in agent_card.additional_interfaces:
-                interface.url = _reachable_url(interface.url)
+        for interface in agent_card.supported_interfaces:
+            interface.url = _reachable_url(interface.url)
 
         logger.info(
             "[agent:dynamic_workflow] Sending to agent: %s at %s",
             record.name,
-            agent_card.url,
+            [i.url for i in agent_card.supported_interfaces],
         )
 
         try:

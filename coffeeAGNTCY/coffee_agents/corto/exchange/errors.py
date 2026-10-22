@@ -39,8 +39,12 @@ def _is_timeout_error(
     exc: BaseException, slim_error_class: type | None = _SENTINEL
 ) -> bool:
     """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
-    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
-    SlimError.SessionError in chain (SDK wrap)."""
+    raises for a lapsed SLIM deadline), SlimError.Timeout, SlimError.SessionError, or
+    AttributeError with SlimError.SessionError in chain (SDK wrap).
+
+    SlimError.Timeout is a sibling of SessionError, not a subclass, and the SDK's
+    SLIMTransport.request() only converts asyncio.TimeoutError, so it propagates as is.
+    """
     if isinstance(exc, TimeoutError):
         return True
     if slim_error_class is _SENTINEL:
@@ -49,6 +53,9 @@ def _is_timeout_error(
         SlimError = slim_error_class
     if SlimError is None:
         return False
+    slim_timeout = getattr(SlimError, "Timeout", None)
+    if slim_timeout is not None and isinstance(exc, slim_timeout):
+        return True
     if isinstance(exc, SlimError.SessionError):
         return True
     if not isinstance(exc, AttributeError):

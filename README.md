@@ -58,13 +58,13 @@ case and the other a more complex MAS:
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
-- [SLIM](https://github.com/agntcy/slim) = v1.4.0
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.6.0
+- [SLIM](https://github.com/agntcy/slim) = v2.2.0
 - [NATS](https://github.com/nats-io/nats-server) = latest
-- [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
+- [A2A](https://github.com/a2aproject/a2a-python) = v1.1.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.30.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.11
-- [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.49
 - [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
 - [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
 

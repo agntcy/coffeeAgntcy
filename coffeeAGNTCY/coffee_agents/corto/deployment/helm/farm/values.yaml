@@ -26,6 +26,8 @@ config:
   natsServer: ""
   otlpHttpEndpoint: ""
   slimSharedSecret: ""
+  # SLIM_ALLOW_PLACEHOLDER_SECRET: true lets the SLIM interfaces start with the public app-sdk placeholder when no secret is set. Local demos only.
+  slimAllowPlaceholderSecret: false
 #  llmStreaming: False
 
 # You can use your own config here for service account

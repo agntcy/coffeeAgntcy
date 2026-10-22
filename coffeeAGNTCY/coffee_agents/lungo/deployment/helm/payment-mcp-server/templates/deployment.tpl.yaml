@@ -48,6 +48,11 @@ spec:
           value: "{{ .Values.identityAuthEnabled }}"
         - name: IDENTITY_SERVICE_API_KEY
           value: "{{ .Values.identityServiceApiKey }}"
+        {{- if .Values.externalSecrets }}
+        envFrom:
+          - secretRef:
+              name: {{ .Values.appName }}-secrets
+        {{- end }}
         {{ if .Values.resources.enabled }}
         resources:
           requests:

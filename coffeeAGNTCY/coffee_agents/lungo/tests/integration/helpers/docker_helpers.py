@@ -86,12 +86,18 @@ def _run(cmd: List[str]):
         return result  # return result so callers (like up()) can inspect .stdout
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}\n")
+        # The CalledProcessError message carries only the exit status; Docker's
+        # actual error (port already allocated, build failure, ...) is in stderr.
+        if e.stderr:
+            print("--- stderr ---")
+            print(e.stderr)
 
-        # 1. Show resolved compose config dynamically using the same file set
-        print("\n--- docker compose config ---")
+        # 1. Show the services of the same file set. Never print the full resolved
+        #    config: it expands the process environment, including credentials.
+        print("\n--- docker compose config --services ---")
         subprocess.run(
             _compose_cmd([f for f in cmd if f.endswith((".yaml", ".yml"))])
-            + ["config"],
+            + ["config", "--services"],
             check=False,
             cwd=PROJECT_DIR,
             env=compose_env,

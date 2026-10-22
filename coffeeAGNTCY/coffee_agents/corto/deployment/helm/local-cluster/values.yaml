@@ -18,6 +18,12 @@ clickhouse:
     tag: 25.7.5-debian-12-r0
     pullPolicy: IfNotPresent
 
+slim:
+  slim:
+    image:
+      # Chart v2.2.0 defaults to appVersion 2.3.0.
+      tag: "2.2.0"
+
 corto-exchange:
   config:
     corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
@@ -32,4 +38,4 @@ corto-ui:
 # Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
 localExternalSecret:
   azureApiKey: ""
-  slimSharedSecret: "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
+  slimSharedSecret: "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"

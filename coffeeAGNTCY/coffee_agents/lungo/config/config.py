@@ -42,11 +42,16 @@ A2A_CLIENT_TIMEOUT_SECONDS = float(os.getenv("A2A_CLIENT_TIMEOUT_SECONDS", "30")
 # to 6s, which expires before an LLM-backed agent can answer.
 SLIM_REQUEST_TIMEOUT_SECONDS = int(os.getenv("SLIM_REQUEST_TIMEOUT_SECONDS", "20"))
 
-if os.getenv("SLIM_SHARED_SECRET") is None:
-    # set a default value for development/testing
-    os.environ["SLIM_SHARED_SECRET"] = (
-        "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
-    )
+# When true, the A2A servers may start their SLIM interfaces with the app SDK's
+# public placeholder secret if SLIM_SHARED_SECRET is unset or is the placeholder.
+# Local demos only: without it the SDK refuses to start those interfaces.
+SLIM_ALLOW_PLACEHOLDER_SECRET = os.getenv(
+    "SLIM_ALLOW_PLACEHOLDER_SECRET", "false"
+).strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 LLM_MODEL = os.getenv("LLM_MODEL", "")
 ## Oauth2 OpenAI Provider

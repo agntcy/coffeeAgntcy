@@ -1,7 +1,7 @@
 dependencies:
 - name: slim
   repository: oci://ghcr.io/agntcy/slim/helm
-  version: v1.4.0
+  version: v2.2.0
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
   version: 2.15.0
@@ -19,31 +19,31 @@ dependencies:
   version: 0.2.0
 - name: brazil-farm
   repository: file://../brazil-farm
-  version: 0.1.2
+  version: 0.2.0
 - name: vietnam-farm
   repository: file://../vietnam-farm
-  version: 0.1.2
+  version: 0.2.0
 - name: colombia-farm
   repository: file://../colombia-farm
-  version: 0.2.0
+  version: 0.3.0
 - name: weather-mcp-server
   repository: file://../weather-mcp-server
-  version: 0.1.2
+  version: 0.2.0
 - name: logistics-farm
   repository: file://../logistics-farm
-  version: 0.1.2
+  version: 0.2.0
 - name: logistics-helpdesk
   repository: file://../logistics-helpdesk
-  version: 0.1.2
+  version: 0.2.0
 - name: logistics-supervisor
   repository: file://../logistics-supervisor
   version: 0.2.0
 - name: logistics-shipper
   repository: file://../logistics-shipper
-  version: 0.1.2
+  version: 0.2.0
 - name: logistics-accountant
   repository: file://../logistics-accountant
-  version: 0.1.2
+  version: 0.2.0
 - name: recruiter
   repository: file://../recruiter
   version: 0.1.2
@@ -58,6 +58,6 @@ dependencies:
   version: 0.1.4
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
-  version: 0.1.2
-digest: sha256:16e8e8290e62d53efe66c53656ee944a8f967123443d8d059ad20b2d6a882507
-generated: "2026-10-21T15:29:01.039217+02:00"
+  version: 0.2.0
+digest: sha256:454b4af526f890e2d6e32557060a4bd90ba0a229316a84e3f2da0d37b64d1161
+generated: "2026-10-22T22:03:14.840561+02:00"

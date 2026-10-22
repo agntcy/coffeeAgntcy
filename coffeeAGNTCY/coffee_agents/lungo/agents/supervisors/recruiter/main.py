@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
+from google.protobuf.json_format import MessageToDict
 from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 
@@ -365,7 +366,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
 @app.get("/.well-known/agent-card.json")
 async def agent_card():
     """Return the A2A AgentCard for this recruiter supervisor."""
-    return RECRUITER_SUPERVISOR_CARD.model_dump(by_alias=True, exclude_none=True)
+    return MessageToDict(RECRUITER_SUPERVISOR_CARD)
 
 
 @app.get("/health")

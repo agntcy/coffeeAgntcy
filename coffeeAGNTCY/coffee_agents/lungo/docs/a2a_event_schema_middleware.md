@@ -16,8 +16,8 @@ Shared, transport-agnostic pieces live in `common/workflow_utils/`:
 
 A2A-specific orchestration remains in `common/a2a_event_middleware/`:
 
-- `common/a2a_event_middleware/middleware.py` - `EventEmittingInterceptor`, `make_event_emitting_consumer`, A2A topology builders.
-- `common/a2a_event_middleware/__init__.py` - minimal public API: interceptor, consumer factory, cleanup registration.
+- `common/a2a_event_middleware/middleware.py` - `EventEmittingInterceptor` (outbound `before` and inbound `after` hooks), A2A topology builders.
+- `common/a2a_event_middleware/__init__.py` - minimal public API: interceptor, cleanup registration.
 - `common/a2a_event_middleware/{event_sink,inflight,workflow_catalog}.py` - compatibility shims re-exporting from `workflow_utils`.
 
 MCP-specific orchestration lives in `common/mcp_event_middleware/`:
@@ -30,7 +30,7 @@ MCP-specific orchestration lives in `common/mcp_event_middleware/`:
 The middleware reports topology updates to the workflow API at two points:
 
 1. **Outbound request (interceptor)** emits `Operation.CREATE` fragments.
-2. **Inbound response (consumer)** emits `Operation.UPDATE` fragments.
+2. **Inbound response (interceptor `after` hook)** emits `Operation.UPDATE` fragments.
 
 Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 
@@ -41,10 +41,10 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
   - Resolves workflow identity from OTel baggage (`common.workflow_context_prop`).
   - Computes correlation and instance IDs.
   - Builds outbound topology and emits an event.
-  - Stores trace-scoped state for the consumer.
+  - Stores trace-scoped state for the inbound `after` hook.
 
-- **`make_event_emitting_consumer(...)`**
-  - Returns a consumer callback for inbound events.
+- **`EventEmittingInterceptor.after(...)`**
+  - Runs after each inbound A2A response (a2a-sdk 1.x calls interceptors instead of `consumers=`, which it ignores).
   - Looks up previously stored trace-scoped state.
   - Builds inbound topology and emits an event.
   - Drops the event with a warning when no in-flight state exists.
@@ -59,7 +59,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 
 ## Outbound Flow
 
-1. Interceptor receives `method_name`, `agent_card`, and optional `context`.
+1. `before` receives the call arguments (`method`, `agent_card`, optional `context`).
 2. Workflow identity is read from propagated OTel baggage (`workflow_name`, `workflow_instance_id`) and validated against the catalog.
 3. Trace context (`trace_id`, `span_id`, `owner_span_id`) is read from OTel.
 4. Correlation ID is resolved from context, trace, or a new UUID.
@@ -70,7 +70,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 
 ## Inbound Flow
 
-1. Consumer receives response event + `agent_card`.
+1. `EventEmittingInterceptor.after` receives `args.result` plus `args.agent_card`.
 2. Trace context is read from OTel.
 3. Remote agent ID is extracted from response metadata (fallback to card name).
 4. Correlation/workflow/allocator are resolved from in-flight state (`resolve_consumer_state`).
@@ -93,6 +93,9 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 - If `EMIT_WORKFLOW_EVENTS` is false: sink is disabled, no emission occurs.
 - If OTel context is missing: middleware still emits outbound, but inbound correlation may be lost.
 - If sink POST fails: error is logged, exception is not raised to caller.
+- Events are emitted only for the `send_message` and `send_message_streaming` methods (this includes broadcast and group chat calls). `get_task`, `cancel_task` and resubscribe calls emit nothing.
+- `before` and `after` log and swallow every exception. This is deliberate: in the app-sdk an exception raised by an after-interceptor would turn a successful reply into a broadcast failure. A persistent local failure is therefore visible only as log lines, one per message.
+- The `consumers=` callback hook and `make_event_emitting_consumer` no longer exist: a2a-sdk 1.x ignores `consumers=`, so all emission goes through the interceptor.
 - Catalog lookup (`GET /agentic-workflows/`) is fail-soft: a down or empty catalog is logged at **error** and emission is skipped; the agent request continues. A successful catalog is process-cached. A failed GET is reused for a short window (no retry, no extra error); after that window the next lookup retries. The GET itself is a blocking `httpx.Client` call (shared by sync MCP wrap and async A2A middleware).
 
 ## MCP Tool-Call Events

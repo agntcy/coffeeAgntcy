@@ -98,6 +98,9 @@ docker compose up exchange-server payment-mcp-server brazil-farm-server colombia
 ```
 
 To stop, use the same list for `docker compose down` as when starting, or run `docker compose --profile '*' down`.
+
+> **Behavior change with the SLIM 2.2 App SDK:** when `IDENTITY_AUTH_ENABLED="true"`, the App SDK now enforces identity on every transport. Anonymous HTTP JSON-RPC calls to a farm are rejected (the agent card path stays public), and a server whose Identity SDK cannot be built (for example a wrong API key) fails at startup instead of serving unauthenticated traffic. Auth stays off by default.
+
 A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
 
 Run without `.env` (inline key):

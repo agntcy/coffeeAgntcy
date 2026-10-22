@@ -39,6 +39,10 @@ def _base_env():
         "SLIM_SERVER": "127.0.0.1:46357",
         "NATS_SERVER": "127.0.0.1:4222",
         "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357",
+        # CI has no SLIM_SHARED_SECRET; let the farm fall back to the placeholder.
+        "SLIM_ALLOW_PLACEHOLDER_SECRET": os.environ.get(
+            "SLIM_ALLOW_PLACEHOLDER_SECRET", "true"
+        ),
     }
 
 

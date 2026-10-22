@@ -24,6 +24,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
@@ -55,6 +56,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
@@ -90,6 +92,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
@@ -126,14 +129,13 @@ services:
       start_period: 5s
 
   slim:
-    image: ghcr.io/agntcy/slim:1.4.0@sha256:7a7531cb81f1e24682f08364713da06a158411df3e90b687acf8d5836da5a78e
+    image: ghcr.io/agntcy/slim:2.2.0@sha256:0d329cc438d4bbc6695917a94a59b8cb8d8c137dc59124357483dd709c677ba7
     container_name: lungo-slim
     ports:
       - "46357:46357"
       - "46358:46358"
     environment:
-      # Must match SLIM_SHARED_SECRET used by Lungo agents (compose defaults chain both from SLIM_GATEWAY_PASSWORD).
-      - PASSWORD=${SLIM_SHARED_SECRET:-${SLIM_GATEWAY_PASSWORD:-dummy_password}}
+      # The server does not authenticate peers (see server-config.yaml); the shared secret lives in the clients.
       - CONFIG_PATH=/config.yaml
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
@@ -370,6 +372,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
@@ -400,6 +403,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
@@ -430,6 +434,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
@@ -460,6 +465,7 @@ services:
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true

@@ -6,18 +6,12 @@ from uuid import uuid4
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.types import (
-    UnsupportedOperationError,
-    JSONRPCResponse,
+from a2a.types import Message, Part, Role
+from a2a.utils.errors import (
     ContentTypeNotSupportedError,
     InternalError,
-    Message,
-    Role,
-    Part,
-    TextPart,
-    Task,
+    UnsupportedOperationError,
 )
-from a2a.utils.errors import ServerError
 
 from agents.farms.brazil.agent import FarmAgent
 from agents.farms.brazil.card import AGENT_CARD
@@ -28,14 +22,12 @@ logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
         self.agent = FarmAgent()
-        self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
-    def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
+    def _validate_request(self, context: RequestContext) -> None:
         """Validates the incoming request."""
         if not context or not context.message or not context.message.parts:
             logger.error("Invalid request parameters: %s", context)
-            return JSONRPCResponse(error=ContentTypeNotSupportedError())
-        return None
+            raise ContentTypeNotSupportedError()
 
     async def execute(
         self,
@@ -49,9 +41,8 @@ class FarmAgentExecutor(AgentExecutor):
         The agent should extract the necessary information from the `context`, invoke the FarmAgent
         to generate the yield estimate in lb, and enqueue the response message to the `event_queue`.
 
-        During execution, the agent may also publish `Task`, `Message`, `TaskStatusUpdateEvent`,
-        or `TaskArtifactUpdateEvent` events. This method should return once the agent's execution
-        for the current request is complete or yields control (e.g., enters an input-required state).
+        The reply is a single final `Message`. This method returns once the agent's
+        execution for the current request is complete.
 
         Args:
             context: The request context containing the message, task ID, and other relevant data.
@@ -60,10 +51,7 @@ class FarmAgentExecutor(AgentExecutor):
 
         logger.debug("Received message request: %s", context.message)
 
-        validation_error = self._validate_request(context)
-        if validation_error:
-            await event_queue.enqueue_event(validation_error)
-            return
+        self._validate_request(context)
 
         prompt = context.get_user_input()
 
@@ -72,9 +60,9 @@ class FarmAgentExecutor(AgentExecutor):
 
             message = Message(
                 message_id=str(uuid4()),
-                role=Role.agent,
-                metadata={"name": self.agent_card["name"]},
-                parts=[Part(TextPart(text=output))],
+                role=Role.ROLE_AGENT,
+                metadata={"name": AGENT_CARD.name},
+                parts=[Part(text=output)],
             )
 
             logger.info("agent output message: %s", message)
@@ -84,10 +72,8 @@ class FarmAgentExecutor(AgentExecutor):
             logger.error(
                 f"An error occurred while streaming the yield estimate response: {e}"
             )
-            raise ServerError(error=InternalError()) from e
+            raise InternalError() from e
 
-    async def cancel(
-        self, request: RequestContext, event_queue: EventQueue
-    ) -> Task | None:
+    async def cancel(self, request: RequestContext, event_queue: EventQueue) -> None:
         """Cancel this agent's execution for the given request context."""
-        raise ServerError(error=UnsupportedOperationError())
+        raise UnsupportedOperationError()
