@@ -1,7 +1,7 @@
 dependencies:
 - name: slim
   repository: oci://ghcr.io/agntcy/slim/helm
-  version: v1.4.0
+  version: v2.2.0
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
   version: 2.15.0
@@ -59,5 +59,5 @@ dependencies:
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
   version: 0.1.2
-digest: sha256:16e8e8290e62d53efe66c53656ee944a8f967123443d8d059ad20b2d6a882507
-generated: "2026-10-21T15:29:01.039217+02:00"
+digest: sha256:dce0b7e1633792f9b5a09a21c51a94851de30b7e6ea14ab5755100fd55bd6b45
+generated: "2026-10-22T22:02:21.015988+02:00"
