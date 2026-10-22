@@ -27,8 +27,8 @@ def get_factory() -> AgntcyFactory:
 # All supported transport configs are declared here as data (endpoints, names).
 # No connections are established at import time - transport construction is
 # deferred until A2AClientFactory.create(card) is called.  At that point
-# the factory negotiates which transport to use based on the card's
-# preferred_transport.
+# the factory negotiates which transport to use following the order of the
+# card's supported_interfaces (first match wins).
 
 config = build_a2a_client_config(
     namespace="lungo",
@@ -38,8 +38,9 @@ config = build_a2a_client_config(
 )
 
 # -- A2A client factory --
-# Holds all transports; callers set preferred_transport on the card
-# before calling create(). Factory negotiates based on card interfaces.
+# Holds all transports; callers reorder the card's supported_interfaces with
+# common.a2a_helpers.prefer_transport() before calling create(). The factory
+# negotiates in that order.
 a2a_client_factory = A2AClientFactory(config)
 
 

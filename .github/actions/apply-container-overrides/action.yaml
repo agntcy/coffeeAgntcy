@@ -4,6 +4,10 @@ inputs:
   project_dir:
     description: Path where docker-compose.yaml lives
     required: true
+  project_name:
+    description: Short project name; lines prefixed "<project_name>:" apply here, lines prefixed with another project are skipped
+    required: false
+    default: ""
   compose_file:
     description: Base compose file name
     required: false
@@ -12,6 +16,10 @@ inputs:
     description: One-per-line service=image[:tag] (only applied if the service exists)
     required: false
     default: ""
+  allow_missing_compose:
+    description: When "true", a missing base compose file skips the overrides instead of failing (for projects without a compose file)
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -43,6 +51,9 @@ runs:
 
         base_path = Path("${{ inputs.compose_file }}")
         if not base_path.exists():
+          if "${{ inputs.allow_missing_compose }}".strip().lower() == "true":
+            print(f"Base compose file not found: {base_path}; skipping image overrides.")
+            sys.exit(0)
           print(f"Base compose file not found: {base_path}", file=sys.stderr)
           sys.exit(1)
 
@@ -51,9 +62,25 @@ runs:
         base = yaml.load(base_path.read_text(encoding="utf-8"))
         base_services = set((base.get("services") or {}).keys())
 
+        project = "${{ inputs.project_name }}".strip()
+
         overrides = {}
-        lines = [ln.strip() for ln in """${{ inputs.docker_overrides }}""".splitlines() if ln.strip() and not ln.strip().startswith("#")]
+        lines = []
         applied, skipped = [], []
+        for raw in """${{ inputs.docker_overrides }}""".splitlines():
+            ln = raw.strip()
+            if not ln or ln.startswith("#"):
+                continue
+            prefix, sep, rest = ln.partition(":")
+            # "name:service=image" is scoped only when the prefix is a bare project name;
+            # unscoped lines like slim=ghcr.io/x:tag have "=" or "/" before the colon.
+            if sep and prefix and all(c.isalnum() or c in "-_" for c in prefix):
+                if prefix == project:
+                    lines.append(rest.strip())
+                else:
+                    skipped.append(f"{ln} (scoped to another project)")
+                continue
+            lines.append(ln)
 
         for ln in lines:
             if "=" not in ln:

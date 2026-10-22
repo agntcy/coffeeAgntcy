@@ -39,6 +39,6 @@ config.httpx_client = httpx.AsyncClient(
 )
 
 # -- A2A client factory --
-# Holds all transports; callers set preferred_transport on the card
-# before calling create(). Factory negotiates based on card interfaces.
+# Holds all transports; the factory negotiates in the order of the card's
+# supported_interfaces (first match wins).
 a2a_client_factory = A2AClientFactory(config)

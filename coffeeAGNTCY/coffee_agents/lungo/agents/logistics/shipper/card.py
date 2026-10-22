@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from agntcy_app_sdk.semantic.a2a.transport_types import InterfaceTransport
 from config.config import SLIM_SERVER
 
 AGENT_ID = "shipping-agent"
@@ -24,19 +25,16 @@ AGENT_SKILL = AgentSkill(
 
 AGENT_CARD = AgentCard(
     name="Shipping agent",
-    id="shipping-agent",
     description="An AI agent that ships coffee beans and sends status updates.",
     version="1.0.0",
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
-    supportsAuthenticatedExtendedCard=False,
-    preferred_transport="slim",
-    url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
-    additional_interfaces=[
+    supported_interfaces=[
+        # slim-based group messaging transport
         AgentInterface(
-            transport="slim",
+            protocol_binding=InterfaceTransport.SLIM_PATTERNS,
             url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
         ),
     ],

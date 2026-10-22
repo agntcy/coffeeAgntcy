@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from a2a.types import Message, Part, Role, TextPart
+from a2a.types import Message, Part, Role, StreamResponse
 from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import Runnable
@@ -62,11 +62,14 @@ class _FakeRoutingLLM(Runnable):
         )
 
 
-def _agent_message(text: str) -> Message:
-    return Message(
-        messageId=str(uuid4()),
-        role=Role.agent,
-        parts=[Part(root=TextPart(text=text))],
+def _agent_reply(text: str) -> StreamResponse:
+    """One farm reply event as ``send_a2a_with_retry`` collects it."""
+    return StreamResponse(
+        message=Message(
+            message_id=str(uuid4()),
+            role=Role.ROLE_AGENT,
+            parts=[Part(text=text)],
+        )
     )
 
 
@@ -160,7 +163,7 @@ def test_auction_colombia_weather_unavailable_response_has_no_inventory(
         patch(
             "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
             new_callable=AsyncMock,
-            return_value=[_agent_message(_COLOMBIA_WEATHER_UNAVAILABLE)],
+            return_value=[_agent_reply(_COLOMBIA_WEATHER_UNAVAILABLE)],
         ),
     ):
         resp = auction_supervisor_client.post(

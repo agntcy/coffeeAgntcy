@@ -19,13 +19,12 @@ LOGISTICS_SUPERVISOR_SKILL = AgentSkill(
 
 LOGISTICS_SUPERVISOR_CARD = AgentCard(
     name="Logistics Supervisor agent",
-    id="logistics-supervisor-agent",
     description="An AI agent that supervises and tracks coffee logistics and shipments.",
-    url="",
     version="1.0.0",
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[LOGISTICS_SUPERVISOR_SKILL],
-    supportsAuthenticatedExtendedCard=False,
+    # Caller identity only: this supervisor serves no A2A interface.
+    supported_interfaces=[],
 )

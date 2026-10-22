@@ -4,6 +4,10 @@ inputs:
   project_dir:
     description: Path to the project root (where pyproject.toml lives)
     required: true
+  project_name:
+    description: Short project name; lines prefixed "<project_name>:" apply here, lines prefixed with another project are skipped
+    required: false
+    default: ""
   pip_overrides:
     description: One-per-line PEP 508 specs to force (applied only if the package is declared here)
     required: false
@@ -38,12 +42,24 @@ runs:
             m = re.match(r"([A-Za-z0-9_.-]+)", s)
             return norm(m.group(1)) if m else ""
 
+        project_name = "${{ inputs.project_name }}".strip()
+
         def as_list(block: str) -> list[str]:
             out = []
-            for line in (block or "").splitlines():
-                line = line.strip()
-                if line and not line.startswith("#"):
-                    out.append(line)
+            for raw in (block or "").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                prefix, sep, rest = line.partition(":")
+                # "name:spec" is scoped only when the prefix is a bare project name;
+                # a PEP 508 URL spec ("pkg @ https://...") has spaces or "@" before the colon.
+                if sep and prefix and all(c.isalnum() or c in "-_" for c in prefix):
+                    if prefix == project_name:
+                        out.append(rest.strip())
+                    else:
+                        print(f"Skipped (scoped to {prefix}): {line}")
+                    continue
+                out.append(line)
             return out
 
         py = pathlib.Path("pyproject.toml")

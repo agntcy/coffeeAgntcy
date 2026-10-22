@@ -1,20 +1,19 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import copy
 import logging
 from typing import Any, Literal, Union
 from uuid import uuid4
 
-from a2a.client.middleware import ClientCallContext
+from a2a.client import ClientCallContext
+from a2a.helpers import get_message_text
 from a2a.types import (
     AgentCard,
     Message,
-    MessageSendParams,
     Part,
     Role,
     SendMessageRequest,
-    TextPart,
+    SendMessageResponse,
 )
 from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 from agents.supervisors.auction.graph.a2a_retry import (
@@ -27,9 +26,13 @@ from agents.supervisors.auction.graph.models import (
 )
 from agents.supervisors.auction.graph.shared import a2a_client_factory, farm_registry
 from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
-from common.a2a_event_middleware import (
-    EventEmittingInterceptor,
-    make_event_emitting_consumer,
+from agntcy_app_sdk.semantic.a2a import A2ABroadcastError
+from common.a2a_event_middleware import EventEmittingInterceptor
+from common.a2a_helpers import (
+    message_metadata,
+    prefer_transport,
+    response_message,
+    response_text,
 )
 from common.workflow_context_prop import read_workflow_context
 from config.config import (
@@ -96,9 +99,8 @@ async def _dispose_a2a_client(client: object) -> None:
         logger.debug("A2A client transport close failed", exc_info=True)
 
 
-# A2A middleware singletons that capture outbound and inbound calls.
+# A2A middleware singleton that captures outbound and inbound calls.
 _event_interceptor = EventEmittingInterceptor(caller_card=AUCTION_SUPERVISOR_CARD)
-_event_consumer = make_event_emitting_consumer(caller_card=AUCTION_SUPERVISOR_CARD)
 
 
 class A2AAgentError(ToolException):
@@ -108,30 +110,107 @@ class A2AAgentError(ToolException):
 
 
 def _extract_text_from_events(events: list) -> str | None:
-    """Extract the last text content from a list of A2A stream events.
+    """Extract the last text content from a list of A2A ``StreamResponse`` events.
 
-    Handles both ``Message`` objects and ``ClientEvent`` tuples
-    ``(Task, UpdateEvent)``.  Returns the last text found, or None.
+    Reads the message, task status message, or artifact text of each event.
+    Returns the last non-empty text found, or None.
     """
     result_text = None
     for response in events:
-        if isinstance(response, Message):
-            for part in response.parts:
-                part_root = part.root
-                if hasattr(part_root, "text"):
-                    result_text = part_root.text.strip()
-        elif isinstance(response, tuple):
-            task_update, _event = response
-            if (
-                hasattr(task_update, "status")
-                and task_update.status
-                and task_update.status.message
-            ):
-                for part in task_update.status.message.parts:
-                    part_root = part.root
-                    if hasattr(part_root, "text"):
-                        result_text = part_root.text.strip()
+        text = response_text(response).strip()
+        if text:
+            result_text = text
     return result_text
+
+
+def _user_message(text: str, metadata: dict[str, str] | None = None) -> Message:
+    """Build an outbound user ``Message`` with a single text part."""
+    return Message(
+        message_id=str(uuid4()),
+        role=Role.ROLE_USER,
+        parts=[Part(text=text)],
+        metadata=metadata,
+    )
+
+
+def _farm_reply(response: Any) -> tuple[str, str] | None:
+    """``(farm name, text)`` of a farm's reply message, or None if it has none."""
+    message = response_message(response)
+    if message is None:
+        return None
+    text = get_message_text(message).strip()
+    if not text:
+        return None
+    name = message_metadata(message).get("name") or "Unknown Farm"
+    return str(name), text
+
+
+def _reply_sender(response: Any) -> str | None:
+    """Farm display name from a reply's metadata, even when its text is empty."""
+    message = response_message(response)
+    if message is None:
+        return None
+    name = message_metadata(message).get("name")
+    return str(name) if name else None
+
+
+def _incomplete_broadcast_note(
+    responded: set[str],
+    error: A2ABroadcastError | None = None,
+    unusable: frozenset[str] | set[str] = frozenset(),
+) -> str | None:
+    """One sentence naming every farm without a usable reply, with the reason.
+
+    A farm that failed and a farm that never answered are reported once each.
+    ``responded`` holds the display names of the farms that gave a usable reply;
+    ``error`` is the SDK's ``A2ABroadcastError`` for the broadcast, if it raised
+    one; ``unusable`` holds the farms that replied without usable text. Returns
+    None when every registered farm answered.
+    """
+    farm_names = {
+        identifier: card.name
+        for card in farm_registry.cards()
+        if (identifier := get_agent_identifier(card))
+    }
+    reply_wait = "in time" if error is not None and error.timed_out else "at all"
+    # an error reported for the same farm overwrites this; a missing-recipient entry does not
+    problems: dict[str, str] = {
+        farm: "gave no usable reply" for farm in sorted(unusable - responded)
+    }
+    unattributed: list[str] = []
+
+    if error is not None:
+        for failure in error.failures:
+            reason = f"returned an error ({failure.error})"
+            farm = farm_names.get(failure.sender) if failure.sender else None
+            if farm is None:
+                # the SDK got no sender identity with this failure
+                unattributed.append(str(failure.error))
+            else:
+                problems[farm] = reason
+        for recipient in error.missing_recipients:
+            farm = farm_names.get(recipient, recipient)
+            if farm in responded:
+                # never name a farm that already gave a usable reply
+                continue
+            problems.setdefault(farm, f"did not reply {reply_wait}")
+
+    # Farms the SDK could not name (no sender identity): every registered farm
+    # without a usable reply and without a reason above.
+    for farm in sorted(farm_registry.display_names() - responded - problems.keys()):
+        problems[farm] = (
+            "gave no usable reply" if unattributed else f"did not reply {reply_wait}"
+        )
+
+    if not problems:
+        return None
+    note = (
+        f"Incomplete answer: {len(problems)} of {len(farm_registry)} farms gave no "
+        "usable reply: " + "; ".join(f"{farm} {why}" for farm, why in problems.items())
+    )
+    if unattributed:
+        note += f". Errors reported: {'; '.join(unattributed)}"
+    return note + "."
 
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
@@ -269,22 +348,15 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     client = None
     try:
         try:
-            card = copy.deepcopy(card)
-            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
+            card = prefer_transport(card, DEFAULT_MESSAGE_TRANSPORT)
 
             # create a client with event middleware to capture tool calls and responses for tracing in the UI
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
-            message = Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=prompt))],
-                metadata=_workflow_message_metadata(),
-            )
+            message = _user_message(prompt, _workflow_message_metadata())
 
             # call context (workflow identity flows via OTel baggage)
             ctx = ClientCallContext()
@@ -330,15 +402,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
 
     request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=prompt))],
-                metadata=_workflow_message_metadata(),
-            ),
-        ),
+        message=_user_message(prompt, _workflow_message_metadata())
     )
 
     # create a list of recipients to include in the broadcast
@@ -347,18 +411,13 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     client = None
     try:
         try:
-            # pick any card to initialize the client, will use the recipient list to route to the correct farms
-            card = copy.deepcopy(
-                farm_registry.cards()[0]
-            )  # avoid mutating the singleton card
-
-            # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
-            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
+            # pick any card to initialize the client, will use the recipient list to route to the correct farms;
+            # prefer the configured publish-subscribe transport (returns a copy, the singleton card is untouched)
+            card = prefer_transport(farm_registry.cards()[0], DEFAULT_MESSAGE_TRANSPORT)
 
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
             # set call context for the broadcast (workflow identity comes from baggage)
@@ -370,31 +429,51 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
                 }
             )
 
-            # create a broadcast message and collect responses
-            responses = await client.broadcast_message(
-                request, recipients=recipients, context=ctx
-            )
+            # create a broadcast message and collect responses; a partial result
+            # (a farm failed or never answered) arrives as A2ABroadcastError
+            broadcast_error: A2ABroadcastError | None = None
+            responses: list[SendMessageResponse]
+            try:
+                responses = await client.broadcast_message(
+                    request, recipients=recipients, context=ctx
+                )
+            except A2ABroadcastError as e:
+                logger.warning(f"Broadcast to farms incomplete: {e}")
+                broadcast_error = e
+                responses = list(e.responses)
 
             logger.info(f"got {len(responses)} responses back from farms")
 
             farm_yields = ""
+            responded: set[str] = set()
+            unusable: set[str] = set()
+            skipped_unusable = False
             for response in responses:
-                err = getattr(response.root, "error", None)
-                result = getattr(response.root, "result", None)
-                if err:
-                    err_msg = f"A2A error from farm: {err.message}"
-                    logger.error(err_msg)
-                    raise A2AAgentError(err_msg)
-                if result and result.parts:
-                    part = result.parts[0].root
-                    farm_name = "Unknown Farm"
-                    if hasattr(result, "metadata") and result.metadata:
-                        farm_name = result.metadata.get("name", "Unknown Farm")
-                    farm_yields += f"{farm_name} : {part.text.strip()}\n"
-                else:
-                    err_msg = "Unknown response type from farm"
-                    logger.error(err_msg)
-                    raise A2AAgentError(err_msg)
+                reply = _farm_reply(response)
+                if reply is None:
+                    # keep the other farms' answers; the closing note names this farm
+                    logger.warning("Farm reply without usable text, skipping it")
+                    skipped_unusable = True
+                    if (sender := _reply_sender(response)) is not None:
+                        unusable.add(sender)
+                    continue
+                farm_name, text = reply
+                responded.add(farm_name)
+                farm_yields += f"{farm_name} : {text}\n"
+
+            note = (
+                _incomplete_broadcast_note(responded, broadcast_error, unusable)
+                if broadcast_error is not None or skipped_unusable
+                else None
+            )
+            if not responded:
+                raise A2AAgentError(
+                    note
+                    or (str(broadcast_error) if broadcast_error is not None else None)
+                    or "Unknown response type from farm"
+                )
+            if note:
+                farm_yields += f"{note}\n"
 
             logger.info(f"Farm yields: {farm_yields}")
             return farm_yields.strip()
@@ -424,15 +503,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
     )
 
     request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=prompt))],
-                metadata=_workflow_message_metadata(),
-            ),
-        ),
+        message=_user_message(prompt, _workflow_message_metadata())
     )
 
     # create a list of recipients to include in the broadcast
@@ -445,17 +516,13 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                 f"Broadcasting to {len(recipients)} farms: {', '.join(recipients)}"
             )
 
-            card = copy.deepcopy(
-                farm_registry.cards()[0]
-            )  # avoid mutating the singleton card
-
-            # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
-            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
+            # prefer the configured publish-subscribe transport for broadcasts
+            # (returns a copy, the singleton card is untouched)
+            card = prefer_transport(farm_registry.cards()[0], DEFAULT_MESSAGE_TRANSPORT)
 
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
             ctx = ClientCallContext(
@@ -475,67 +542,70 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
             )
 
             # Track which farms responded
-            responded_farms = set()
-            errors = []
+            responded_farms: set[str] = set()
+            unusable: set[str] = set()
+            broadcast_error: A2ABroadcastError | None = None
 
-            # Process responses as they arrive
-            async for response in response_stream:
-                try:
-                    err = getattr(response.root, "error", None)
-                    result = getattr(response.root, "result", None)
-                    if err:
-                        err_msg = f"A2A error from farm: {err.message}"
-                        logger.error(err_msg)
-                        yield f"Error from farm: {err.message}\n"
-                    elif result and result.parts:
-                        part = result.parts[0].root
-                        farm_name = "Unknown Farm"
-                        if hasattr(result, "metadata") and result.metadata:
-                            farm_name = result.metadata.get("name", "Unknown Farm")
-
-                        if farm_name == "None":
-                            errors.append(part.text.strip())
-                        else:
-                            responded_farms.add(farm_name)
-                            logger.info(
-                                f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})",
-                            )
-                            yield f"{farm_name} : {part.text.strip()}\n"
-                    else:
-                        err_msg = "Unknown response type from farm"
-                        logger.error(err_msg)
-                        yield "Error: Unknown response format from farm\n"
-                except Exception as e:
-                    logger.error(f"Error processing farm response: {e}")
-                    yield f"Error processing farm response: {str(e)}\n"
-
-            # Check for missing responses and report them
-            if len(responded_farms) < len(recipients):
-                # Determine which farms didn't respond by checking farm names
-                expected_farms = farm_registry.display_names()
-                missing_farms = expected_farms - responded_farms
-
-                if missing_farms:
-                    missing_list = ", ".join(sorted(missing_farms))
-                    logger.warning(
-                        f"Broadcast completed with partial responses: {len(responded_farms)}/{len(recipients)} "
-                        f"farms responded. Missing: {missing_list}",
-                    )
-
-                    response = f"No response from {missing_list}. These farms may be unavailable or slow to respond."
-                    if len(errors) != 0:
-                        readable_errors = "\n".join(errors)
-                        response += (
-                            f" Errors encountered from farms:\n{readable_errors}\n"
+            # Process responses as they arrive. Failed or missing replies are
+            # reported once the stream ends, as A2ABroadcastError.
+            try:
+                async for response in response_stream:
+                    try:
+                        payload = response.WhichOneof("payload")
+                        reply = (
+                            _farm_reply(response)
+                            if payload in ("message", "task")
+                            else None
                         )
+                        if reply is None and payload in (
+                            "task",
+                            "status_update",
+                            "artifact_update",
+                        ):
+                            # intermediate progress event; the farm's answer is its final message
+                            logger.debug("Skipping intermediate broadcast event")
+                            continue
+                        if reply is None:
+                            # no separate error line: the closing note names this farm once
+                            logger.warning(
+                                "Farm reply without usable text, skipping it"
+                            )
+                            if payload == "message" and (
+                                sender := _reply_sender(response)
+                            ):
+                                unusable.add(sender)
+                            continue
+                        farm_name, text = reply
+                        responded_farms.add(farm_name)
+                        logger.info(
+                            f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})",
+                        )
+                        yield f"{farm_name} : {text}\n"
+                    except Exception as e:
+                        logger.error(f"Error processing farm response: {e}")
+                        yield f"Error processing farm response: {str(e)}\n"
+            except A2ABroadcastError as e:
+                logger.warning(f"Broadcast to farms incomplete: {e}")
+                if not responded_farms and not e.failures:
+                    raise
+                broadcast_error = e
 
-                    yield response
+            # Report every farm without a usable reply once, with the reason
+            note = _incomplete_broadcast_note(
+                responded_farms, broadcast_error, unusable
+            )
+            if note:
+                logger.warning(
+                    f"Broadcast completed with partial responses: {len(responded_farms)}/{len(recipients)} "
+                    "farms responded. " + note
+                )
+                yield f"{note}\n"
 
         except Exception as e:
             error_msg = f"Failed to communicate with farms during broadcast: {e}"
             logger.error(error_msg)
             # Check if it's a timeout-related error
-            if "timeout" in str(e).lower():
+            if isinstance(e, TimeoutError) or "timeout" in str(e).lower():
                 yield (
                     f"Error: Broadcast timed out. Some farms may be slow to respond or unavailable. {str(e)}\n"
                 )
@@ -597,25 +667,16 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     client = None
     try:
         try:
-            card = copy.deepcopy(card)  # avoid mutating the singleton card
-            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
+            # returns a copy, the singleton card is untouched
+            card = prefer_transport(card, DEFAULT_MESSAGE_TRANSPORT)
 
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
-            message = Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[
-                    Part(
-                        TextPart(
-                            text=f"Create an order with price {price} and quantity {quantity}"
-                        )
-                    )
-                ],
+            message = _user_message(
+                f"Create an order with price {price} and quantity {quantity}"
             )
 
             ctx = ClientCallContext()
@@ -677,24 +738,16 @@ async def get_order_details(order_id: str) -> str:
     client = None
     try:
         try:
-            # pick any card to initialize the client
-            card = copy.deepcopy(
-                farm_registry.cards()[0]
-            )  # avoid mutating the singleton card
-            # override preferred transport to ensure direct communication for order creation
-            card.preferred_transport = InterfaceTransport.SLIM
+            # pick any card to initialize the client; prefer SLIM to ensure direct
+            # communication for order details, even on a NATS run (returns a copy)
+            card = prefer_transport(farm_registry.cards()[0], InterfaceTransport.SLIM)
 
             client = await a2a_client_factory.create(
                 card,
                 interceptors=[_event_interceptor],
-                consumers=[_event_consumer],
             )
 
-            message = Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
-            )
+            message = _user_message(f"Get details for order ID {order_id}")
 
             ctx = ClientCallContext()
 

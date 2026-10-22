@@ -20,15 +20,17 @@ _APPLIED_TIMEOUT = "_coffee_agntcy_slim_request_timeout"
 def apply_slim_request_timeout(timeout_seconds: int) -> None:
     """Default ``SLIMTransport.request()`` to ``timeout_seconds``.
 
-    agntcy-app-sdk 0.5.5 keeps the deadline in the signature of
-    ``SLIMTransport.request()`` and its A2A client never forwards one, so
-    ``SlimTransportConfig`` offers no way to raise it. Replacing the method is the
-    only hook available; drop this module once the SDK takes the value as config.
+    agntcy-app-sdk keeps the deadline in the signature of
+    ``SLIMTransport.request()`` (default 6s) and its A2A client never forwards
+    one; ``SlimTransportConfig.message_timeout_seconds`` applies to listening
+    sessions, not to ``request()``, so config offers no way to raise it.
+    Replacing the method is the only hook available; drop this module once the
+    SDK takes the value as config.
 
-    The same SDK method logs the expiry and returns ``None``, so callers only find
-    out through an ``AttributeError`` on the missing payload, which reads as a
-    malformed reply rather than a deadline. The override raises ``TimeoutError``
-    instead so the retry paths can tell the two apart.
+    The SDK now raises ``asyncio.TimeoutError`` itself when the deadline lapses.
+    Older SDKs (0.5.5) logged the expiry and returned ``None``, so callers only
+    found out through an ``AttributeError`` on the missing payload; the override
+    still raises ``TimeoutError`` on a ``None`` reply as a backstop for those.
 
     Callers that pass their own ``timeout`` are left untouched, and the override
     is skipped altogether if a future SDK stops accepting the argument.

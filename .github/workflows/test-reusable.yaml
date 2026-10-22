@@ -7,22 +7,26 @@ on:
         description: 'The directory of the project to test.'
         required: true
         type: string
+      project_name:
+        description: 'Short project name (corto, lungo, recruiter) used to select project-prefixed override lines.'
+        required: true
+        type: string
       test_paths:
         description: 'Space-separated pytest directory arguments and flags, e.g. tests --ignore=tests/integration/llm'
         required: true
         type: string
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: 'One-per-line PEP 508 specs to force (applied only if declared; a <project>: prefix scopes a line).'
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: 'One-per-line constraints (applied only if declared; a <project>: prefix scopes a line).'
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: 'One-per-line service=image[:tag] (applied only if declared; a <project>: prefix scopes a line).'
         required: false
         type: string
         default: ""
@@ -55,6 +59,7 @@ jobs:
         uses: ./.github/actions/apply-uv-overrides
         with:
           project_dir: ${{ inputs.project_dir }}
+          project_name: ${{ inputs.project_name }}
           pip_overrides: ${{ inputs.pip_overrides }}
           pip_constraints: ${{ inputs.pip_constraints }}
 
@@ -63,8 +68,11 @@ jobs:
         uses: ./.github/actions/apply-container-overrides
         with:
           project_dir: ${{ inputs.project_dir }}/
+          project_name: ${{ inputs.project_name }}
           compose_file: docker-compose.yaml
           docker_overrides: ${{ inputs.docker_overrides }}
+          # The recruiter project has no root docker-compose.yaml; corto and lungo must fail loudly.
+          allow_missing_compose: ${{ inputs.project_name == 'recruiter' }}
 
       - name: Resolve and install
         run: uv sync --extra dev

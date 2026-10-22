@@ -5,7 +5,8 @@
 
 import asyncio
 import logging
-from a2a.client.middleware import ClientCallContext
+from a2a.client import ClientCallContext
+from a2a.types import SendMessageRequest
 
 _SENTINEL = object()
 _SLIM_ERROR = None
@@ -43,8 +44,12 @@ def _is_timeout_error(
     exc: BaseException, slim_error_class: type | None = _SENTINEL
 ) -> bool:
     """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
-    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
-    SlimError.SessionError in chain (SDK wrap)."""
+    raises for a lapsed SLIM deadline), SlimError.Timeout, SlimError.SessionError, or
+    AttributeError with SlimError.SessionError in chain (SDK wrap).
+
+    SlimError.Timeout is a sibling of SessionError, not a subclass, and the SDK's
+    SLIMTransport.request() only converts asyncio.TimeoutError, so it propagates as is.
+    """
     if isinstance(exc, TimeoutError):
         return True
     if slim_error_class is _SENTINEL:
@@ -53,6 +58,9 @@ def _is_timeout_error(
         SlimError = slim_error_class
     if SlimError is None:
         return False
+    slim_timeout = getattr(SlimError, "Timeout", None)
+    if slim_timeout is not None and isinstance(exc, slim_timeout):
+        return True
     if isinstance(exc, SlimError.SessionError):
         return True
     if not isinstance(exc, AttributeError):
@@ -90,13 +98,15 @@ async def send_a2a_with_retry(
     Send message to A2A client. On timeout or no response, retry
     up to 2 times (3 attempts total) with exponential backoff (base 2, delays 1s, 2s).
 
-    The A2A SDK (>=0.3.x) client.send_message() returns an AsyncIterator.
-    This function collects all events from the stream and returns them as a list.
+    The a2a-sdk 1.x client.send_message() takes a SendMessageRequest and returns an
+    AsyncIterator of StreamResponse. This function collects all events from the
+    stream and returns them as a list.
     """
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
             events = []
-            async for event in client.send_message(message, context=context):
+            request = SendMessageRequest(message=message)
+            async for event in client.send_message(request, context=context):
                 events.append(event)
 
             if events:
