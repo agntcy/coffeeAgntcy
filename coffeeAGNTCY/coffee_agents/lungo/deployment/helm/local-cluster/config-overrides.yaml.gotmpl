@@ -157,5 +157,7 @@ recruiter-supervisor:
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
-  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "dummy_password" | quote }}
+  # Local development only. SLIM 2.x clients reject secrets shorter than 32 characters. The default is the
+  # public placeholder of the app-sdk (agntcy_app_sdk PLACEHOLDER_SHARED_SECRET), which the SDK logs a warning for.
+  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}
 
