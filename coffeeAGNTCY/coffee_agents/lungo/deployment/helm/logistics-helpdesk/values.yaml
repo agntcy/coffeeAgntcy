@@ -23,6 +23,8 @@ config:
   slimServer: ""
   natsServer: ""
   slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
+  # SLIM_ALLOW_PLACEHOLDER_SECRET: true lets the SLIM interfaces start with the public app-sdk placeholder when no secret is set. Local demos only.
+  slimAllowPlaceholderSecret: false
   otlpHttpEndpoint: ""
   corsAllowedOrigins: ""
 #  llmStreaming: False

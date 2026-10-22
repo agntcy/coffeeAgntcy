@@ -11,6 +11,7 @@ data:
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   SLIM_SERVER: "{{ .Values.config.slimServer }}"
   NATS_SERVER: "{{ .Values.config.natsServer }}"
+  SLIM_ALLOW_PLACEHOLDER_SECRET: "{{ .Values.config.slimAllowPlaceholderSecret | default false }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   {{- if .Values.config.workflowApiUrl }}
   WORKFLOW_API_URL: {{ .Values.config.workflowApiUrl | quote }}
