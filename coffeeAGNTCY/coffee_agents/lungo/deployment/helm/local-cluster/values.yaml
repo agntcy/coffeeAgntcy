@@ -72,7 +72,7 @@ lungo-ui:
         VITE_AGENTIC_WORKFLOWS_API_URL: http://localhost:30084
         VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH: main
         # VITE_DIRECTORY_SERVER_URL: http://127.0.0.1:8888
-        VITE_DIRECTORY_VERSION: v1.0.0
+        VITE_DIRECTORY_VERSION: v1.8.0
         VITE_DISCOVERY_APP_API_URL: http://localhost:30082
         VITE_EXCHANGE_APP_API_URL: http://localhost:30080
         # VITE_GRAFANA_URL: http://127.0.0.1:3001
