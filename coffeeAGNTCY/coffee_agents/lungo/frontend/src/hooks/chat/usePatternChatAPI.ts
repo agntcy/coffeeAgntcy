@@ -48,9 +48,7 @@ interface PatternChatFrameError {
 }
 
 type PatternChatFrame =
-  | PatternChatFrameResponse
-  | PatternChatFrameDone
-  | PatternChatFrameError
+  PatternChatFrameResponse | PatternChatFrameDone | PatternChatFrameError
 
 const isResponseFrame = (v: unknown): v is PatternChatFrameResponse =>
   typeof v === "object" &&
