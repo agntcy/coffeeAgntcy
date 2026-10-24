@@ -5,8 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "a2a-sdk==0.3.20",
-    "mcp==1.30.0",
+    "a2a-sdk==1.2.2",
+    "mcp==2.3.0",
     "loguru==0.7.3",
     "pydantic==2.13.4",
     "python-dotenv==1.2.2",
@@ -16,7 +16,7 @@ dependencies = [
     "langchain-google-genai==4.4.0",
     "langchain-openai==1.2.2",
     "agntcy-app-sdk==0.5.5",
-    "slim-bindings==1.1.0",
+    "slim-bindings==2.2.0",
     "google-adk==2.8.0",
     "rogue-ai-sdk==0.6.4",
     "pydantic-yaml==1.6.0",
