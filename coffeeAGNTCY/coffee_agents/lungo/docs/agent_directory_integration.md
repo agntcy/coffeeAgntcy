@@ -12,7 +12,7 @@ The integration enables automatic translation and publication of all lungo agent
 
 ### 1. Start the Directory Service
 
-From the **lungo** project directory, launch Postgres, the directory API server, MCP server (`dirctl`), and the OCI registry (all use the `recruiter` compose profile):
+From the **lungo** project directory, launch Postgres, the directory API server, MCP server (`dir-mcp`), and the OCI registry (all use the `recruiter` compose profile):
 
 ```bash
 docker compose --profile recruiter up -d postgres zot dir-api-server dir-mcp-server
@@ -22,7 +22,7 @@ This starts:
 
 - `postgres`: PostgreSQL backing store for the directory API server
 - `dir-api-server`: Directory API (`ghcr.io/agntcy/dir-apiserver:v1.8.0`)
-- `dir-mcp-server`: MCP bridge (`ghcr.io/agntcy/dir-ctl:v1.8.0`, `mcp serve` with open stdin)
+- `dir-mcp-server`: MCP bridge (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`, with open stdin)
 - `zot`: OCI-compliant registry (`ghcr.io/project-zot/zot:v2.1.15`) for agent artifacts
 
 To stop, use the same service list for `down`, e.g. `docker compose --profile recruiter down` or `docker compose --profile '*' down`.

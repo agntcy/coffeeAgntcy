@@ -582,11 +582,10 @@ services:
       - recruiter
 
   dir-mcp-server:
-    image: ghcr.io/agntcy/dir-ctl:v1.8.0@sha256:a6cd66961f89ee0b4cc768996b6f621d6424a7059c8571c8faa2489c55218c4e
+    image: ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1@sha256:175ac3acec89488451617ba1f3b80b54a8e31fa36fe940971bdb8157de89ada8
     container_name: dir-mcp-server
     stdin_open: true
     tty: true
-    command: ["mcp", "serve"]
     environment:
       OASF_API_VALIDATION_SCHEMA_URL: https://schema.oasf.outshift.com
       DIRECTORY_CLIENT_SERVER_ADDRESS: dir-api-server:8888

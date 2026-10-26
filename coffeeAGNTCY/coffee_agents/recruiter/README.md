@@ -88,7 +88,7 @@ DIRECTORY_CLIENT_TLS_SKIP_VERIFY="true"
 
 **Or run locally via Docker Compose:**
 
-Directory stack uses **AGNTCY Directory v1.0.0** (`ghcr.io/agntcy/dir-apiserver:v1.0.0`), **PostgreSQL** (`postgres:16.6-bookworm`), **Zot** `v2.1.15`, and optional **`dir-mcp-server`** (`ghcr.io/agntcy/dir-ctl:v1.0.0`) for `MCP_CONNECTION_MODE=docker`.
+Directory stack uses **AGNTCY Directory v1.0.0** (`ghcr.io/agntcy/dir-apiserver:v1.0.0`), **PostgreSQL** (`postgres:16.6-bookworm`), **Zot** `v2.1.15`, and optional **`dir-mcp-server`** (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`) for `MCP_CONNECTION_MODE=docker`.
 
 ```bash
 # Minimal: Postgres + Zot + API (and optionally MCP for docker-mode MCP)
@@ -171,7 +171,7 @@ docker compose -f docker/docker-compose.yaml up --build -d
 This starts:
 - **postgres**: PostgreSQL for directory metadata (`directory` database)
 - **dir-api-server**: Agent Directory Service API (`ghcr.io/agntcy/dir-apiserver:v1.0.0`)
-- **dir-mcp-server**: MCP bridge for Docker-mode MCP (`ghcr.io/agntcy/dir-ctl:v1.0.0`)
+- **dir-mcp-server**: MCP bridge for Docker-mode MCP (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`)
 - **zot**: OCI artifact registry for agent storage (`ghcr.io/project-zot/zot:v2.1.15`)
 - **recruiter-agent**: The recruiter agent A2A server
 
