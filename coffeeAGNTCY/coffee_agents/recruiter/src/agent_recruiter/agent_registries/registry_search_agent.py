@@ -7,7 +7,7 @@ ADK-based agent for searching agent registries via the AGNTCY Directory.
 Searches run a single tool (`search_agents`) that drives the local `dirctl`
 binary directly: one batch `dirctl export` searches, transforms each match to
 its A2A AgentCard, and writes them out, which we then persist to session state.
-A small MCP toolset is also attached, filtered down to the OASF schema-discovery
+A small MCP toolset served by the `dir-mcp` binary is also attached, filtered down to the OASF schema-discovery
 tools so the agent can resolve valid skill/domain names before filtering on them.
 """
 
@@ -58,6 +58,18 @@ def _dirctl_path() -> str:
     return path
 
 
+def _dir_mcp_path() -> str:
+    """Return the dir-mcp binary path, raising if it is not on PATH."""
+    path = shutil.which("dir-mcp")
+    if not path:
+        raise RuntimeError(
+            "dir-mcp binary not found in PATH. Install it from "
+            "https://github.com/agntcy/dir-mcp/releases (asset mcp-server-<os>-<arch>, "
+            "saved as dir-mcp)."
+        )
+    return path
+
+
 def _dirctl_env() -> dict[str, str]:
     """Directory client settings passed to every dirctl invocation."""
     return {
@@ -84,20 +96,19 @@ def create_discovery_mcp_toolset(
     Raises:
         RuntimeError: If the toolset cannot be created.
     """
-    dirctl_path = _dirctl_path()
+    dir_mcp_path = _dir_mcp_path()
     try:
         toolset = McpToolset(
             connection_params=StdioConnectionParams(
                 server_params=StdioServerParameters(
-                    command=dirctl_path,
-                    args=["mcp", "serve"],
+                    command=dir_mcp_path,
                     env=_dirctl_env(),
                 ),
                 timeout=MCP_SERVER_STARTUP_TIMEOUT,
             ),
             tool_filter=tool_filter if tool_filter is not None else DISCOVERY_TOOLS,
         )
-        logger.info(f"Created discovery MCP toolset (dirctl at {dirctl_path})")
+        logger.info(f"Created discovery MCP toolset (dir-mcp at {dir_mcp_path})")
         return toolset
     except Exception as e:
         error_msg = f"Failed to create discovery MCP toolset: {e}"
