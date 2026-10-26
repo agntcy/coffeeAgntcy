@@ -31,7 +31,7 @@ dependencies = [
     "llama-index-core==0.14.9",
     "griffe==1.15.0",  # banks/llama-index import griffe 1.x API; 2.x is a meta-package without it
     "litellm==1.88.6",
-    "google-adk",
+    "google-adk==2.13.0",
     "slima2a==0.8.0",
     "slim-bindings==2.2.0",
     "agntcy-app-sdk==0.6.0",
@@ -91,9 +91,6 @@ constraint-dependencies = [
 # for the compatibility contract this relies on.
 override-dependencies = ["pyjwt[crypto]==2.15.1", "a2a-sdk[sqlite,telemetry]==1.2.3"]
 
-[tool.uv.sources]
-google-adk = { git = "https://github.com/google/adk-python", rev = "facd7ddafe0e23715e079e50971ad27b251e2e98" } # FIXME: When new release after v2.10.0 is done, use the pypi package again
-
 [tool.uv.exclude-newer-package]
 pyjwt = "2026-10-01T00:00:00Z"
 # Deliberate early adoption: agntcy-app-sdk 0.6.0 (uploaded 2026-10-21) is the
@@ -102,6 +99,7 @@ pyjwt = "2026-10-01T00:00:00Z"
 agntcy-app-sdk = "2026-10-22T00:00:00Z"
 slima2a = "2026-10-14T00:00:00Z"
 google-genai = "2026-10-23T00:00:00Z"
+google-adk = "2026-10-26T00:00:00Z"
 authlib = "2026-10-23T00:00:00Z"
 a2a-sdk = "2026-10-23T00:00:00Z"
 agntcy-dir = "2026-10-23T00:00:00Z"
