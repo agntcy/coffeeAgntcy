@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # dirctl (only fetched when referenced by agent-with-dirctl)
-FROM ghcr.io/agntcy/dir-ctl:v1.5.0@sha256:87b9db2b013f80efe514928b8fb10a0dbb0caee77d0d8a82079bf952e3fb0613 AS dirctl
+FROM ghcr.io/agntcy/dir-ctl:v1.8.0@sha256:a6cd66961f89ee0b4cc768996b6f621d6424a7059c8571c8faa2489c55218c4e AS dirctl
+
+# dir-mcp (only fetched when referenced by agent-with-dirctl). Replaces `dirctl mcp serve`,
+# which was removed from dirctl; v1.3.8-mcp.1 is the latest dir-mcp release.
+FROM ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1@sha256:175ac3acec89488451617ba1f3b80b54a8e31fa36fe940971bdb8157de89ada8 AS dirmcp
 
 # common base
 # SLIM v0.7+ requires debian trixie distribution
@@ -81,7 +85,8 @@ FROM base AS agent
 # Build with: docker build --target agent-with-dirctl ...
 FROM base AS agent-with-dirctl
 
-COPY --from=dirctl /dirctl /usr/local/bin/dirctl
+COPY --from=dirctl /usr/local/bin/dirctl /usr/local/bin/dirctl
+COPY --from=dirmcp /mcp-server /usr/local/bin/dir-mcp
 
 EXPOSE 8881
 ENV ENABLE_HTTP=true

@@ -6,36 +6,21 @@
   "description": "An AI agent that supervises and routes coffee flavor requests to the farm agent.",
   "domains": [
     {
-      "id": 1502.0,
+      "id": 1502,
       "name": "hospitality_and_tourism/food_and_beverage"
     }
   ],
-  "schema_version": "0.8.0",
+  "schema_version": "1.1.0",
   "name": "Exchange Supervisor agent",
   "skills": [
     {
-      "id": 1004.0,
-      "name": "agent_orchestration/agent_coordination"
+      "id": 70901,
+      "name": "ai_ml_engineering/agent_orchestration/multi_agent_coordination"
     }
   ],
   "modules": [
     {
       "data": {
-        "transports": [
-          "http"
-        ],
-        "capabilities": [
-          "streaming"
-        ],
-        "output_modes": [
-          "text/html",
-          "application/json"
-        ],
-        "protocol_version": "0.3.0",
-        "input_modes": [
-          "text/plain",
-          "application/json"
-        ],
         "card_data": {
           "preferredTransport": "JSONRPC",
           "capabilities": {
@@ -83,9 +68,7 @@
           "securitySchemes": null,
           "additionalInterfaces": null
         },
-        "security_schemes": [
-          "none"
-        ]
+        "card_schema_version": "v1.0.0"
       },
       "name": "integration/a2a"
     }

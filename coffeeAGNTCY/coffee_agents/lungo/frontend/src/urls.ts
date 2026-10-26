@@ -83,7 +83,7 @@ export const LUNGO_FRONTEND_URLS = {
 
   /** Non-URL values resolved from Vite env (version labels, branch names, etc.). */
   configDefaults: {
-    directoryVersion: "v1.0.0",
+    directoryVersion: "v1.8.0",
     agenticWorkflowsDocsGithubBranch: "main",
   } as const,
 

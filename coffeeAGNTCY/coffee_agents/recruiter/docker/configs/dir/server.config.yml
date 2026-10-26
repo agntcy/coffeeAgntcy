@@ -1,0 +1,10 @@
+# Mounted at /etc/agntcy/dir/server.config.yml.
+# Other settings come from apiserver.env.
+# Validates records on push, autosync and index against the pinned OASF server
+# (see oasf-server in the compose file), not the public schema server.
+policy:
+  operations:
+    - provider: oasf
+      op: ["push", "autosync", "index"]
+      name: schema
+      schema_url: "http://oasf-server:8080"
