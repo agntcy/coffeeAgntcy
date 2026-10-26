@@ -43,11 +43,6 @@ ENV UV_CACHE_DIR=/root/.cache/uv
 
 ENV PYTHONUNBUFFERED=1
 
-# git is required to resolve git-sourced dependencies (e.g. google-adk in lungo)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
-    && rm -rf /var/lib/apt/lists/*
-
 # Install dependencies (project source excluded for better layer caching)
 COPY ${PROJECT_PATH}/uv.lock ${PROJECT_PATH}/pyproject.toml ./
 RUN --mount=type=cache,id=${UV_CACHE_ID}-uv,target=/root/.cache/uv \
