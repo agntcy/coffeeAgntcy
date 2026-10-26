@@ -3,17 +3,14 @@
 
 import logging
 
+from a2a.helpers import new_text_message
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.types import (
+from a2a.utils.errors import (
     ContentTypeNotSupportedError,
     InternalError,
-    JSONRPCResponse,
-    Task,
     UnsupportedOperationError,
 )
-from a2a.utils import new_agent_text_message
-from a2a.utils.errors import ServerError
 from farm.agent import FarmAgent
 
 logger = logging.getLogger("corto.farm_agent.a2a_executor")
@@ -33,23 +30,21 @@ class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
         self.agent = FarmAgent()
 
-    def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
+    def _validate_request(self, context: RequestContext) -> None:
         """
         Validates the incoming request context.
 
         Ensures that the context contains a valid message with content parts.
-        If the request is invalid, returns an appropriate JSON-RPC error response.
 
         Args:
             context (RequestContext): The incoming request context to validate.
 
-        Returns:
-            JSONRPCResponse | None: An error response if validation fails, otherwise None.
+        Raises:
+            ContentTypeNotSupportedError: If the request has no message parts.
         """
         if not context or not context.message or not context.message.parts:
             logger.error("Invalid request parameters: %s", context)
-            return JSONRPCResponse(error=ContentTypeNotSupportedError())
-        return None
+            raise ContentTypeNotSupportedError()
 
     async def execute(
         self,
@@ -60,29 +55,27 @@ class FarmAgentExecutor(AgentExecutor):
         Processes a user prompt to generate a coffee flavor profile via the FarmAgent.
 
         This method extracts the user prompt from the request context, invokes the FarmAgent
-        asynchronously to get a flavor profile, and publishes the result as an event.
-        If the prompt is invalid or processing fails, it returns an error message.
+        asynchronously to get a flavor profile, and publishes the result as a single final
+        message. If the prompt is invalid or processing fails, it returns an error message.
 
         Args:
             context (RequestContext): The request context containing message metadata.
             event_queue (EventQueue): The queue used to emit events (messages).
 
         Raises:
-            ServerError: If an unexpected error occurs during flavor generation.
+            ContentTypeNotSupportedError: If the request has no message parts.
+            InternalError: If an unexpected error occurs during flavor generation.
         """
 
         logger.info("Received message request: %s", context.message)
 
-        validation_error = self._validate_request(context)
-        if validation_error:
-            await event_queue.enqueue_event(validation_error)
-            return
+        self._validate_request(context)
 
         prompt = context.get_user_input()
         if not prompt:
             logger.warning("Empty or missing prompt in user input.")
             await event_queue.enqueue_event(
-                new_agent_text_message("No valid input prompt provided.")
+                new_text_message("No valid input prompt provided.")
             )
             return
 
@@ -93,7 +86,7 @@ class FarmAgentExecutor(AgentExecutor):
                 and output.get("error_message") != ""
             ):
                 logger.error("Error in agent response: %s", output.get("error_message"))
-                message = new_agent_text_message(
+                message = new_text_message(
                     output.get("error_message", "Failed to generate flavor profile"),
                 )
                 await event_queue.enqueue_event(message)
@@ -101,16 +94,14 @@ class FarmAgentExecutor(AgentExecutor):
 
             flavor = output.get("flavor_notes", "No flavor profile returned")
             logger.info("Flavor profile generated: %s", flavor)
-            await event_queue.enqueue_event(new_agent_text_message(flavor))
+            await event_queue.enqueue_event(new_text_message(flavor))
         except Exception as e:
             logger.error(
                 f"An error occurred while streaming the flavor profile response: {e}"
             )
-            raise ServerError(error=InternalError()) from e
+            raise InternalError() from e
 
-    async def cancel(
-        self, request: RequestContext, event_queue: EventQueue
-    ) -> Task | None:
+    async def cancel(self, request: RequestContext, event_queue: EventQueue) -> None:
         """
         Cancel this agent's execution for the given request context.
 
@@ -119,6 +110,6 @@ class FarmAgentExecutor(AgentExecutor):
             event_queue (EventQueue): The event queue to potentially emit cancellation events.
 
         Raises:
-            ServerError: Always raised due to unsupported operation.
+            UnsupportedOperationError: Always raised due to unsupported operation.
         """
-        raise ServerError(error=UnsupportedOperationError())
+        raise UnsupportedOperationError()

@@ -19,7 +19,8 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
     ports:
@@ -35,13 +36,12 @@ services:
       - "8222:8222"
 
   slim:
-    image: ghcr.io/agntcy/slim:1.4.0@sha256:7a7531cb81f1e24682f08364713da06a158411df3e90b687acf8d5836da5a78e
+    image: ghcr.io/agntcy/slim:2.2.0@sha256:0d329cc438d4bbc6695917a94a59b8cb8d8c137dc59124357483dd709c677ba7
     container_name: slim-corto
     ports:
       - "46357:46357"
     environment:
-      - PASSWORD=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
-      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      # The server does not authenticate peers (see server-config.yaml); the shared secret lives in the clients.
       - CONFIG_PATH=/config.yaml
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
@@ -69,7 +69,7 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
-      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - SLIM_SERVER=${SLIM_SERVER}
       - NATS_SERVER=${NATS_SERVER}
     depends_on:

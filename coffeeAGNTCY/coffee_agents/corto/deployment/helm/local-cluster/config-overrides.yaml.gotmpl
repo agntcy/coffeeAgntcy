@@ -5,6 +5,9 @@
 
 {{- $cortoTargets := list "corto-farm" "corto-exchange" -}}
 
+{{- /* SLIM_ALLOW_PLACEHOLDER_SECRET: same truthy set as config.py; unset or empty stays true, like compose. */ -}}
+{{- $allowPlaceholder := has (env "SLIM_ALLOW_PLACEHOLDER_SECRET" | default "true" | trim | lower) (list "true" "1" "yes") -}}
+
 {{- range $name := $cortoTargets }}
 {{ $name }}:
   environment: local
@@ -20,6 +23,10 @@
     defaultMessageTransport: "SLIM"
     slimServer: "corto-local-cluster-slim:46357"
     natsServer: "corto-local-cluster-nats:4222"
+    {{- if eq $name "corto-farm" }}
+    {{- /* Local cluster only: SLIM_SHARED_SECRET may be the app-sdk placeholder (see localExternalSecret). */}}
+    slimAllowPlaceholderSecret: {{ $allowPlaceholder }}
+    {{- end }}
   externalSecrets:
     secretStoreName: local-secret-store
     secretStoreKind: ClusterSecretStore
@@ -36,4 +43,7 @@
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
-  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}
+  # Local development only. SLIM 2.x clients reject secrets shorter than 32 characters. The default is the
+  # public placeholder of the app-sdk (agntcy_app_sdk PLACEHOLDER_SHARED_SECRET), which the SDK logs a warning for and
+  # accepts only because the farm above gets slimAllowPlaceholderSecret: true (the default).
+  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}

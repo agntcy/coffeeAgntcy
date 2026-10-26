@@ -52,7 +52,7 @@ flowchart LR
     UI --> API
     API --> EX
     EX -->|A2A client call| SDK
-    SDK -->|card.preferred_transport=slim| SLIM
+    SDK -->|first supported interface: slim| SLIM
     SLIM -->|routable name| FARM_CARD
     FARM_CARD --> FARM
     EX -->|decide relevance / compose reply| LLM
@@ -63,8 +63,8 @@ The runtime path is intentionally small:
 
 1. The UI sends a prompt to the Exchange API.
 2. The Exchange agent calls an LLM (via LiteLLM, configured by `LLM_MODEL`) to decide whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
-3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the transport named in `card.preferred_transport` (`slim` by default).
-4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, whose LangGraph node (`farm/agent.py`) calls the same configured LLM to generate the flavor profile.
+3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the first entry of `card.supported_interfaces` (`slim` by default).
+4. The farm server advertises every transport it supports on its `AgentCard.supported_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, whose LangGraph node (`farm/agent.py`) calls the same configured LLM to generate the flavor profile.
 
 This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport - see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
 
@@ -78,14 +78,14 @@ Corto uses one point-to-point A2A route between the Exchange client and the Farm
 
 The topic wiring lives on the farm's `AgentCard` in `farm/card.py`, not behind a shared protocol helper:
 
-- `SLIM_TOPIC = f"default/default/{AGENT_ID}"` (`AGENT_ID = "flavor-profile-farm-agent"`) is used to build the `slim://` and `nats://` URLs in `additional_interfaces`, and `preferred_transport="slim"` marks SLIM as the primary transport.
+- `SLIM_TOPIC = f"default/default/{AGENT_ID}"` (`AGENT_ID = "flavor-profile-farm-agent"`) is used to build the `slim://` and `nats://` URLs in `supported_interfaces`; SLIM is listed first, which marks it as the preferred transport.
 - `exchange/agent.py` imports that same `AGENT_CARD` directly (`from farm.card import AGENT_CARD as farm_agent_card`) rather than deriving the topic separately.
 - The Exchange's own `SlimTransportConfig` is given a routable `name` in `org/namespace/local_name` form (`common/a2a_transport_config.py`: `name=f"{namespace}/{group}/{agent_name}"`, e.g. `default/default/exchange`) because SLIM requires one for request-reply delivery.
 
 There are two deployment modes, selected by `farm/farm_server.py`'s `main()`:
 
-- `DEFAULT_MESSAGE_TRANSPORT=A2A`: the farm is served directly over local HTTP via `A2AStarletteApplication`, bypassing the App SDK entirely.
-- Any other value (`SLIM` by default): `serve_multi_transport()` starts one App SDK session per interface in `AGENT_CARD.additional_interfaces` (`slim`, `jsonrpc`, `nats`). A startup failure on the card's `preferred_transport` is fatal; failures on the other transports are logged and skipped so the farm still comes up on whatever is healthy.
+- `DEFAULT_MESSAGE_TRANSPORT=A2A`: the farm is served directly over local HTTP via the App SDK's `A2AServerConfig(...).build_app()`, without a transport session.
+- Any other value (`SLIM` by default): `serve_multi_transport()` starts one App SDK session per interface in `AGENT_CARD.supported_interfaces` (`slim`, `jsonrpc`, `nats`). A startup failure on the preferred (first) interface is fatal; failures on the other transports are logged and skipped so the farm still comes up on whatever is healthy.
 
 ## Where App SDK Fits
 
@@ -270,10 +270,15 @@ OTLP_HTTP_ENDPOINT="http://localhost:4318"
    ```env
    DEFAULT_MESSAGE_TRANSPORT=slim
    TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
+   SLIM_SHARED_SECRET=<random-string-of-at-least-32-characters>
+   SLIM_ALLOW_PLACEHOLDER_SECRET=false
    ```
 
    - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.
    - `TRANSPORT_SERVER_ENDPOINT`: The gateway or server endpoint for the specified transport.
+   - `SLIM_SHARED_SECRET`: Secret the SLIM peers (farm and exchange) use to authenticate each other; the SLIM server itself does not check it. At least 32 characters, the same value for every peer.
+   - `SLIM_ALLOW_PLACEHOLDER_SECRET`: Local development only. When `SLIM_SHARED_SECRET` is unset, empty or the app-sdk placeholder, the farm refuses to start its SLIM interface unless this is `true`; with it the farm uses the public placeholder and logs a warning. Defaults to `false` in code; Docker Compose, `.env.example` and the Helm `local-cluster` set it to `true`, the `farm` Helm chart leaves it `false`. The exchange does not read it: it keeps using the public placeholder after logging a warning, and its SLIM session fails if the farm uses a real secret.
+   - Upgrading an existing `.env`: an older `.env.example` set `SLIM_SHARED_SECRET=slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS`. The farm and exchange still accept that value without `SLIM_ALLOW_PLACEHOLDER_SECRET`, because it is not the app-sdk placeholder, so it is fine for the local demo. It is public, though: if you use corto beyond a demo, replace it with your own random secret of at least 32 characters.
 
    For a list of supported protocols and implementation details, see the [Agntcy App SDK README](https://github.com/agntcy/app-sdk). This SDK provides the underlying interfaces for building communication bridges and agent clients.
 

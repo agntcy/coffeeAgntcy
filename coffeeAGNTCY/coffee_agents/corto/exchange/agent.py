@@ -5,8 +5,10 @@ import asyncio
 import logging
 from uuid import uuid4
 
-from a2a.types import Message, Part, Role, TextPart
+from a2a.helpers import get_message_text
+from a2a.types import Message, Part, Role, SendMessageRequest
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
+from common.a2a_helpers import response_message
 from common.a2a_transport_config import build_a2a_client_config
 from common.llm import get_llm
 from exchange.errors import (
@@ -63,33 +65,36 @@ _A2A_BACKOFF_BASE = 2
 
 def _build_message(prompt: str) -> Message:
     return Message(
-        messageId=str(uuid4()),
-        role=Role.user,
-        parts=[Part(root=TextPart(text=prompt))],
+        message_id=str(uuid4()),
+        role=Role.ROLE_USER,
+        parts=[Part(text=prompt)],
     )
 
 
 def _extract_text_from_events(events: list) -> str | None:
+    """Text of the last event whose message (direct or task status) has text."""
     result_text = None
     for event in events:
-        if isinstance(event, Message):
-            for part in event.parts:
-                if hasattr(part.root, "text"):
-                    result_text = part.root.text
-        elif isinstance(event, tuple):
-            task, _update = event
-            if hasattr(task, "status") and task.status and task.status.message:
-                for part in task.status.message.parts:
-                    if hasattr(part.root, "text"):
-                        result_text = part.root.text
+        message = response_message(event)
+        if message is None:
+            continue
+        text = get_message_text(message)
+        if text:
+            result_text = text
     return result_text
 
 
 async def _send_a2a_with_retry(client, message: Message):
+    """Send ``message`` and collect the reply stream.
+
+    The a2a-sdk 1.x client.send_message() takes a SendMessageRequest and returns an
+    AsyncIterator of StreamResponse.
+    """
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
             events = []
-            async for event in client.send_message(message):
+            request = SendMessageRequest(message=message)
+            async for event in client.send_message(request):
                 events.append(event)
 
             if events:
