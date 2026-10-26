@@ -34,12 +34,17 @@
   "workflowApiKey" (env "WORKFLOW_API_KEY" | default "TheAnswerIs42")
 ) -}}
 
+{{- /* SLIM_ALLOW_PLACEHOLDER_SECRET: same truthy set as config.py; unset or empty stays true, like compose. */ -}}
+{{- $allowPlaceholder := has (env "SLIM_ALLOW_PLACEHOLDER_SECRET" | default "true" | trim | lower) (list "true" "1" "yes") -}}
+
 {{- /* Auction targets: merge shared + NATS into one config block */ -}}
 {{- range $name := $auctionTargets }}
 {{- $cfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
 {{- if eq $name "colombia-farm" }}
 {{- $cfg = merge $cfg (deepCopy $workflowApi.config) }}
 {{- end }}
+{{- /* Local cluster only: SLIM_SHARED_SECRET may be the app-sdk placeholder (see localExternalSecret). */ -}}
+{{- $_ := set $cfg "slimAllowPlaceholderSecret" $allowPlaceholder }}
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
@@ -60,6 +65,7 @@
 {{- /* Logistics targets: merge shared + SLIM into one config block */ -}}
 {{- range $name := $logisticsTargets }}
 {{- $cfg := merge (deepCopy $shared.config) (deepCopy $slim.config) }}
+{{- $_ := set $cfg "slimAllowPlaceholderSecret" $allowPlaceholder }}
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
@@ -134,6 +140,26 @@ recruiter:
           key: my-local-secret
           property: SLIM_SHARED_SECRET
 
+weather-mcp-server:
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
+
+payment-mcp-server:
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
+
 agentic-workflows-api:
   environment: local
 
@@ -157,5 +183,8 @@ recruiter-supervisor:
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
-  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "dummy_password" | quote }}
+  # Local development only. SLIM 2.x clients reject secrets shorter than 32 characters. The default is the
+  # public placeholder of the app-sdk (agntcy_app_sdk PLACEHOLDER_SHARED_SECRET), which the SDK logs a warning for and
+  # accepts only because the farm and logistics agents above get slimAllowPlaceholderSecret: true (the default).
+  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}
 

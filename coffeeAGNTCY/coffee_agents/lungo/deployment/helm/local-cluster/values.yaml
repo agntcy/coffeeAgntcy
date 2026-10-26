@@ -16,13 +16,18 @@ clickhouse:
     tag: 25.7.5-debian-12-r0
     pullPolicy: IfNotPresent
 
+slim:
+  slim:
+    image:
+      # Chart v2.2.0 defaults to appVersion 2.3.0.
+      tag: "2.2.0"
+
 weather-mcp-server:
   transportServerEndpoint: "nats://lungo-local-cluster-nats:4222"
   defaultMessageTransport: "NATS"
   slimServer: "lungo-local-cluster-slim:46357"
   natsServer: "lungo-local-cluster-nats:4222"
-  # Set via CI/helmfile or leave empty if using image default from config.config for dev only.
-  slimSharedSecret: "dummy_password" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
+  # SLIM_SHARED_SECRET comes from my-local-secret through externalSecrets (config-overrides.yaml.gotmpl).
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
 agentic-workflows-api:
@@ -76,4 +81,4 @@ lungo-ui:
 # Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
 localExternalSecret:
   azureApiKey: ""
-  slimSharedSecret: "dummy_password"
+  slimSharedSecret: "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"

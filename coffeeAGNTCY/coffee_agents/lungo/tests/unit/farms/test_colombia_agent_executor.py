@@ -8,12 +8,24 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+from a2a.types import Message, Part, Role
 
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
 
 
 def _context(metadata):
-    return SimpleNamespace(message=SimpleNamespace(metadata=metadata))
+    """Request-context stand-in carrying a real a2a-sdk 1.x Message.
+
+    ``Message.metadata`` is a protobuf ``Struct``, not a dict, so this is the
+    shape the executor receives at runtime.
+    """
+    message = Message(
+        message_id="m1",
+        role=Role.ROLE_USER,
+        parts=[Part(text="hi")],
+        metadata=metadata,
+    )
+    return SimpleNamespace(message=message)
 
 
 @pytest.mark.parametrize(
@@ -29,15 +41,14 @@ def _context(metadata):
             ),
             ("Auction", "instance://abc"),
         ),
-        ("name_only", _context({"workflow_name": "Auction"}), ("Auction", None)),
+        ("name_only", _context({"workflow_name": "w"}), ("w", None)),
         (
             "instance_only",
             _context({"workflow_instance_id": "instance://abc"}),
             (None, "instance://abc"),
         ),
         ("empty_metadata", _context({}), (None, None)),
-        ("metadata_none", _context(None), (None, None)),
-        ("metadata_not_dict", _context("oops"), (None, None)),
+        ("metadata_unset", _context(None), (None, None)),
         (
             "non_string_values",
             _context({"workflow_name": 123, "workflow_instance_id": 456}),

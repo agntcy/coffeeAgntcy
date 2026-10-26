@@ -11,16 +11,16 @@ In the current codebase, “registering a farm” means that the supervisor can 
 ## Supervisor-Side Registration and Messaging
 
 Supervisor updates:
-- `agents/supervisors/auction/graph/tools.py`:
-  - Import the new farm `AGENT_CARD`.
-  - Update `get_farm_card()`.
-  - Add the farm to the broadcast recipients list in `get_all_farms_yield_inventory()` and `get_all_farms_yield_inventory_streaming()`.
+- `agents/supervisors/auction/graph/shared.py`:
+  - Import the new farm `AGENT_CARD` and add one `farm_registry.register("<slug>", <card>)` call. `get_farm_card()` and the broadcast recipients lists in `get_all_farms_yield_inventory()` and `get_all_farms_yield_inventory_streaming()` are built from this registry.
 - `agents/supervisors/auction/graph/graph.py`:
-  - Add the farm to supervisor-side routing (single-farm detection and the list of known farms).
+  - Check the supervisor-side routing prompt (single-farm detection and the list of known farms).
 
-Messaging:
-- Unicast: send to `A2AProtocol.create_agent_topic(AgentCard)`.
-- Broadcast: send on `FARM_BROADCAST_TOPIC` with a recipients list.
+Messaging (A2A 1.x, through the app-sdk A2A client factory):
+- Unicast: yield lookup and `create_order` call `prefer_transport(card, DEFAULT_MESSAGE_TRANSPORT)` on the target farm card (`common/a2a_helpers.py`), create a client, and send a `SendMessageRequest(message=...)`. `get_order_details` is the exception: it calls `prefer_transport(farm_registry.cards()[0], InterfaceTransport.SLIM)`, so that lookup stays on SLIM during a NATS run and uses the first registered farm card. The factory negotiates the connection in the order of the card's `supported_interfaces`.
+- Broadcast: the supervisor calls `broadcast_message(request, recipients=[...])` on a client created from any registered farm card. A farm that fails or never answers is reported through `A2ABroadcastError`; the successful replies are kept.
+
+> **Deprecated:** `A2AProtocol.create_agent_topic(AgentCard)` for unicast and a `FARM_BROADCAST_TOPIC` topic for broadcast. The current supervisor code uses neither (the app-sdk moved topic creation away from `A2AProtocol` in 0.5.0), so do not use them in new farms.
 
 ### 1) Transport & Routing Config
 
@@ -31,49 +31,104 @@ The supervisor uses these environment variables (see `config/config.py`):
 DEFAULT_MESSAGE_TRANSPORT=SLIM               # or NATS
 SLIM_SERVER=127.0.0.1:46357                  # host:port for SLIM dataplane (no http://)
 NATS_SERVER=127.0.0.1:4222                   # host:port for NATS (cards use nats://{NATS_SERVER}/...)
-SLIM_SHARED_SECRET=my_shared_secret_for_mls
+SLIM_SHARED_SECRET=<random-string-of-at-least-32-characters>  # same value for every SLIM peer
+SLIM_ALLOW_PLACEHOLDER_SECRET=false          # true: farm servers may start SLIM with the public placeholder (local only)
 # Legacy / secondary (tooling, some docs); keep aligned with the mode above
 TRANSPORT_SERVER_ENDPOINT=http://127.0.0.1:46357   # or nats://127.0.0.1:4222 when using NATS
-FARM_BROADCAST_TOPIC=farm_broadcast_topic_name
+FARM_BROADCAST_TOPIC=farm_broadcast_topic_name     # deprecated: not read by the current supervisor code
 ```
+
+SLIM 2.x rejects shared secrets shorter than 32 characters. The app-sdk takes the secret from the value passed in code, else from `SLIM_SHARED_SECRET`, else from a public placeholder with a warning in the log (`resolve_shared_secret()`). The supervisors (`SlimTransportConfig`) accept the placeholder. The farm servers (`CardBuilder`) refuse to start their SLIM interface when the secret is unset, empty or the placeholder, unless `SLIM_ALLOW_PLACEHOLDER_SECRET` is `true` (`common/slim_placeholder_secret.py`); Docker Compose and the Helm `local-cluster` set it for local demos. The placeholder is public: set your own random value of at least 32 characters, the same for every SLIM peer.
 
 ### 2) An AgentCard for the Farm
 
-Each farm is represented by an `AgentCard` (see current examples under `agents/farms/<farm>/card.py`).
+Each farm is represented by an `a2a.types.AgentCard` (A2A 1.x, a protobuf message; see current examples under `agents/farms/<farm>/card.py`).
 
 Minimum fields you should provide:
 
-- **`name`**: a stable, human-readable name (e.g., `Kenya Coffee Farm`).
-- **`id`**: a stable, unique ID (see existing `*-farm-agent` IDs).
+- **`name`**: a stable, human-readable name (e.g., `Kenya Coffee Farm`). It is also the display name the supervisor uses in answers and the name the identity check matches.
 - **`description`**: a brief description of what the farm can do.
 - **`version`**: the card version.
-- **`defaultInputModes`** / **`defaultOutputModes`**: `"text"`.
-- **`capabilities`**: e.g., streaming.
-- **`skills`**: at least an “inventory/yield” skill.
+- **`default_input_modes`** / **`default_output_modes`**: `["text"]`.
+- **`capabilities`**: e.g., `AgentCapabilities(streaming=True)`.
+- **`skills`**: at least an “inventory/yield” skill (`AgentSkill(id=...)` keeps its own `id`).
+- **`supported_interfaces`**: an ordered list of `AgentInterface(protocol_binding=..., url=...)`. The order is the preference order: clients negotiate in this order, and the farm server treats the first entry as its required (preferred) transport. Use the `InterfaceTransport` constants from `agntcy_app_sdk.semantic.a2a.transport_types`:
+  - `InterfaceTransport.SLIM_PATTERNS` with `slim://{SLIM_SERVER}/lungo/agents/<agent_id>`
+  - `InterfaceTransport.NATS_PATTERNS` with `nats://{NATS_SERVER}/lungo/agents/<agent_id>`
+  - `InterfaceTransport.JSONRPC` with `http://0.0.0.0:{PORT}` (the bind address of the HTTP endpoint)
+
+Example (shortened from `agents/farms/brazil/card.py`):
+
+```python
+AGENT_CARD = AgentCard(
+    name="Kenya Coffee Farm",
+    description="An AI agent that returns the yield of coffee beans in pounds for the Kenya farm.",
+    version="1.0.0",
+    default_input_modes=["text"],
+    default_output_modes=["text"],
+    capabilities=AgentCapabilities(streaming=True),
+    skills=[AGENT_SKILL],
+    supported_interfaces=[
+        AgentInterface(protocol_binding=InterfaceTransport.SLIM_PATTERNS, url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(protocol_binding=InterfaceTransport.NATS_PATTERNS, url=f"nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(protocol_binding=InterfaceTransport.JSONRPC, url=f"http://0.0.0.0:{PORT}"),
+    ],
+)
+```
+
+Card fields from A2A v0.3 that no longer exist (**deprecated, do not set them**):
+
+| Old field (A2A v0.3) | Replacement (A2A 1.x) |
+|---|---|
+| `id` (stable card ID) | none; use `name`. Only `AgentSkill(id=...)` still has an `id` |
+| `url` | the `url` of the first `supported_interfaces` entry |
+| `preferred_transport` | the first entry of `supported_interfaces` |
+| `additional_interfaces` / `AgentInterface(transport=...)` | the rest of `supported_interfaces` / `AgentInterface(protocol_binding=...)` |
+| `defaultInputModes` / `defaultOutputModes` | `default_input_modes` / `default_output_modes` |
+| `supportsAuthenticatedExtendedCard` | removed from the card |
+| lowercase transport strings (`"slim"`, `"nats"`, `"jsonrpc"`) | `InterfaceTransport` constants (`SLIM_PATTERNS`, `NATS_PATTERNS`, `JSONRPC`) |
+
+The OASF records under `agents/**/oasf/` are still written in the A2A v0.3 card shape (`url`, `preferredTransport`, `additionalInterfaces`) on purpose: the recruiter and the frontend read that shape.
 
 The supervisor currently expects new farms to be wired into:
 
 - A new card module: `agents/farms/<new_farm>/card.py` exporting `AGENT_CARD`.
-- Import the new farm card in `agents/supervisors/auction/graph/tools.py` and add it to `get_farm_card()`.
-- The broadcast recipients list in `agents/supervisors/auction/graph/tools.py` (see the `farm_names = [...]` list used by `get_all_farms_yield_inventory()` / `get_all_farms_yield_inventory_streaming()`).
+- The farm registry in `agents/supervisors/auction/graph/shared.py` (one `farm_registry.register(...)` call; `get_farm_card()` and the broadcast recipients are derived from it).
 - The supervisor router in `agents/supervisors/auction/graph/graph.py` (the `_supervisor_node` prompt currently hard-codes the known farms: Brazil, Colombia, Vietnam).
 
-### 3) Farm A2A Server (Topics + Reply Contract)
+### 3) Farm A2A Server (Interfaces + Reply Contract)
 
 Your farm runs an A2A server (see existing `agents/farms/<farm>/farm_server.py`) that:
 
-- Accepts A2A `SendMessageRequest` requests.
-- Replies with a response whose first part is text (`result.parts[0].text`).
-- Subscribes to both of these transport topics (two `AppContainer`s in a single app session):
-  - **Unicast (personal)**: `A2AProtocol.create_agent_topic(AGENT_CARD)`
-  - **Broadcast**: `FARM_BROADCAST_TOPIC`
+- Builds a `DefaultRequestHandler(agent_executor=..., task_store=InMemoryTaskStore(), agent_card=AGENT_CARD)`. The `agent_card` argument is required in a2a-sdk 1.x.
+- Serves every entry of the card's `supported_interfaces`, each in its own app-sdk session (`session.add_a2a_card(card, handler)`), so one unavailable transport (for example NATS) cannot stop the others. A startup failure on the first, preferred interface is fatal; failures on the others are logged and skipped.
+- Also answers A2A v0.3 JSON-RPC calls on its HTTP endpoint (`A2AServerConfig(..., enable_v0_3_compat=True)` through `builder.override("jsonrpc", ...)`, with a `clone_card(AGENT_CARD)` so the module card is not edited), because the recruiter interviewer still speaks v0.3. The logistics servers (`agents/logistics/*/server.py`) do not do this: their cards advertise SLIM only, their HTTP port serves `/v1/health` and the card, and nothing calls their JSON-RPC over HTTP, so their HTTP JSON-RPC is A2A v1.0 only (the pre-migration app also answered v0.3 there).
+- Replies with exactly one final `Message` (see below). Do not return a `Task`: in a2a-sdk 1.x an executor that enqueues a `Message` must not enqueue anything else afterwards.
 
 In practice, the supervisor sends:
 
-- **Unicast** requests to the personal topic when querying a single farm.
-- **Broadcast** requests on `FARM_BROADCAST_TOPIC` when querying all farms (the broadcast includes an explicit recipients list of farm personal topics).
+- **Unicast** requests to one farm's card when querying a single farm.
+- **Broadcast** requests with a `recipients` list (one identifier per registered farm) when querying all farms.
 
-The supervisor currently expects responses to be in **plain text**.
+The supervisor currently expects responses to be in **plain text**, in the first text part of the reply message.
+
+The reply is built like this (see `agents/farms/<farm>/agent_executor.py`):
+
+```python
+from a2a.types import Message, Part, Role
+
+message = Message(
+    message_id=str(uuid4()),
+    role=Role.ROLE_AGENT,
+    metadata={"name": AGENT_CARD.name},   # the supervisor reads the farm name from here
+    parts=[Part(text=output)],
+)
+await event_queue.enqueue_event(message)
+```
+
+Errors are raised, not returned as text: use `ContentTypeNotSupportedError`, `InternalError` and `UnsupportedOperationError` from `a2a.utils.errors`.
+
+> **Deprecated (A2A v0.3 shapes, do not use):** `new_agent_text_message(...)` / `new_task(...)` with `TaskStatusUpdateEvent` and `TextPart` replies, enum values such as `Role.agent` and `TaskState.completed` (now `Role.ROLE_AGENT`, `TaskState.TASK_STATE_COMPLETED`), reading the reply as `result.parts[0].text` (now `get_message_text(message)` from `a2a.helpers`, or `response_text(response)` from `common/a2a_helpers.py`), and a plain-dict `metadata` on the received message (it is a protobuf `Struct` now; use `message_metadata(message)` from `common/a2a_helpers.py`).
 
 If you have identity verification enabled, the supervisor verifies identity by matching the farm's identity app name against `AgentCard.name` (see `verify_farm_identity()` in `agents/supervisors/auction/graph/tools.py`).
 

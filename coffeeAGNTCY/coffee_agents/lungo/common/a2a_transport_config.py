@@ -26,10 +26,14 @@ def build_a2a_client_config(
     """
     Build ClientConfig for A2AClientFactory using SLIM_SERVER, NATS_SERVER (if enabled),
     and SLIM_SHARED_SECRET from the environment.
+
+    An unset or empty SLIM_SHARED_SECRET is not an error here: the app SDK resolves
+    the secret when the SLIM transport connects (explicit value, then the
+    SLIM_SHARED_SECRET variable, then its public placeholder with a warning). Only
+    the CardBuilder servers refuse the placeholder unless
+    SLIM_ALLOW_PLACEHOLDER_SECRET is set (common.slim_placeholder_secret).
     """
-    slim_shared_secret = os.getenv("SLIM_SHARED_SECRET")
-    if not slim_shared_secret:
-        raise ValueError("SLIM_SHARED_SECRET environment variable must be set")
+    slim_shared_secret = os.getenv("SLIM_SHARED_SECRET") or None
 
     # The per-request deadline is not part of SlimTransportConfig, so it has to be
     # applied to the transport class before the factory builds one from this config.

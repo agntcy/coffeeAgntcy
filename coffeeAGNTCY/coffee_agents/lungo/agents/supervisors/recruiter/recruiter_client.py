@@ -12,17 +12,17 @@ from uuid import NAMESPACE_DNS, UUID, uuid4, uuid5
 import httpx
 from pydantic import ValidationError
 from a2a.client import ClientConfig, ClientFactory
+from a2a.helpers import new_data_part
 from a2a.types import (
-    AgentCard,
-    DataPart,
     Message,
     Part,
     Role,
-    Task,
+    SendMessageRequest,
+    StreamResponse,
     TaskState,
     TaskStatusUpdateEvent,
-    TextPart,
 )
+from google.protobuf.json_format import MessageToDict
 from google.adk.tools.tool_context import ToolContext
 
 from agents.supervisors.recruiter.models import (
@@ -33,6 +33,7 @@ from agents.supervisors.recruiter.models import (
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_CARD,
 )
+from common.a2a_helpers import message_metadata
 from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_context_prop import read_workflow_context
 from common.workflow_utils.builders import build_event, make_node
@@ -124,21 +125,45 @@ def _parse_dict_values(data: dict) -> dict[str, dict]:
     return result
 
 
+_INTEGER_FIELDS = frozenset({"id"})
+
+
+def _restore_known_ints(value, *, key: str | None = None):
+    """Restore schema-defined integer fields after a Struct round trip.
+
+    Data parts travel as ``google.protobuf.Struct``, which stores every number
+    as a double, so an OASF ``"id": 10201`` reads back as ``10201.0``. Only
+    keys listed in ``_INTEGER_FIELDS`` are converted back to ``int``; other
+    whole-valued floats (for example a ``score`` of ``1.0``) stay floats.
+    """
+    if isinstance(value, dict):
+        return {k: _restore_known_ints(v, key=k) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_restore_known_ints(v, key=key) for v in value]
+    if key in _INTEGER_FIELDS and isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
 def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
     """Extract text, agent records, and evaluation results from A2A message parts."""
     text = None
     agent_records: dict[str, dict] = {}
     evaluation_results: dict[str, dict] = {}
     for part in parts:
-        root = part.root
-        if isinstance(root, TextPart):
-            text = root.text
-        elif isinstance(root, DataPart):
-            meta_type = root.metadata.get("type") if root.metadata else None
+        which = part.WhichOneof("content")
+        if which == "text":
+            text = part.text
+        elif which == "data":
+            metadata = MessageToDict(part.metadata) if part.HasField("metadata") else {}
+            data = _restore_known_ints(MessageToDict(part.data))
+            if not isinstance(data, dict):
+                continue
+            meta_type = metadata.get("type")
             if meta_type == "found_agent_records":
-                agent_records = _parse_dict_values(root.data)
+                agent_records = _parse_dict_values(data)
             elif meta_type == "evaluation_results":
-                evaluation_results = _parse_dict_values(root.data)
+                evaluation_results = _parse_dict_values(data)
     return RecruitmentResponse(
         text=text,
         agent_records=agent_records,
@@ -251,34 +276,64 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     )
 
 
+_TERMINAL_STATES = frozenset(
+    {
+        TaskState.TASK_STATE_COMPLETED,
+        TaskState.TASK_STATE_FAILED,
+        TaskState.TASK_STATE_CANCELED,
+        TaskState.TASK_STATE_REJECTED,
+    }
+)
+
+
+async def _handle_stream_event(
+    event: StreamResponse, tool_name: str
+) -> RecruitmentResponse | None:
+    """Forward intermediate updates; return the parsed result once it arrives.
+
+    The result is the agent's ``Message``, or the status message of a task
+    (or status update) that reached ``TASK_STATE_COMPLETED``.
+    """
+    which = event.WhichOneof("payload")
+    if which == "message":
+        return _extract_parts(list(event.message.parts))
+    if which == "status_update":
+        await _forward_status_update(event.status_update, tool_name)
+        status = event.status_update.status
+    elif which == "task":
+        status = event.task.status
+    else:
+        return None
+    if status.state == TaskState.TASK_STATE_COMPLETED and status.HasField("message"):
+        return _extract_parts(list(status.message.parts))
+    return None
+
+
 async def _forward_status_update(update: TaskStatusUpdateEvent, tool_name: str) -> None:
     """Forward one intermediate A2A status update onto the side-channel queue.
 
-    Shared by recruit_agents and evaluate_agent: each non-final text status part
-    is republished as a ``status_update`` event for main.py's stream_generator
-    to drain in parallel.
+    Shared by recruit_agents and evaluate_agent: each text status part of a
+    non-terminal update is republished as a ``status_update`` event for
+    main.py's stream_generator to drain in parallel. (a2a-sdk 1.x dropped the
+    ``final`` flag; a terminal task state marks the last update.)
     """
-    if update.final or not update.status or not update.status.message:
+    if update.status.state in _TERMINAL_STATES or not update.status.HasField(
+        "message"
+    ):
         return
     message = update.status.message
-    for part in message.parts or []:
-        root = part.root
-        if not isinstance(root, TextPart) or not root.text:
+    metadata = message_metadata(message)
+    for part in message.parts:
+        if part.WhichOneof("content") != "text" or not part.text:
             continue
-        status_text = root.text
-        author = None
-        event_type = "a2a_status"
-        if message.metadata:
-            author = message.metadata.get("author") or message.metadata.get(
-                "from_agent"
-            )
-            event_type = message.metadata.get("event_type", "a2a_status")
+        status_text = part.text
+        author = metadata.get("author") or metadata.get("from_agent")
+        event_type = metadata.get("event_type", "a2a_status")
         logger.info(
-            "[tool:%s] A2A status: %s (state=%s, final=%s)",
+            "[tool:%s] A2A status: %s (state=%s)",
             tool_name,
             status_text[:120],
-            update.status.state if update.status else "?",
-            update.final,
+            TaskState.Name(update.status.state),
         )
         await _a2a_event_queue.put(
             {
@@ -317,32 +372,17 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
         client = factory.create(RECRUITER_AGENT_CARD)
 
         message = Message(
-            role=Role.user,
+            role=Role.ROLE_USER,
             message_id=str(uuid4()),
-            parts=[Part(root=TextPart(text=query))],
+            parts=[Part(text=query)],
         )
 
         response_data = RecruitmentResponse()
 
-        async for event in client.send_message(message):
-            # Streaming mode yields (Task, UpdateEvent) tuples
-            if isinstance(event, tuple) and len(event) == 2:
-                task, update = event
-
-                # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent):
-                    await _forward_status_update(update, "recruit_agents")
-
-                # Extract final result from completed task
-                if (
-                    isinstance(task, Task)
-                    and task.status
-                    and task.status.state == TaskState.completed
-                    and task.status.message
-                ):
-                    response_data = _extract_parts(task.status.message.parts)
-            elif isinstance(event, Message):
-                response_data = _extract_parts(event.parts)
+        async for event in client.send_message(SendMessageRequest(message=message)):
+            result = await _handle_stream_event(event, "recruit_agents")
+            if result is not None:
+                response_data = result
 
         # Signal that A2A streaming is done for this tool invocation
         await _a2a_event_queue.put(None)
@@ -449,25 +489,31 @@ async def evaluate_agent(
     # the agent_evaluator sub-agent on the remote side.
     single_agent_records = {cid: record}
 
+    # Known limitation, deliberately not worked around here: a data part is a
+    # protobuf Struct, which only stores doubles, and a2a-sdk's v1 -> v0.3 bridge
+    # (a2a/compat/v0_3/conversions.py, to_compat_part) serialises it with
+    # MessageToDict. So an OASF ``"id": 10201`` reaches the recruiter as
+    # ``10201.0``. We cannot repair it on the wire: the recruiter service only reads
+    # typed DataParts (a JSON text part would be ignored), and turning every whole
+    # float into an int here would corrupt genuine floats such as a score of 1.0
+    # (see _restore_known_ints for the inbound side, which only restores ``id``).
+    # Impact is cosmetic: the records end up as JSON text in LLM prompts. A real fix
+    # needs a schema-aware conversion in a2a-sdk's compat layer; see
+    # docs/recruiter_dynamic_workflow.md.
+    records_part = new_data_part(single_agent_records)
+    records_part.metadata.update({"type": "found_agent_records"})
     parts: list[Part] = [
         Part(
-            root=TextPart(
-                text=(
-                    f"Evaluate the agent '{agent_name}' using these criteria:\n\n"
-                    f"{query}"
-                )
+            text=(
+                f"Evaluate the agent '{agent_name}' using these criteria:\n\n"
+                f"{query}"
             )
         ),
-        Part(
-            root=DataPart(
-                data=single_agent_records,
-                metadata={"type": "found_agent_records"},
-            )
-        ),
+        records_part,
     ]
 
     message = Message(
-        role=Role.user,
+        role=Role.ROLE_USER,
         message_id=str(uuid4()),
         parts=parts,
     )
@@ -481,24 +527,10 @@ async def evaluate_agent(
         # See recruit_agents: no A2A topology middleware on the internal hop.
         client = factory.create(RECRUITER_AGENT_CARD)
 
-        async for event in client.send_message(message):
-            if isinstance(event, tuple) and len(event) == 2:
-                task, update = event
-
-                # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent):
-                    await _forward_status_update(update, "evaluate_agent")
-
-                # Extract final result from completed task
-                if (
-                    isinstance(task, Task)
-                    and task.status
-                    and task.status.state == TaskState.completed
-                    and task.status.message
-                ):
-                    response_data = _extract_parts(task.status.message.parts)
-            elif isinstance(event, Message):
-                response_data = _extract_parts(event.parts)
+        async for event in client.send_message(SendMessageRequest(message=message)):
+            result = await _handle_stream_event(event, "evaluate_agent")
+            if result is not None:
+                response_data = result
 
         # Signal that A2A streaming is done for this tool invocation
         await _a2a_event_queue.put(None)

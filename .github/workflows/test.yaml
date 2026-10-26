@@ -16,6 +16,8 @@ on:
       - '.github/workflows/test-reusable.yaml'
       - '.github/workflows/test-subprojects-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - '.github/actions/apply-container-overrides/**'
+      - '.github/actions/apply-uv-overrides/**'
       - '.dockerignore'
   pull_request:
     paths:
@@ -30,21 +32,23 @@ on:
       - '.github/workflows/test-reusable.yaml'
       - '.github/workflows/test-subprojects-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - '.github/actions/apply-container-overrides/**'
+      - '.github/actions/apply-uv-overrides/**'
       - '.dockerignore'
   workflow_call:
     inputs:
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: 'One-per-line PEP 508 specs to force (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: 'One-per-line constraints (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: 'One-per-line service=image[:tag] (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
@@ -66,17 +70,17 @@ on:
   workflow_dispatch:
     inputs:
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: 'One-per-line PEP 508 specs to force (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: 'One-per-line constraints (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: 'One-per-line service=image[:tag] (applied only if declared; prefix a line with corto:, lungo: or recruiter: to scope it to one demo).'
         required: false
         type: string
         default: ""
@@ -121,6 +125,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/corto
+      project_name: corto
       test_paths: tests --ignore=tests/integration/llm
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
@@ -147,6 +152,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/lungo
+      project_name: lungo
       test_paths: tests --ignore=tests/integration/llm
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
@@ -173,6 +179,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/recruiter
+      project_name: recruiter
       test_paths: tests --ignore=tests/integration/llm
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}

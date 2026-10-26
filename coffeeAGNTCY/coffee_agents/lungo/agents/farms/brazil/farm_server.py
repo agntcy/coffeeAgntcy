@@ -13,8 +13,14 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
 from agents.farms.brazil.agent_executor import FarmAgentExecutor
 from agents.farms.brazil.card import AGENT_CARD
+from agntcy_app_sdk import A2AServerConfig
 from agntcy_app_sdk.factory import AgntcyFactory
+from agntcy_app_sdk.semantic.a2a.card_utils import clone_card
 from agntcy_app_sdk.semantic.a2a.transport_types import normalize_transport
+from common.slim_placeholder_secret import (
+    apply_placeholder_secret_policy,
+    start_builder,
+)
 from config.config import OTEL_SDK_DISABLED
 from dotenv import load_dotenv
 
@@ -32,71 +38,70 @@ async def serve_all_a2a_interfaces(
 
     Each advertised interface is started in its own session so a broker that is
     unavailable at startup (e.g. NATS) cannot abort the others. A startup failure
-    on the card's ``preferred_transport`` is fatal; failures on any other transport
-    are logged and skipped so the agent still comes up on the transports that are
-    healthy.
-    The card's ``additional_interfaces`` typically include:
-    - **slimrpc** - point-to-point transport for direct client-agent communication
-    - **slim** - SLIM-based group messaging and pub/sub transport
-    - **nats** - NATS-based pub/sub transport for broadcasting to multiple subscribers
+    on the preferred transport (the first entry of ``supported_interfaces``) is
+    fatal; failures on any other transport are logged and skipped so the agent
+    still comes up on the transports that are healthy.
+    The card's ``supported_interfaces`` typically include:
+    - **slimpatterns** - SLIM-based group messaging and pub/sub transport
+    - **natspatterns** - NATS-based pub/sub transport for broadcasting to multiple subscribers
     - **jsonrpc** - JSON-RPC endpoint for direct client-agent communication over HTTP
 
-    The card's ``preferred_transport`` determines the primary ``url`` advertised
-    to callers.  The session is kept alive until the process is interrupted.
+    The HTTP JSON-RPC endpoint also accepts A2A v0.3 requests (``message/send``,
+    ``message/stream``) so v0.3 callers such as the recruiter interviewer keep
+    working. The session is kept alive until the process is interrupted.
 
     Args:
         request_handler: The A2A request handler wired to the
             :class:`FarmAgentExecutor` and an in-memory task store.
         agent_card: The ``AgentCard`` describing this agent's capabilities,
-            skills, and transport interfaces.
+            skills, and transport interfaces, ordered by preference.
     """
-    interfaces = agent_card.additional_interfaces or []
+    interfaces = list(agent_card.supported_interfaces)
     if not interfaces:
-        raise ValueError("agent_card.additional_interfaces is empty; nothing to serve")
+        raise ValueError("agent_card.supported_interfaces is empty; nothing to serve")
 
-    preferred = normalize_transport(agent_card.preferred_transport or "")
-    advertised = {normalize_transport(i.transport) for i in interfaces}
-    if preferred and preferred not in advertised:
-        logger.warning(
-            "preferred_transport %r is not advertised in additional_interfaces %s; "
-            "no transport will be treated as required at startup",
-            agent_card.preferred_transport,
-            sorted(advertised),
-        )
+    preferred = normalize_transport(interfaces[0].protocol_binding)
+    advertised = {normalize_transport(i.protocol_binding) for i in interfaces}
 
     started = []
     for interface in interfaces:
-        transport = normalize_transport(interface.transport)
-        is_preferred = bool(preferred) and transport == preferred
+        transport = normalize_transport(interface.protocol_binding)
+        is_preferred = transport == preferred
 
         # Serve only this interface in its own session; skipping the other
         # advertised transports keeps a single failing transport isolated.
         session = factory.create_app_session()
-        builder = session.add_a2a_card(agent_card, request_handler).with_factory(
-            factory
+        builder = apply_placeholder_secret_policy(
+            session.add_a2a_card(agent_card, request_handler).with_factory(factory)
         )
         for other in advertised - {transport}:
             builder = builder.skip(other)
+        if transport == "jsonrpc":
+            # The override gets its own copy: with identity auth on, the SDK
+            # edits the card it serves, which must not be the module card.
+            builder = builder.override(
+                "jsonrpc",
+                A2AServerConfig(
+                    agent_card=clone_card(agent_card),
+                    request_handler=request_handler,
+                    enable_v0_3_compat=True,
+                ),
+            )
 
         try:
-            await builder.start(keep_alive=False)
+            await start_builder(builder, keep_alive=False)
         except Exception as exc:
             if is_preferred:
-                logger.error(
-                    "Preferred transport %r failed to start; shutting down: %s",
-                    interface.transport,
-                    exc,
-                )
                 raise
             logger.error(
                 "Transport %r failed to start; continuing without it: %s",
-                interface.transport,
+                interface.protocol_binding,
                 exc,
             )
             continue
 
         started.append(session)
-        logger.info("Serving %s on %s", interface.transport, interface.url)
+        logger.info("Serving %s on %s", interface.protocol_binding, interface.url)
 
     if not started:
         raise RuntimeError("No transport interfaces could be started")
@@ -113,6 +118,7 @@ async def main():
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
+        agent_card=AGENT_CARD,
     )
 
     await serve_all_a2a_interfaces(request_handler, AGENT_CARD)
@@ -124,4 +130,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nShutting down gracefully on keyboard interrupt.")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logger.error("Error occurred: %s", e)
+        raise SystemExit(1) from e
