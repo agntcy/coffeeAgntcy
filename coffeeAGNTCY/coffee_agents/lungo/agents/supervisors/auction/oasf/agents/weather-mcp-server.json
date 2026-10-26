@@ -6,22 +6,22 @@
   },
   "version": "1.0.0",
   "description": "An MCP server agent for weather forecasting operations.",
-  "schema_version": "0.8.0",
+  "schema_version": "1.1.0",
   "domains": [
     {
-      "id": 1701.0,
+      "id": 1701,
       "name": "environmental_science/climate_science"
     }
   ],
   "name": "Weather MCP Server",
   "skills": [
     {
-      "id": 10302.0,
-      "name": "natural_language_processing/information_retrieval_synthesis/question_answering"
+      "id": 70604,
+      "name": "ai_ml_engineering/retrieval_augmented_generation/document_or_database_question_answering"
     },
     {
-      "id": 10303.0,
-      "name": "natural_language_processing/information_retrieval_synthesis/knowledge_synthesis"
+      "id": 130202,
+      "name": "research_knowledge_productivity/web_search/information_synthesis"
     }
   ],
   "modules": [
@@ -29,26 +29,23 @@
       "id": 202,
       "name": "integration/mcp",
       "data": {
-        "servers": [
+        "name": "lungo-weather-mcp-server",
+        "connections": [
           {
-            "name": "lungo-weather-mcp-server",
-            "type": "local",
-            "capabilities": [
-              "subscribe"
-            ],
+            "type": "stdio",
             "command": "docker",
             "args": [
               "run",
               "-i",
               "--rm",
               "agntcy/coffee-agntcy/weather-mcp-server:latest"
-            ],
-            "tools": [
-              {
-                "name": "get_forecast",
-                "description": "Returns a short current-weather summary for the given latitude and longitude via Open-Meteo."
-              }
             ]
+          }
+        ],
+        "tools": [
+          {
+            "name": "get_forecast",
+            "description": "Returns a short current-weather summary for the given latitude and longitude via Open-Meteo."
           }
         ]
       }
