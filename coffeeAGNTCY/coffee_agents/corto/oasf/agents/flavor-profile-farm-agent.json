@@ -6,36 +6,21 @@
   "description": "An AI agent that estimates the flavor profile of coffee beans using growing conditions like season and altitude.",
   "domains": [
     {
-      "id": 1502.0,
+      "id": 1502,
       "name": "hospitality_and_tourism/food_and_beverage"
     }
   ],
-  "schema_version": "0.8.0",
+  "schema_version": "1.1.0",
   "name": "Coffee Farm Flavor Agent",
   "skills": [
     {
-      "id": 1005.0,
-      "name": "coffee/flavor/estimate"
+      "id": 150103,
+      "name": "reasoning_planning/logical_reasoning/analytical_reasoning"
     }
   ],
   "modules": [
     {
       "data": {
-        "transports": [
-          "http"
-        ],
-        "capabilities": [
-          "streaming"
-        ],
-        "output_modes": [
-          "text/html",
-          "application/json"
-        ],
-        "protocol_version": "0.3.0",
-        "input_modes": [
-          "text/plain",
-          "application/json"
-        ],
         "card_data": {
           "preferredTransport": "JSONRPC",
           "capabilities": {
@@ -84,9 +69,7 @@
           "securitySchemes": null,
           "additionalInterfaces": null
         },
-        "security_schemes": [
-          "none"
-        ]
+        "card_schema_version": "v1.0.0"
       },
       "name": "integration/a2a"
     }

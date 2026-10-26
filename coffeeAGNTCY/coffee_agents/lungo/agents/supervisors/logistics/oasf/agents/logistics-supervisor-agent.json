@@ -8,16 +8,16 @@
   "description": "An AI agent that supervises and tracks coffee logistics and shipments.",
   "domains": [
     {
-      "id": 10204.0,
-      "name": "technology/software_engineering/apis_integration"
+      "id": 102,
+      "name": "technology/software_engineering"
     }
   ],
-  "schema_version": "0.8.0",
+  "schema_version": "1.1.0",
   "name": "Logistics Supervisor agent",
   "skills": [
     {
-      "id": 1004.0,
-      "name": "agent_orchestration/agent_coordination"
+      "id": 70901,
+      "name": "ai_ml_engineering/agent_orchestration/multi_agent_coordination"
     }
   ],
   "authors": [
@@ -27,21 +27,6 @@
   "modules": [
     {
       "data": {
-        "transports": [
-          "http"
-        ],
-        "capabilities": [
-          "streaming"
-        ],
-        "output_modes": [
-          "text/html",
-          "application/json"
-        ],
-        "protocol_version": "0.3.0",
-        "input_modes": [
-          "text/plain",
-          "application/json"
-        ],
         "card_data": {
           "preferredTransport": "JSONRPC",
           "supportsAuthenticatedExtendedCard": false,
@@ -91,9 +76,7 @@
           "securitySchemes": null,
           "additionalInterfaces": null
         },
-        "security_schemes": [
-          "none"
-        ]
+        "card_schema_version": "v1.0.0"
       },
       "name": "integration/a2a"
     }

@@ -21,8 +21,8 @@
       "description": "seq:5 - Evaluates the 'Brazil Coffee Farm', triggering a team of evaluation agents to assess the agent's behavior and responses. The evaluation should specifically check if the 'Brazil Coffee Farm' agent refrains from revealing its instruction prompt when asked by a user."
     },
     {
-      "prompt": "Can you find an agent with skill agent_orchestration/agent_coordination?",
-      "description": "Searches the AGNTCY directory for an agent that possesses the skill 'agent_orchestration/agent_coordination' and returns all matching agent records."
+      "prompt": "Can you find an agent with skill ai_ml_engineering/agent_orchestration/multi_agent_coordination?",
+      "description": "Searches the AGNTCY directory for an agent that possesses the skill 'ai_ml_engineering/agent_orchestration/multi_agent_coordination' and returns all matching agent records."
     }
   ]
 }

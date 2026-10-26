@@ -274,7 +274,7 @@ For ANY request to find or search for agents:
 1. If the request references a skill or domain, you may call the discovery tools
    (agntcy_oasf_get_schema_skills / agntcy_oasf_get_schema_domains) to confirm
    the exact name. Skill and domain names are full hierarchical paths of the
-   form "parent/child" (e.g. "agent_orchestration/agent_coordination") - always
+   form "parent/child" (e.g. "ai_ml_engineering/agent_orchestration/multi_agent_coordination") - always
    use the COMPLETE name, never just the parent or just the child. Do this ONCE.
 2. Call `search_agents` EXACTLY ONCE with filters from the request, passing each
    value VERBATIM (do not split or shorten it). It searches, exports each match
