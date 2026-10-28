@@ -4,13 +4,13 @@ dependencies:
   version: v2.2.0
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
-  version: 2.15.0
+  version: 2.15.1
 - name: clickhouse
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 9.4.4
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  version: 0.174.0
+  version: 0.176.0
 - name: grafana
   repository: oci://ghcr.io/grafana/helm-charts
   version: 10.1.2
@@ -59,5 +59,5 @@ dependencies:
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
   version: 0.2.0
-digest: sha256:454b4af526f890e2d6e32557060a4bd90ba0a229316a84e3f2da0d37b64d1161
-generated: "2026-10-22T22:03:14.840561+02:00"
+digest: sha256:1065b624a339f05bf0d08c831e1f192be69319cdb93a2a7736a6070afc1ccad4
+generated: "2026-10-28T00:19:31.399113825Z"
