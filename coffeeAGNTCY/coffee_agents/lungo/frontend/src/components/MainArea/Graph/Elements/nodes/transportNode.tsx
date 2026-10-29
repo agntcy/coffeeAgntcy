@@ -144,9 +144,11 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             position={Position.Top}
             style={{
               ...handleStyle,
-              top: "8px",
+              // Center the handle on the circle's top border point so the edge
+              // arrow tip touches the circumference instead of intruding.
+              top: 0,
               left: "50%",
-              transform: "translateX(-50%)",
+              transform: "translate(-50%, -50%)",
             }}
           />
           <Handle
