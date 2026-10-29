@@ -59,5 +59,20 @@ dependencies:
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
   version: 0.2.0
-digest: sha256:e73957e350100f41712b03995986c5db9c853c3866ffc42fc1e75da87d874cc1
-generated: "2026-10-26T13:15:08.341822+01:00"
+- name: supply-chain-buyer
+  repository: file://../supply-chain-buyer
+  version: 0.1.0
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.0
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.0
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.0
+- name: supply-chain-logistics
+  repository: file://../supply-chain-logistics
+  version: 0.1.0
+digest: sha256:6aeaf2b78bfec2fd5a7b01324e3ba80367b1db6e8b17ed5ab3ca8ca79e078d5f
+generated: "2026-10-28T11:08:46.79361+01:00"

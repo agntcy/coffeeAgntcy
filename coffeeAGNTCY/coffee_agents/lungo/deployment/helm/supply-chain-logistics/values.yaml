@@ -1,0 +1,54 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: supply-chain-logistics
+appVersion: v1
+replicaCount: 1
+
+image:
+  repository: ghcr.io/agntcy/coffee-agntcy/supply-chain-logistics
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 9099
+
+config:
+  azureApiBase: ""
+  azureApiVersion: ""
+  llmModel: ""
+  transportServerEndpoint: ""
+  defaultMessageTransport: ""
+  # Host:port for SLIM dataplane (no scheme). Set per environment (e.g. slim:46357 in compose DNS).
+  slimServer: ""
+  natsServer: ""
+  # When externalSecrets is not used, set to inject SLIM_SHARED_SECRET via Helm Secret (see transport-secret.tpl.yaml).
+  slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
+  # SLIM_ALLOW_PLACEHOLDER_SECRET: true lets the SLIM interfaces start with the public app-sdk placeholder when no secret is set. Local demos only.
+  slimAllowPlaceholderSecret: false
+  otlpHttpEndpoint: ""
+  # SUPPLY_CHAIN_L9_ENABLED: whether this agent may answer ACCORD and CONCORD messages. With false it refuses them. Default false: set true to allow L9 runs.
+  l9Enabled: false
+#  llmStreaming: False
+
+# You can use your own config here for service account
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 9099
+  endpoint: /v1/health
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi

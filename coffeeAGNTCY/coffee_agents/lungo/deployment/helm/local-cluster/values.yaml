@@ -63,6 +63,32 @@ recruiter-supervisor:
   config:
     corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
 
+supply-chain-buyer:
+  config:
+    corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+# One chart, three releases: each alias sets its own name, id and port.
+supply-chain-supplier-a:
+  appName: supply-chain-supplier-a
+  service:
+    port: 9096
+  config:
+    supplierId: a
+
+supply-chain-supplier-b:
+  appName: supply-chain-supplier-b
+  service:
+    port: 9097
+  config:
+    supplierId: b
+
+supply-chain-supplier-c:
+  appName: supply-chain-supplier-c
+  service:
+    port: 9098
+  config:
+    supplierId: c
+
 lungo-ui:
   environment: local
   configs:
@@ -77,6 +103,7 @@ lungo-ui:
         VITE_EXCHANGE_APP_API_URL: http://localhost:30080
         # VITE_GRAFANA_URL: http://127.0.0.1:3001
         VITE_LOGISTICS_APP_API_URL: http://localhost:30081
+        VITE_SUPPLY_CHAIN_APP_API_URL: http://localhost:30085
 
 # Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
 localExternalSecret:
