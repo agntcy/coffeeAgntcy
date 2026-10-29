@@ -5,6 +5,7 @@
       * [Auction Topology](#auction-topology)
       * [Logistics Group Chat Topology](#logistics-group-chat-topology)
       * [Recruiter Discovery and Delegation Topology](#recruiter-discovery-and-delegation-topology)
+      * [Supply Chain Commitment Topology](#supply-chain-commitment-topology)
     * [Transport, Topics, and App SDK Integration](#transport-topics-and-app-sdk-integration)
   * [Running Lungo Locally](#running-lungo-locally)
     * [Prerequisites](#prerequisites)
@@ -49,7 +50,7 @@ One notable component is the **Colombia Farm**, which functions as an **MCP clie
 
 ### Architecture At A Glance
 
-Lungo contains three distinct communication patterns in one reference app.
+Lungo contains four distinct communication patterns in one reference app.
 
 #### Auction Topology
 
@@ -174,6 +175,30 @@ The recruiter supervisor uses a different pattern from the transport-bridged auc
 - it talks to the recruiter service over a URL-based A2A client rather than App SDK topic routing,
 - the recruiter service queries the AGNTCY directory and returns agent cards plus evaluation results,
 - once a user selects an agent, the supervisor forwards subsequent prompts directly to that advertised A2A endpoint.
+
+#### Supply Chain Commitment Topology
+
+```mermaid
+flowchart LR
+    UI[Frontend]
+    BUYER[Buyer: moderator and HTTP API :9095]
+    SLIM[SLIM group session]
+    A[Supplier A :9096]
+    B[Supplier B :9097]
+    C[Supplier C :9098]
+    LOG[Logistics :9099]
+    CHECK[Deterministic checker]
+
+    UI --> BUYER
+    BUYER --> SLIM
+    SLIM --> A
+    SLIM --> B
+    SLIM --> C
+    SLIM --> LOG
+    BUYER -->|after the run ends| CHECK
+```
+
+Five LLM agents negotiate one coffee shipment as a group over SLIM, and the Buyer moderates. After the run, a checker (a program, not an agent) compares the committed plan with the scenario data, so a plan that every party confirmed but that is wrong shows up as a silent failure. The Buyer's HTTP API streams the group messages, the commitment record and the verdict to the UI. The flow is **SLIM-only** and starts with the `supply_chain` compose profile. How to run it, the cases and how to read a run are in [Supply Chain Commitment](./docs/supply_chain_commitment.md).
 
 ### Transport, Topics, and App SDK Integration
 
@@ -477,6 +502,7 @@ The docker-compose file is organized into profiles for running specific subsets 
 | `frontend` | **ui** (port 3000; env: **`frontend/.env`** only for **`VITE_*`**) |
 | `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
 | `recruiter` | recruiter, recruiter-supervisor, postgres, dir-api-server, dir-mcp-server, zot |
+| `supply_chain` | slim, supply-chain-supplier-a, supply-chain-supplier-b, supply-chain-supplier-c, supply-chain-logistics, supply-chain-buyer (ports 9095 to 9099) |
 
 Run a specific profile:
 ```sh
@@ -489,8 +515,11 @@ docker compose --profile logistics up
 # Run only recruiter
 docker compose --profile recruiter up
 
+# Run only the supply chain commitment use case
+docker compose --profile supply_chain up --build
+
 # Run all profiles
-docker compose --profile farms --profile logistics --profile recruiter up
+docker compose --profile farms --profile logistics --profile recruiter --profile supply_chain up
 
 # Run the UI in Docker (optional; otherwise use npm run dev in frontend/)
 docker compose --profile frontend up --build
