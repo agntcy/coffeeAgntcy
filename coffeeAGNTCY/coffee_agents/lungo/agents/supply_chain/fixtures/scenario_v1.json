@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "simulated": true,
+  "source": "cisco-eti/ioc-app-mas-patterns-implementations use-cases/supply-chain-commitment/use-case.md @ 238e99d3cb02115ae13aedda730630f26539315e",
+  "notes": [
+    "All data is synthetic and all commitments are simulated.",
+    "Upstream gives only totals ($15,000 all standard, $19,000 with Supplier C expedited). The per-lot split below is an implementation assumption that reproduces both totals.",
+    "Refinement (decisions N27, the hold-time lever): the explicit, infeasible and disruption openings name arrival at Warehouse W and the deadline date, not the 17:00 UTC time of day, which only the Buyer's own brief holds. Before this the exact time was in the opening words, so every party held it and the baseline passed those two cases.",
+    "Refinement (decisions N25, scenario variant A): standard transit is 60 hours, not the upstream 3 days (72 hours), so Supplier C's standard arrival is Nov 18, 21:00 UTC, four hours after the 17:00 deadline, instead of a day late. Ready times, the expedited option (48 hours, arrives Nov 18, 09:00 UTC) and the disruption outcome are unchanged."
+  ],
+  "buyer": {
+    "organization": "Northwind Roasters",
+    "quantity_t": 1000,
+    "grade": "Grade 1 washed Arabica, screen 17/18",
+    "destination": "Warehouse W",
+    "deadline": "2026-11-18T17:00:00Z",
+    "milestone": "destination_receipt",
+    "budget_usd": 20000
+  },
+  "suppliers": {
+    "supplier_a": {
+      "name": "Supplier A",
+      "quantity_t": 400,
+      "grade": "Grade 1 washed Arabica, screen 17/18",
+      "origin": "Origin facility A",
+      "ready_at": "2026-11-14T09:00:00Z"
+    },
+    "supplier_b": {
+      "name": "Supplier B",
+      "quantity_t": 350,
+      "grade": "Grade 1 washed Arabica, screen 17/18",
+      "origin": "Origin facility B",
+      "ready_at": "2026-11-15T09:00:00Z"
+    },
+    "supplier_c": {
+      "name": "Supplier C",
+      "quantity_t": 250,
+      "grade": "Grade 1 washed Arabica, screen 17/18",
+      "origin": "Origin facility C",
+      "ready_at": "2026-11-16T09:00:00Z"
+    }
+  },
+  "logistics": {
+    "organization": "Meridian Freight",
+    "destination": "Warehouse W",
+    "options": [
+      {
+        "id": "standard",
+        "description": "Standard road transport",
+        "transit_hours": 60,
+        "lot_cost_usd": {"supplier_a": 5000, "supplier_b": 5000, "supplier_c": 5000},
+        "available": true,
+        "requires_capacity_confirmation": false
+      },
+      {
+        "id": "expedited",
+        "description": "Expedited transport",
+        "transit_hours": 48,
+        "lot_cost_usd": {"supplier_c": 9000},
+        "available": true,
+        "requires_capacity_confirmation": true
+      }
+    ]
+  },
+  "cases": {
+    "ambiguous": {
+      "description": "The buyer asks for delivery by November 18 without naming the milestone.",
+      "buyer_wording": "We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, delivered by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this.",
+      "logistics_overrides": {},
+      "disruption": null
+    },
+    "explicit": {
+      "description": "The buyer names arrival at Warehouse W and the deadline date. The time of day (17:00 UTC) is in the buyer's own brief only.",
+      "buyer_wording": "We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this.",
+      "logistics_overrides": {},
+      "disruption": null
+    },
+    "infeasible": {
+      "description": "Expedited transport has no capacity, so no plan meets the deadline.",
+      "buyer_wording": "We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this.",
+      "logistics_overrides": {"expedited": {"available": false}},
+      "disruption": null
+    },
+    "disruption": {
+      "description": "After a first commitment, Supplier C's origin-ready time moves to Nov 17, 09:00 UTC.",
+      "buyer_wording": "We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this.",
+      "logistics_overrides": {},
+      "disruption": {
+        "supplier": "supplier_c",
+        "ready_at": "2026-11-17T09:00:00Z",
+        "supplier_notice": "Operations update: a processing delay at your origin facility means your lot is now ready for pickup on November 17, 09:00 UTC instead of November 16, 09:00 UTC.",
+        "group_notice": "Supplier C has reported a change that may affect the agreed plan."
+      }
+    }
+  }
+}

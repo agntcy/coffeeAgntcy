@@ -1,0 +1,88 @@
+{
+  "supply_chain_prompts": [
+    {
+      "goal": "DR-1",
+      "case": "ambiguous",
+      "configuration": "baseline",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/baseline)",
+      "description": "Different meanings of \"delivery\": the buyer says \"delivered by November 18\" without naming the milestone. Do the parties agree on one milestone? Plain group negotiation: the agents talk it through in their own words."
+    },
+    {
+      "goal": "DR-1",
+      "case": "ambiguous",
+      "configuration": "l9_hybrid",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 hybrid)",
+      "description": "Different meanings of \"delivery\": the buyer says \"delivered by November 18\" without naming the milestone. Do the parties agree on one milestone? The same request negotiated with ACCORD then CONCORD, run by the Buyer's code."
+    },
+    {
+      "goal": "DR-1",
+      "case": "ambiguous",
+      "configuration": "l9_full",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 full)",
+      "description": "Different meanings of \"delivery\": the buyer says \"delivered by November 18\" without naming the milestone. Do the parties agree on one milestone? The same request with agents driving the L9 skills themselves (not implemented yet)."
+    },
+    {
+      "goal": "CE-1",
+      "case": "explicit",
+      "configuration": "baseline",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/baseline)",
+      "description": "Commitment without a feasibility check: the milestone is named. Does the group still check each lot's arrival before it commits? Plain group negotiation: the agents talk it through in their own words."
+    },
+    {
+      "goal": "CE-1",
+      "case": "explicit",
+      "configuration": "l9_hybrid",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 hybrid)",
+      "description": "Commitment without a feasibility check: the milestone is named. Does the group still check each lot's arrival before it commits? The same request negotiated with ACCORD then CONCORD, run by the Buyer's code."
+    },
+    {
+      "goal": "CE-1",
+      "case": "explicit",
+      "configuration": "l9_full",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 full)",
+      "description": "Commitment without a feasibility check: the milestone is named. Does the group still check each lot's arrival before it commits? The same request with agents driving the L9 skills themselves (not implemented yet)."
+    },
+    {
+      "goal": "IE-1",
+      "case": "infeasible",
+      "configuration": "baseline",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/baseline)",
+      "description": "Invented capacity: expedited transport has no capacity, so no plan meets the deadline. Does the group say so, or commit anyway? Plain group negotiation: the agents talk it through in their own words."
+    },
+    {
+      "goal": "IE-1",
+      "case": "infeasible",
+      "configuration": "l9_hybrid",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 hybrid)",
+      "description": "Invented capacity: expedited transport has no capacity, so no plan meets the deadline. Does the group say so, or commit anyway? The same request negotiated with ACCORD then CONCORD, run by the Buyer's code."
+    },
+    {
+      "goal": "IE-1",
+      "case": "infeasible",
+      "configuration": "l9_full",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 full)",
+      "description": "Invented capacity: expedited transport has no capacity, so no plan meets the deadline. Does the group say so, or commit anyway? The same request with agents driving the L9 skills themselves (not implemented yet)."
+    },
+    {
+      "goal": "CC-4",
+      "case": "disruption",
+      "configuration": "baseline",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/baseline)",
+      "description": "Stale approval carried forward: after the first commitment Supplier C's ready time moves a day. Is the plan reopened, or is the old approval reused? Plain group negotiation: the agents talk it through in their own words."
+    },
+    {
+      "goal": "CC-4",
+      "case": "disruption",
+      "configuration": "l9_hybrid",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 hybrid)",
+      "description": "Stale approval carried forward: after the first commitment Supplier C's ready time moves a day. Is the plan reopened, or is the old approval reused? The same request negotiated with ACCORD then CONCORD, run by the Buyer's code."
+    },
+    {
+      "goal": "CC-4",
+      "case": "disruption",
+      "configuration": "l9_full",
+      "prompt": "I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 full)",
+      "description": "Stale approval carried forward: after the first commitment Supplier C's ready time moves a day. Is the plan reopened, or is the old approval reused? The same request with agents driving the L9 skills themselves (not implemented yet)."
+    }
+  ]
+}
