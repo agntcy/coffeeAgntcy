@@ -16,11 +16,7 @@ export enum CanvasMode {
 }
 
 export type PatternDocStatus =
-  | "idle"
-  | "loading"
-  | "ready"
-  | "not_found"
-  | "error"
+  "idle" | "loading" | "ready" | "not_found" | "error"
 
 export interface PatternDocState {
   status: PatternDocStatus
