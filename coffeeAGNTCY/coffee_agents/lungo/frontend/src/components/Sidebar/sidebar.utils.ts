@@ -17,6 +17,7 @@ const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> = new Set([
   "Publish Subscribe",
   "Publish Subscribe Streaming",
   "Group Messaging",
+  "Supply Chain Commitment",
 ])
 
 export const A2A_SLIM_MENU_LABEL = "A2A SLIM"

@@ -11,6 +11,9 @@
 **/node_modules
 **/dist
 
+# Local supply chain run output (never part of an image)
+coffeeAGNTCY/coffee_agents/lungo/runs
+
 # For repo root context
 .git
 .github

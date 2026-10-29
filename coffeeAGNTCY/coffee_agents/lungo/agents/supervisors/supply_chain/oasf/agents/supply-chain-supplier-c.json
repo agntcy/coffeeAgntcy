@@ -1,0 +1,75 @@
+{
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false"
+  },
+  "authors": [
+    "agntcy/coffee-agntcy-maintainers"
+  ],
+  "created_at": "2026-10-27T12:00:00Z",
+  "description": "A green coffee supplier (Supplier C) that negotiates a supply commitment with a buyer and a logistics provider.",
+  "domains": [
+    {
+      "id": 804,
+      "name": "transportation/supply_chain"
+    }
+  ],
+  "modules": [
+    {
+      "data": {
+        "card_data": {
+          "additionalInterfaces": [
+            {
+              "transport": "slim",
+              "url": "slim://slim:46357/lungo/agents/supply-chain-supplier-c"
+            }
+          ],
+          "capabilities": {
+            "streaming": true
+          },
+          "defaultInputModes": [
+            "text"
+          ],
+          "defaultOutputModes": [
+            "text"
+          ],
+          "description": "A green coffee supplier (Supplier C) that negotiates a supply commitment with a buyer and a logistics provider.",
+          "name": "Supplier C agent",
+          "preferredTransport": "slim",
+          "protocolVersion": "0.3.0",
+          "skills": [
+            {
+              "description": "Offers a lot of green coffee from this supplier's own inventory and states when it is ready for pickup at origin.",
+              "examples": [
+                "How many tonnes can you supply and when is the lot ready?",
+                "Do you confirm this plan?"
+              ],
+              "id": "offer_supply",
+              "name": "Offer Supply",
+              "tags": [
+                "coffee",
+                "supply",
+                "negotiation"
+              ]
+            }
+          ],
+          "supportsAuthenticatedExtendedCard": false,
+          "url": "slim://slim:46357/lungo/agents/supply-chain-supplier-c",
+          "version": "1.0.0"
+        },
+        "card_schema_version": "v1.0.0"
+      },
+      "name": "integration/a2a"
+    }
+  ],
+  "name": "Supplier C agent",
+  "schema_version": "1.0.0",
+  "skills": [
+    {
+      "id": 1004,
+      "name": "agent_orchestration/agent_coordination"
+    }
+  ],
+  "version": "1.0.0"
+}

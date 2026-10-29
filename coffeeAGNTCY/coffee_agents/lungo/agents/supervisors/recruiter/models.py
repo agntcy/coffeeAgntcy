@@ -61,9 +61,7 @@ def card_from_dict(data: dict[str, Any]) -> AgentCard:
 
 def _card_has_transport_endpoint(card: AgentCard) -> bool:
     """True when the card advertises at least one non-empty transport URL."""
-    return any(
-        (interface.url or "").strip() for interface in card.supported_interfaces
-    )
+    return any((interface.url or "").strip() for interface in card.supported_interfaces)
 
 
 def _require_delegation_card(card: AgentCard) -> None:

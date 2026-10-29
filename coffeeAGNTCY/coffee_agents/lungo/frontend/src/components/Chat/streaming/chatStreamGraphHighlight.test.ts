@@ -46,6 +46,30 @@ const GROUP_SUPERVISOR_CONFIG: GraphConfig = {
   edges: [],
 }
 
+const SUPPLY_CHAIN_CONFIG: GraphConfig = {
+  title: "Supply Chain Commitment",
+  animationSequence: [],
+  nodes: [
+    liveNode("sc-buyer", "customNode", {
+      label: "Buyer",
+      label_subtitle: "Moderator Agent",
+    }),
+    liveNode("sc-supplier-a", "customNode", {
+      label: "Supplier A",
+      label_subtitle: "Supplier Agent",
+    }),
+    liveNode("sc-supplier-b", "customNode", {
+      label: "Supplier B",
+      label_subtitle: "Supplier Agent",
+    }),
+    liveNode("sc-logistics", "customNode", {
+      label: "Logistics",
+      label_subtitle: "Carrier Agent",
+    }),
+  ],
+  edges: [],
+}
+
 describe("resolveStreamAuthorToNodeId", () => {
   it.each([
     {
@@ -65,6 +89,24 @@ describe("resolveStreamAuthorToNodeId", () => {
       author: "Supervisor",
       config: GROUP_SUPERVISOR_CONFIG,
       expected: "auction-agent",
+    },
+    {
+      caseName: "supply chain Supplier B -> its node",
+      author: "Supplier B",
+      config: SUPPLY_CHAIN_CONFIG,
+      expected: "sc-supplier-b",
+    },
+    {
+      caseName: "supply chain Buyer -> the moderator node",
+      author: "Buyer",
+      config: SUPPLY_CHAIN_CONFIG,
+      expected: "sc-buyer",
+    },
+    {
+      caseName: "supply chain Logistics -> the carrier node",
+      author: "Logistics",
+      config: SUPPLY_CHAIN_CONFIG,
+      expected: "sc-logistics",
     },
     {
       caseName: "discovered agent author via inline record name",

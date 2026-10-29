@@ -14,3 +14,5 @@ nodes:
     hostPort: 3000
   - containerPort: 30084
     hostPort: 30084
+  - containerPort: 30085
+    hostPort: 30085

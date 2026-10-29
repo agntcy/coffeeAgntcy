@@ -4,6 +4,7 @@
  **/
 
 import type { NdjsonStreamingStatus } from "./ndjsonStreamingStatus"
+import type { SupplyChainStreamEvent } from "./supplyChainEvents"
 
 export interface LogisticsStreamStep {
   order_id: string
@@ -17,6 +18,8 @@ export interface LogisticsStreamStep {
 export interface GroupStreamingState {
   status: NdjsonStreamingStatus
   events: LogisticsStreamStep[]
+  /** Supply Chain Commitment events (a discriminated union on `type`). */
+  negotiationEvents: SupplyChainStreamEvent[]
   finalResponse: string | null
   error: string | null
   currentOrderId: string | null

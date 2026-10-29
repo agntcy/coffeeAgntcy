@@ -77,6 +77,7 @@ log_directory_target() {
 OASF_DIRS=(
     "$LUNGO_DIR/agents/supervisors/auction/oasf/agents"
     "$LUNGO_DIR/agents/supervisors/logistics/oasf/agents"
+    "$LUNGO_DIR/agents/supervisors/supply_chain/oasf/agents"
 )
 
 echo -e "${BLUE}========================================${NC}"
