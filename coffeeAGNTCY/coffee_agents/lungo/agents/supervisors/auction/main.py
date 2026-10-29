@@ -220,7 +220,14 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                         )
                 except Exception as e:
                     logger.exception("Error in stream: %s", e)
-                    yield json.dumps({"response": "Error: an internal error occurred while processing the request."}) + "\n"
+                    yield (
+                        json.dumps(
+                            {
+                                "response": "Error: an internal error occurred while processing the request."
+                            }
+                        )
+                        + "\n"
+                    )
 
             return StreamingResponse(
                 stream_generator(),
