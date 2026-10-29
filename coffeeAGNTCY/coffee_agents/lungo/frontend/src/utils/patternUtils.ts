@@ -7,6 +7,7 @@ import {
   getDiscoveryAppApiUrl,
   getExchangeAppApiUrl,
   getLogisticsAppApiUrl,
+  getSupplyChainAppApiUrl,
 } from "@/urls"
 
 export const PATTERNS = {
@@ -19,7 +20,11 @@ export const PATTERNS = {
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
-export type ChatApiTarget = "exchange" | "logistics" | "discovery"
+export type ChatApiTarget =
+  | "exchange"
+  | "logistics"
+  | "discovery"
+  | "supply_chain"
 
 /** Resolves the backend app URL for a workflow's `chat_api_target`. */
 export const getApiUrlForChatTarget = (
@@ -27,6 +32,9 @@ export const getApiUrlForChatTarget = (
 ): string => {
   if (target === "logistics") {
     return getLogisticsAppApiUrl()
+  }
+  if (target === "supply_chain") {
+    return getSupplyChainAppApiUrl()
   }
   if (target === "discovery") {
     return getDiscoveryAppApiUrl()

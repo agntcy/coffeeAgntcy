@@ -42,6 +42,12 @@ describe("workflowCapabilities", () => {
         transport: "group_sse" as const,
       },
       {
+        caseName: "supply chain with sse maps to group messaging",
+        over: { chat_api_target: "supply_chain" as const, supports_sse: true },
+        pattern: PATTERNS.GROUP_MESSAGING,
+        transport: "group_sse" as const,
+      },
+      {
         caseName: "discovery maps to a2a http",
         over: { chat_api_target: "discovery" as const },
         pattern: PATTERNS.A2A_HTTP,
@@ -88,6 +94,11 @@ describe("workflowCapabilities", () => {
         caseName: "chat enabled for exchange plain post",
         over: { chat_api_target: "exchange" as const },
         expected: true,
+      },
+      {
+        caseName: "chat disabled for supply chain without sse",
+        over: { chat_api_target: "supply_chain" as const, supports_sse: false },
+        expected: false,
       },
       {
         caseName: "chat disabled for logistics without sse",

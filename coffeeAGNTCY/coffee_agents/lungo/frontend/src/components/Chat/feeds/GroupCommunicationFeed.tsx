@@ -16,11 +16,18 @@ import type { GraphConfig } from "@/utils/graphConfigs"
 import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
   useGroupEvents,
+  useGroupNegotiationEvents,
   useGroupError,
   useGroupCurrentOrderId,
   useGroupStreamingStatus,
 } from "@/stores/groupStreamingStore"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
+import { resolveStreamAuthorToNodeId } from "../streaming/chatStreamGraphHighlight"
+import {
+  isVisibleSupplyChainMessage,
+  supplyChainPartyLabel,
+} from "@/stores/supplyChainEvents"
+import { SupplyChainEventList } from "./SupplyChainEventList"
 import { FeedSpinnerRow } from "./FeedSpinnerRow"
 import { successIconColorSx } from "@/utils/successIconColor"
 import { FeedStatusLine } from "./FeedStatusLine"
@@ -51,6 +58,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   observabilitySessionId,
 }) => {
   const groupEvents = useGroupEvents()
+  const negotiationEvents = useGroupNegotiationEvents()
+  const isNegotiation = negotiationEvents.length > 0
   const groupError = useGroupError()
   const groupCurrentOrderId = useGroupCurrentOrderId()
   const groupStatus = useGroupStreamingStatus()
@@ -62,6 +71,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   const [isExpanded, setIsExpanded] = useState(true)
 
   const lastProcessedEventRef = useRef<string | null>(null)
+  const lastHighlightedNegotiationRef = useRef<string | null>(null)
   const highlightTimeoutsRef = useRef<number[]>([])
 
   const toggleDetailsExpanded = useCallback(() => {
@@ -75,6 +85,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
 
       setIsExpanded(true)
       lastProcessedEventRef.current = null
+      lastHighlightedNegotiationRef.current = null
     }
   }, [prompt])
 
@@ -85,6 +96,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
 
       setIsExpanded(true)
       lastProcessedEventRef.current = null
+      lastHighlightedNegotiationRef.current = null
     }
   }, [executionKey])
 
@@ -93,6 +105,27 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       highlightTimeoutsRef.current.forEach(clearTimeout)
     }
   }, [])
+
+  // Supply Chain Commitment: highlight the node of the latest speaker. The
+  // highlight callback and graph config are not referentially stable, and
+  // highlighting updates the parent, so a key guard stops a render loop.
+  useEffect(() => {
+    if (!onSenderHighlight || !graphConfig) return
+    for (let i = negotiationEvents.length - 1; i >= 0; i -= 1) {
+      const event = negotiationEvents[i]
+      if (event.type !== "message") continue
+      if (!isVisibleSupplyChainMessage(event)) continue
+      const eventKey = `${i}-${event.seq}-${event.from}`
+      if (lastHighlightedNegotiationRef.current === eventKey) return
+      lastHighlightedNegotiationRef.current = eventKey
+      const nodeId = resolveStreamAuthorToNodeId(
+        supplyChainPartyLabel(event.from),
+        graphConfig,
+      )
+      if (nodeId) onSenderHighlight(nodeId)
+      return
+    }
+  }, [negotiationEvents, onSenderHighlight, graphConfig])
 
   useEffect(() => {
     if (!groupEvents.length) return
@@ -149,22 +182,22 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   }
 
   const events = groupEvents || []
+  const hasAnyEvents = events.length > 0 || isNegotiation
   const errorMessage = groupError || null
 
-  if ((!prompt && events.length === 0) || apiError) {
+  if ((!prompt && !hasAnyEvents) || apiError) {
     return null
   }
 
-  if (errorMessage && events.length === 0) {
+  if (errorMessage && !hasAnyEvents) {
     return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
   }
 
   const showsStatusLine =
     (isComplete && Boolean(groupCurrentOrderId)) ||
     (Boolean(prompt) && !apiError && isActive)
-  const showsSpinner =
-    Boolean(prompt) && isActive && !apiError && events.length === 0
-  const showsEvents = isExpanded && events.length > 0
+  const showsSpinner = Boolean(prompt) && isActive && !apiError && !hasAnyEvents
+  const showsEvents = isExpanded && hasAnyEvents
   const showsCompleteFooter = isComplete
 
   if (
@@ -204,11 +237,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <FeedStatusLine showDots>Processing Request</FeedStatusLine>
         ) : null}
 
-        {prompt &&
-        isActive &&
-        !apiError &&
-        !errorMessage &&
-        events.length === 0 ? (
+        {prompt && isActive && !apiError && !errorMessage && !hasAnyEvents ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 
@@ -217,6 +246,10 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             spacing={3}
             sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
           >
+            {isNegotiation ? (
+              <SupplyChainEventList events={negotiationEvents} />
+            ) : null}
+
             {events.map((step: LogisticsStreamStep, index: number) => {
               return (
                 <Stack
@@ -264,13 +297,16 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
               )
             })}
 
-            {events.length > 0 && isActive ? <FeedSpinnerRow mt={0} /> : null}
+            {hasAnyEvents && isActive ? <FeedSpinnerRow mt={0} /> : null}
           </Stack>
         )}
 
         {isComplete && (
           <>
-            <GrafanaSessionLink sessionId={observabilitySessionId} />
+            <GrafanaSessionLink
+              sessionId={observabilitySessionId}
+              sx={isNegotiation && isExpanded ? { mt: 2 } : undefined}
+            />
             <FeedCollapseButton
               expanded={isExpanded}
               onToggle={toggleDetailsExpanded}

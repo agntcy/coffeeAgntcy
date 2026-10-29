@@ -33,6 +33,31 @@ describe("topologyNodeIconKind", () => {
       expected: TopologyNodeIconKind.Supervisor,
     },
     {
+      caseName: "supply chain buyer slug -> supervisor",
+      input: { directoryAgentSlug: "supply-chain-buyer-agent" },
+      expected: TopologyNodeIconKind.Supervisor,
+    },
+    {
+      caseName: "supply chain supplier slug -> farm",
+      input: { directoryAgentSlug: "supply-chain-supplier-c" },
+      expected: TopologyNodeIconKind.Farm,
+    },
+    {
+      caseName: "supply chain logistics slug -> shipping",
+      input: { directoryAgentSlug: "supply-chain-logistics-agent" },
+      expected: TopologyNodeIconKind.Shipping,
+    },
+    {
+      caseName: "supply chain supplier labels -> farm",
+      input: { label: "Supplier A", label_subtitle: "Supplier Agent" },
+      expected: TopologyNodeIconKind.Farm,
+    },
+    {
+      caseName: "supply chain logistics labels -> shipping",
+      input: { label: "Logistics", label_subtitle: "Carrier Agent" },
+      expected: TopologyNodeIconKind.Shipping,
+    },
+    {
       caseName: "recruiter slug -> recruiter",
       input: { directoryAgentSlug: "recruiter" },
       expected: TopologyNodeIconKind.Recruiter,
