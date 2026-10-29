@@ -433,7 +433,9 @@ async def get_agent_oasf(slug: str):
     """Returns the OASF JSON for the specified agent slug from the static files."""
     if not _SLUG_RE.fullmatch(slug):
         raise HTTPException(status_code=404, detail="OASF record not found")
-    oasf_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "oasf", "agents"))
+    oasf_dir = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "oasf", "agents")
+    )
     oasf_path = os.path.realpath(os.path.join(oasf_dir, f"{slug}.json"))
     if not oasf_path.startswith(oasf_dir + os.sep) or not os.path.exists(oasf_path):
         raise HTTPException(status_code=404, detail="OASF record not found")
