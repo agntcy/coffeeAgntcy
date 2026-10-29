@@ -1,3 +1,22 @@
+x-supply-chain-supplier: &supply-chain-supplier
+  build:
+    context: ../../..
+    dockerfile: docker/Dockerfile.python-agent
+    args:
+      PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+      UV_CACHE_ID: lungo
+      APP_NAME: supply-chain-supplier
+      AGENT_SCRIPT: agents/supply_chain/supplier/server.py
+  image: ghcr.io/agntcy/coffee-agntcy/supply-chain-supplier:latest
+  env_file:
+    - path: .env
+      required: false
+  depends_on:
+    slim:
+      condition: service_started
+  profiles:
+    - supply_chain
+
 services:
   brazil-farm-server:
     build:
@@ -511,6 +530,143 @@ services:
         condition: service_started
     profiles:
       - logistics
+
+  # Supply Chain Commitment: five LLM agents negotiate in one SLIM group.
+  # The three suppliers share one image and differ only in SUPPLIER_ID and port.
+  supply-chain-supplier-a:
+    <<: *supply-chain-supplier
+    container_name: supply-chain-supplier-a
+    environment:
+      - TZ=UTC
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
+      - SUPPLY_CHAIN_L9_ENABLED=${SUPPLY_CHAIN_L9_ENABLED:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SUPPLIER_ID=a
+      - AGENT_PORT=9096
+    ports:
+      - "9096:9096"
+
+  supply-chain-supplier-b:
+    <<: *supply-chain-supplier
+    container_name: supply-chain-supplier-b
+    environment:
+      - TZ=UTC
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
+      - SUPPLY_CHAIN_L9_ENABLED=${SUPPLY_CHAIN_L9_ENABLED:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SUPPLIER_ID=b
+      - AGENT_PORT=9097
+    ports:
+      - "9097:9097"
+
+  supply-chain-supplier-c:
+    <<: *supply-chain-supplier
+    container_name: supply-chain-supplier-c
+    environment:
+      - TZ=UTC
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
+      - SUPPLY_CHAIN_L9_ENABLED=${SUPPLY_CHAIN_L9_ENABLED:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SUPPLIER_ID=c
+      - AGENT_PORT=9098
+    ports:
+      - "9098:9098"
+
+  supply-chain-logistics:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: supply-chain-logistics
+        AGENT_SCRIPT: agents/supply_chain/logistics/server.py
+    image: ghcr.io/agntcy/coffee-agntcy/supply-chain-logistics:latest
+    container_name: supply-chain-logistics
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
+      - SUPPLY_CHAIN_L9_ENABLED=${SUPPLY_CHAIN_L9_ENABLED:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - AGENT_PORT=9099
+    ports:
+      - "9099:9099"
+    depends_on:
+      slim:
+        condition: service_started
+    profiles:
+      - supply_chain
+
+  supply-chain-buyer:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: supply-chain-buyer
+        AGENT_SCRIPT: agents/supervisors/supply_chain/main.py
+    image: ghcr.io/agntcy/coffee-agntcy/supply-chain-buyer:latest
+    container_name: supply-chain-buyer
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - SLIM_ALLOW_PLACEHOLDER_SECRET=${SLIM_ALLOW_PLACEHOLDER_SECRET:-true}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
+      - SUPPLY_CHAIN_L9_ENABLED=${SUPPLY_CHAIN_L9_ENABLED:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SUPPLY_CHAIN_RUN_DIR=/app/runs/supply_chain
+      - WORKFLOW_API_URL=http://agentic-workflows-api:9105
+      - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
+    volumes:
+      # Every run writes its messages, record and verdict here, on the host.
+      - ./runs:/app/runs
+    ports:
+      - "9095:9095"
+    depends_on:
+      slim:
+        condition: service_started
+    profiles:
+      - supply_chain
 
   mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1@sha256:808423d41c2ef08e116cc41da694bc4adf648c07b23be530e70a691d82653300

@@ -79,6 +79,32 @@ docker build \
   -f docker/Dockerfile.python-agent -t logistics-supervisor .
 ```
 
+### Supply Chain Commitment (`Dockerfile.python-agent`)
+
+```bash
+docker build \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
+  --build-arg UV_CACHE_ID=lungo \
+  --build-arg APP_NAME=supply-chain-buyer \
+  --build-arg AGENT_SCRIPT=agents/supervisors/supply_chain/main.py \
+  -f docker/Dockerfile.python-agent -t supply-chain-buyer .
+
+# One image serves all three suppliers; SUPPLIER_ID (a, b or c) picks the role at run time.
+docker build \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
+  --build-arg UV_CACHE_ID=lungo \
+  --build-arg APP_NAME=supply-chain-supplier \
+  --build-arg AGENT_SCRIPT=agents/supply_chain/supplier/server.py \
+  -f docker/Dockerfile.python-agent -t supply-chain-supplier .
+
+docker build \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
+  --build-arg UV_CACHE_ID=lungo \
+  --build-arg APP_NAME=supply-chain-logistics \
+  --build-arg AGENT_SCRIPT=agents/supply_chain/logistics/server.py \
+  -f docker/Dockerfile.python-agent -t supply-chain-logistics .
+```
+
 ### MCP Servers (`Dockerfile.python-agent`)
 
 ```bash
