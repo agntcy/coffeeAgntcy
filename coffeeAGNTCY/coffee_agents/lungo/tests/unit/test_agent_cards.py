@@ -27,6 +27,8 @@ CARDS = [
     ("agents.logistics.farm.card", "AGENT_CARD", "Tatooine Farm agent", _LOGISTICS),
     ("agents.logistics.helpdesk.card", "AGENT_CARD", "Logistics Helpdesk", _LOGISTICS),
     ("agents.logistics.shipper.card", "AGENT_CARD", "Shipping agent", _LOGISTICS),
+    ("agents.supply_chain.logistics.card", "AGENT_CARD", "Logistics agent", _LOGISTICS),
+    ("agents.supply_chain.supplier.card", "AGENT_CARD", "Supplier A agent", _LOGISTICS),
     (
         "agents.supervisors.auction.card",
         "AUCTION_SUPERVISOR_CARD",
@@ -37,6 +39,12 @@ CARDS = [
         "agents.supervisors.logistics.card",
         "LOGISTICS_SUPERVISOR_CARD",
         "Logistics Supervisor agent",
+        [],
+    ),
+    (
+        "agents.supervisors.supply_chain.card",
+        "BUYER_CARD",
+        "Buyer agent",
         [],
     ),
     (

@@ -34,6 +34,7 @@ setup() {
     chmod +x "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
     AUCTION_DIR="$FIXTURE_ROOT/agents/supervisors/auction/oasf/agents"
     LOGISTICS_DIR="$FIXTURE_ROOT/agents/supervisors/logistics/oasf/agents"
+    SUPPLY_CHAIN_DIR="$FIXTURE_ROOT/agents/supervisors/supply_chain/oasf/agents"
 }
 
 teardown() {
@@ -114,7 +115,7 @@ esac
 
 @test "an OASF directory that does not exist is skipped with a warning, and nothing fails" {
     mock_dirctl_installed_only
-    # Neither AUCTION_DIR nor LOGISTICS_DIR is created for this test.
+    # None of the OASF fixture directories is created for this test.
     run "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"Warning: Directory not found"* ]]
@@ -255,4 +256,23 @@ esac
     [[ "$output" == *"Already in directory:        1"* ]]
     [[ "$output" == *"Successfully pushed:         1"* ]]
     [[ "$output" == *"Failed:                      1"* ]]
+}
+
+@test "records in the supply chain OASF directory are pushed too" {
+    write_json_agent "$SUPPLY_CHAIN_DIR" "buyer.json" "supply-chain-buyer-agent"
+    write_json_agent "$SUPPLY_CHAIN_DIR" "supplier-a.json" "supply-chain-supplier-a"
+    mock_command dirctl '
+case "$3" in
+    search) echo "[]" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
+    pull) exit 0 ;;
+    routing) exit 0 ;;
+    *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
+esac
+'
+    run "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Processing directory: agents/supervisors/supply_chain/oasf/agents"* ]]
+    [[ "$output" == *"Total OASF records found:  2"* ]]
+    [[ "$output" == *"Successfully pushed:         2"* ]]
 }

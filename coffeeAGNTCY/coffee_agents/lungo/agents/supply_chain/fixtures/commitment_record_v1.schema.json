@@ -1,0 +1,278 @@
+{
+  "$defs": {
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "party": {
+          "enum": [
+            "buyer",
+            "supplier_a",
+            "supplier_b",
+            "supplier_c",
+            "logistics"
+          ],
+          "title": "Party",
+          "type": "string"
+        },
+        "plan_version": {
+          "minimum": 1,
+          "title": "Plan Version",
+          "type": "integer"
+        },
+        "decision": {
+          "enum": [
+            "confirm",
+            "reject"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "party",
+        "plan_version",
+        "decision",
+        "seq"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "Lot": {
+      "additionalProperties": false,
+      "properties": {
+        "supplier": {
+          "enum": [
+            "supplier_a",
+            "supplier_b",
+            "supplier_c"
+          ],
+          "title": "Supplier",
+          "type": "string"
+        },
+        "tonnes": {
+          "exclusiveMinimum": 0,
+          "title": "Tonnes",
+          "type": "number"
+        },
+        "grade": {
+          "title": "Grade",
+          "type": "string"
+        },
+        "origin_ready_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin Ready At"
+        },
+        "transport_option": {
+          "title": "Transport Option",
+          "type": "string"
+        },
+        "claimed_arrival_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claimed Arrival At"
+        },
+        "evidence_seq": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Evidence Seq",
+          "type": "array"
+        }
+      },
+      "required": [
+        "supplier",
+        "tonnes",
+        "grade",
+        "transport_option"
+      ],
+      "title": "Lot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "simulated": {
+      "const": true,
+      "default": true,
+      "title": "Simulated",
+      "type": "boolean"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "case": {
+      "enum": [
+        "ambiguous",
+        "explicit",
+        "infeasible",
+        "disruption"
+      ],
+      "title": "Case",
+      "type": "string"
+    },
+    "configuration": {
+      "enum": [
+        "baseline",
+        "l9_hybrid",
+        "l9_full"
+      ],
+      "title": "Configuration",
+      "type": "string"
+    },
+    "plan_version": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Plan Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "committed",
+        "withheld",
+        "escalated"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "buyer_decision",
+        "party_rejected",
+        "round_limit",
+        "timeout",
+        "protocol_error",
+        "no_feasible_revision"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "lots": {
+      "items": {
+        "$ref": "#/$defs/Lot"
+      },
+      "title": "Lots",
+      "type": "array"
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Destination"
+    },
+    "arrival_deadline": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Arrival Deadline"
+    },
+    "total_cost_usd": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Cost Usd"
+    },
+    "milestone": {
+      "default": "unspecified",
+      "enum": [
+        "destination_receipt",
+        "pickup",
+        "origin_ready",
+        "unspecified"
+      ],
+      "title": "Milestone",
+      "type": "string"
+    },
+    "milestone_definition": {
+      "default": "",
+      "title": "Milestone Definition",
+      "type": "string"
+    },
+    "confirmations": {
+      "description": "Every confirmation received in the run, for any plan version.",
+      "items": {
+        "$ref": "#/$defs/Confirmation"
+      },
+      "title": "Confirmations",
+      "type": "array"
+    },
+    "evidence": {
+      "additionalProperties": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "description": "Record field name to the message seq numbers supporting it.",
+      "title": "Evidence",
+      "type": "object"
+    },
+    "disruption_injected": {
+      "default": false,
+      "title": "Disruption Injected",
+      "type": "boolean"
+    },
+    "superseded_versions": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Superseded Versions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "run_id",
+    "case",
+    "configuration",
+    "status",
+    "reason"
+  ],
+  "title": "CommitmentRecord",
+  "type": "object"
+}

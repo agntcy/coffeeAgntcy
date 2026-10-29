@@ -21,6 +21,9 @@ help:
 	@echo "  payment-mcp         - Run payment MCP server"
 	@echo "  helpdesk            - Run logistics helpdesk"
 	@echo "  recruiter-supervisor - Run recruiter supervisor"
+	@echo "  supply-chain-buyer  - Run the Supply Chain Commitment buyer (port 9095)"
+	@echo "  supply-chain-supplier-a|b|c - Run a Supply Chain Commitment supplier (9096-9098)"
+	@echo "  supply-chain-logistics - Run the Supply Chain Commitment logistics agent (9099)"
 
 .PHONY: recruiter-supervisor
 recruiter-supervisor:
@@ -70,3 +73,23 @@ payment-mcp:
 .PHONY: helpdesk
 helpdesk:
 	$(UV) agents/logistics/helpdesk/server.py
+
+.PHONY: supply-chain-buyer
+supply-chain-buyer:
+	$(UV) agents/supervisors/supply_chain/main.py
+
+.PHONY: supply-chain-supplier-a
+supply-chain-supplier-a:
+	SUPPLIER_ID=a $(UV) agents/supply_chain/supplier/server.py
+
+.PHONY: supply-chain-supplier-b
+supply-chain-supplier-b:
+	SUPPLIER_ID=b $(UV) agents/supply_chain/supplier/server.py
+
+.PHONY: supply-chain-supplier-c
+supply-chain-supplier-c:
+	SUPPLIER_ID=c $(UV) agents/supply_chain/supplier/server.py
+
+.PHONY: supply-chain-logistics
+supply-chain-logistics:
+	$(UV) agents/supply_chain/logistics/server.py
