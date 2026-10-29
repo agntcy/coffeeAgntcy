@@ -330,7 +330,7 @@ export interface components {
              * @description Which Lungo chat API base to use; null when the workflow is not runnable in the UI.
              * @enum {string|null}
              */
-            chat_api_target?: "exchange" | "logistics" | "discovery" | null;
+            chat_api_target?: "exchange" | "logistics" | "discovery" | "supply_chain" | null;
         };
         /** @description Workflows keyed by workflow name (map key equals WorkflowSummary.name). */
         WorkflowSummaryMapResponse: {

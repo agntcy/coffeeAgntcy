@@ -9,9 +9,11 @@ from typing import Literal
 
 from schema.types import Workflow
 
-ChatApiTarget = Literal["exchange", "logistics", "discovery"]
+ChatApiTarget = Literal["exchange", "logistics", "discovery", "supply_chain"]
 
-CHAT_API_TARGETS: frozenset[str] = frozenset({"exchange", "logistics", "discovery"})
+CHAT_API_TARGETS: frozenset[str] = frozenset(
+    {"exchange", "logistics", "discovery", "supply_chain"}
+)
 
 
 def parse_chat_api_target(raw: object) -> ChatApiTarget | None:

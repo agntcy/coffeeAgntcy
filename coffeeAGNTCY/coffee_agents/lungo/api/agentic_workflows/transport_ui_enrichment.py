@@ -15,7 +15,9 @@ _TRANSPORT_TYPES = frozenset({TRANSPORT, TRANSPORT_NODE})
 
 _TRANSPORT_BY_TARGET: dict[ChatApiTarget, str] = {}
 
-_ENRICHABLE_TARGETS: frozenset[ChatApiTarget] = frozenset({"exchange", "logistics"})
+_ENRICHABLE_TARGETS: frozenset[ChatApiTarget] = frozenset(
+    {"exchange", "logistics", "supply_chain"}
+)
 
 
 def init_transport_cache() -> None:
@@ -23,6 +25,7 @@ def init_transport_cache() -> None:
     _TRANSPORT_BY_TARGET.clear()
     _TRANSPORT_BY_TARGET["exchange"] = DEFAULT_MESSAGE_TRANSPORT.upper()
     _TRANSPORT_BY_TARGET["logistics"] = "SLIM"
+    _TRANSPORT_BY_TARGET["supply_chain"] = "SLIM"
 
 
 def clear_transport_cache() -> None:

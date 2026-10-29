@@ -14,4 +14,5 @@ PATTERNS: list[str] = [
     "Supervisor",
     "Peer Group",
     "Recruiter",
+    "Secure Group Collaboration",
 ]
