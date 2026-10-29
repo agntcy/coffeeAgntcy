@@ -8,6 +8,7 @@ import {
   getDiscoveryAppApiUrl,
   getExchangeAppApiUrl,
   getLogisticsAppApiUrl,
+  getSupplyChainAppApiUrl,
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
@@ -44,6 +45,11 @@ describe("workflowChatRouting", () => {
         expected: getLogisticsAppApiUrl(),
       },
       {
+        caseName: "supply_chain target",
+        over: { chat_api_target: "supply_chain" as const },
+        expected: getSupplyChainAppApiUrl(),
+      },
+      {
         caseName: "discovery target",
         over: { chat_api_target: "discovery" as const },
         expected: getDiscoveryAppApiUrl(),
@@ -76,6 +82,11 @@ describe("workflowChatRouting", () => {
       {
         caseName: "group sse",
         over: { chat_api_target: "logistics" as const, supports_sse: true },
+        expected: "group_sse" as const,
+      },
+      {
+        caseName: "supply chain group sse",
+        over: { chat_api_target: "supply_chain" as const, supports_sse: true },
         expected: "group_sse" as const,
       },
       {

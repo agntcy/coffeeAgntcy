@@ -8,6 +8,10 @@ import type { HttpRequestTarget } from "@/urls"
 import { logger } from "@/utils/logger"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
 import {
+  parseSupplyChainEvent,
+  type SupplyChainStreamEvent,
+} from "./supplyChainEvents"
+import {
   buildPromptStreamBody,
   runNdjsonStreamingSession,
 } from "./createNdjsonStreamingStore"
@@ -46,6 +50,7 @@ const isValidLogisticsStreamStep = (
 interface LogisticsStreamingState {
   status: NdjsonStreamingStatus
   events: LogisticsStreamStep[]
+  negotiationEvents: SupplyChainStreamEvent[]
   finalResponse: string | null
   error: string | null
   currentOrderId: string | null
@@ -55,6 +60,7 @@ interface LogisticsStreamingState {
 
 interface LogisticsStreamingActions {
   addEvent: (event: LogisticsStreamStep) => void
+  addNegotiationEvent: (event: SupplyChainStreamEvent) => void
   setFinalResponse: (response: string) => void
   setError: (error: string) => void
   setCurrentOrderId: (orderId: string) => void
@@ -71,6 +77,7 @@ interface LogisticsStreamingActions {
 const initialState: LogisticsStreamingState = {
   status: NDJSON_STREAMING_STATUS.IDLE,
   events: [],
+  negotiationEvents: [],
   finalResponse: null,
   error: null,
   currentOrderId: null,
@@ -86,11 +93,29 @@ function promoteToStreaming(
     : status
 }
 
-function handleGroupStreamPayload(
+/**
+ * The logistics stream sends its steps as Python-dict strings; parse those
+ * leniently. Anything that is valid JSON is parsed as JSON first, so text with
+ * apostrophes is never rewritten.
+ */
+function parseStringResponse(response: string): unknown {
+  try {
+    return JSON.parse(response)
+  } catch {
+    const jsonResponse = response
+      .replace(/'/g, '"')
+      .replace(/True/g, "true")
+      .replace(/False/g, "false")
+      .replace(/None/g, "null")
+    return JSON.parse(jsonResponse)
+  }
+}
+
+export function handleGroupStreamPayload(
   parsed: unknown,
   actions: Pick<
     LogisticsStreamingActions,
-    "addEvent" | "setFinalResponse" | "setSessionId"
+    "addEvent" | "addNegotiationEvent" | "setFinalResponse" | "setSessionId"
   >,
 ): "stop" | void {
   if (!parsed || typeof parsed !== "object") return
@@ -101,21 +126,31 @@ function handleGroupStreamPayload(
     actions.setSessionId(record.session_id)
   }
 
+  // Supply chain: the response is already a JSON object.
+  if (record.response && typeof record.response === "object") {
+    const event = parseSupplyChainEvent(record.response)
+    if (event) {
+      actions.addNegotiationEvent(event)
+    } else {
+      logger.error("Unrecognised group stream event:", {
+        event: record.response,
+      })
+    }
+    return
+  }
+
   if (typeof record.response !== "string") return
 
   const response = record.response
 
   if (response.startsWith("{'") || response.startsWith('{"')) {
     try {
-      const jsonResponse = response
-        .replace(/'/g, '"')
-        .replace(/True/g, "true")
-        .replace(/False/g, "false")
-        .replace(/None/g, "null")
+      const eventObj = parseStringResponse(response)
 
-      const eventObj = JSON.parse(jsonResponse)
-
-      if (isValidLogisticsStreamStep(eventObj)) {
+      const negotiationEvent = parseSupplyChainEvent(eventObj)
+      if (negotiationEvent) {
+        actions.addNegotiationEvent(negotiationEvent)
+      } else if (isValidLogisticsStreamStep(eventObj)) {
         actions.addEvent(eventObj)
       }
     } catch (dictParseError) {
@@ -145,6 +180,22 @@ export const useGroupStreamingStore = create<
           ? NDJSON_STREAMING_STATUS.COMPLETED
           : promoteToStreaming(state.status),
     })),
+
+  addNegotiationEvent: (event: SupplyChainStreamEvent) =>
+    set((state) => {
+      const next = {
+        negotiationEvents: [...state.negotiationEvents, event],
+        status: promoteToStreaming(state.status),
+      }
+      if (event.type === "status" && event.state === "error") {
+        return {
+          ...next,
+          error: event.message ?? "The run failed.",
+          status: NDJSON_STREAMING_STATUS.ERROR,
+        }
+      }
+      return next
+    }),
 
   setFinalResponse: (response: string) =>
     set({
@@ -178,7 +229,14 @@ export const useGroupStreamingStore = create<
     workflowInstanceId?: string | null,
     streamRequest?: HttpRequestTarget,
   ) => {
-    const { reset, addEvent, setFinalResponse, setError, setSessionId } = get()
+    const {
+      reset,
+      addEvent,
+      addNegotiationEvent,
+      setFinalResponse,
+      setError,
+      setSessionId,
+    } = get()
 
     reset()
     set({ status: NDJSON_STREAMING_STATUS.CONNECTING })
@@ -194,6 +252,7 @@ export const useGroupStreamingStore = create<
       onLine: (parsed) =>
         handleGroupStreamPayload(parsed, {
           addEvent,
+          addNegotiationEvent,
           setFinalResponse,
           setSessionId,
         }),
@@ -217,6 +276,9 @@ export const useGroupStreamingStore = create<
 export const useGroupEvents = () =>
   useGroupStreamingStore((state) => state.events)
 
+export const useGroupNegotiationEvents = () =>
+  useGroupStreamingStore((state) => state.negotiationEvents)
+
 export const useGroupFinalResponse = () =>
   useGroupStreamingStore((state) => state.finalResponse)
 
@@ -238,6 +300,7 @@ export const useGroupSessionId = () =>
 export const useGroupStreamingActions = () =>
   useGroupStreamingStore((state) => ({
     addEvent: state.addEvent,
+    addNegotiationEvent: state.addNegotiationEvent,
     setFinalResponse: state.setFinalResponse,
     setError: state.setError,
     setCurrentOrderId: state.setCurrentOrderId,

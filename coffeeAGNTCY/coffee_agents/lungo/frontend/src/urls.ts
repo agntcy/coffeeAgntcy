@@ -75,6 +75,7 @@ export const LUNGO_FRONTEND_URLS = {
   apiBaseDefaults: {
     exchangeAppApi: "http://127.0.0.1:8000",
     logisticsAppApi: "http://127.0.0.1:9090",
+    supplyChainAppApi: "http://127.0.0.1:9095",
     discoveryAppApi: "http://127.0.0.1:8882",
     agenticWorkflowsApi: "http://127.0.0.1:9105",
     grafana: "http://127.0.0.1:3001",
@@ -90,6 +91,7 @@ export const LUNGO_FRONTEND_URLS = {
   apiBaseEnvKeys: {
     exchangeAppApi: "VITE_EXCHANGE_APP_API_URL",
     logisticsAppApi: "VITE_LOGISTICS_APP_API_URL",
+    supplyChainAppApi: "VITE_SUPPLY_CHAIN_APP_API_URL",
     discoveryAppApi: "VITE_DISCOVERY_APP_API_URL",
     agenticWorkflowsApi: "VITE_AGENTIC_WORKFLOWS_API_URL",
     grafana: "VITE_GRAFANA_URL",
@@ -238,6 +240,10 @@ export function getExchangeAppApiUrl(): string {
 
 export function getLogisticsAppApiUrl(): string {
   return resolveApiBaseDefault("logisticsAppApi")
+}
+
+export function getSupplyChainAppApiUrl(): string {
+  return resolveApiBaseDefault("supplyChainAppApi")
 }
 
 export function getDiscoveryAppApiUrl(): string {

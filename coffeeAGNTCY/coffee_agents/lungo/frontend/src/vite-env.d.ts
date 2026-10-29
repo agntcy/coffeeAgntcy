@@ -8,6 +8,7 @@
 interface ImportMetaEnv {
   readonly VITE_EXCHANGE_APP_API_URL?: string
   readonly VITE_LOGISTICS_APP_API_URL?: string
+  readonly VITE_SUPPLY_CHAIN_APP_API_URL?: string
   readonly VITE_GRAFANA_URL?: string
   readonly VITE_DISCOVERY_APP_API_URL?: string
   readonly VITE_AGENTIC_WORKFLOWS_API_URL?: string

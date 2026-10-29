@@ -8,6 +8,7 @@ import {
   getDiscoveryAppApiUrl,
   getExchangeAppApiUrl,
   getLogisticsAppApiUrl,
+  getSupplyChainAppApiUrl,
 } from "@/urls"
 import {
   getApiUrlForChatTarget,
@@ -20,6 +21,11 @@ describe("getApiUrlForChatTarget", () => {
       caseName: "logistics target resolves to logistics app",
       target: "logistics" as ChatApiTarget,
       expected: getLogisticsAppApiUrl(),
+    },
+    {
+      caseName: "supply_chain target resolves to the supply chain app",
+      target: "supply_chain" as ChatApiTarget,
+      expected: getSupplyChainAppApiUrl(),
     },
     {
       caseName: "discovery target resolves to discovery app",

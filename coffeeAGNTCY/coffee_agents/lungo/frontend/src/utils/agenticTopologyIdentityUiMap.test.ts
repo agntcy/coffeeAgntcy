@@ -152,7 +152,8 @@ describe("agenticTopologyIdentityUiMap", () => {
       const out = enrichAgenticTopologyWellKnownUi(data, wire, {
         validateUrls: false,
       })
-      expect(out.directoryAgentSlug).toBe("logistics-supervisor-agent")
+      // A group is a container, not an agent: no directory slug is invented.
+      expect(out.directoryAgentSlug).toBeUndefined()
       expect(out.githubLink).toContain("transport")
     })
 
@@ -235,6 +236,30 @@ describe("agenticTopologyIdentityUiMap", () => {
           label_subtitle: "Group",
         }),
         expected: "logistics-supervisor-agent",
+      },
+      {
+        caseName: "supply chain buyer labels",
+        data: customNodeDataFixture({
+          label: "Buyer",
+          label_subtitle: "Moderator Agent",
+        }),
+        expected: "supply-chain-buyer-agent",
+      },
+      {
+        caseName: "supply chain supplier B labels",
+        data: customNodeDataFixture({
+          label: "Supplier B",
+          label_subtitle: "Supplier Agent",
+        }),
+        expected: "supply-chain-supplier-b",
+      },
+      {
+        caseName: "supply chain logistics labels",
+        data: customNodeDataFixture({
+          label: "Logistics",
+          label_subtitle: "Carrier Agent",
+        }),
+        expected: "supply-chain-logistics-agent",
       },
       {
         caseName: "MCP weather labels (title + role)",
