@@ -4,8 +4,6 @@ services:
     env_file:
       - path: ./configs/dir/apiserver.env
         required: true
-    volumes:
-      - ./configs/dir/server.config.yml:/etc/agntcy/dir/server.config.yml:ro
     ports:
       - 8888:8888
     depends_on:

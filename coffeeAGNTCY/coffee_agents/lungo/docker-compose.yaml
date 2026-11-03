@@ -561,8 +561,6 @@ services:
     env_file:
       - path: ./config/docker/dir/apiserver.env
         required: true
-    volumes:
-      - ./config/docker/dir/server.config.yml:/etc/agntcy/dir/server.config.yml:ro
     ports:
       - 8888:8888
     depends_on:
