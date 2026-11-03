@@ -4,6 +4,8 @@
 
 Unverified SSL is used only as a fallback when the first model load fails with
 SSL: CERTIFICATE_VERIFY_FAILED / unable to get local issuer certificate (e.g. macOS).
+The fallback also disables the hf-xet downloader, which uses its own HTTP stack
+that ignores the client factory and fails on large files behind such proxies.
 """
 
 import json
@@ -14,6 +16,7 @@ from typing import Any, Dict, List
 
 import httpx
 import pytest
+from huggingface_hub import constants as hf_constants
 from huggingface_hub.utils import close_session, set_client_factory
 from huggingface_hub.utils._http import default_client_factory
 from sentence_transformers import SentenceTransformer, util
@@ -54,15 +57,23 @@ def _load_sommelier_model():
     except Exception:
         close_session()
         set_client_factory(_unverified_hf_client)
+        xet_was_disabled = hf_constants.HF_HUB_DISABLE_XET
+        hf_constants.HF_HUB_DISABLE_XET = True
         try:
             model = SentenceTransformer("all-MiniLM-L6-v2")
         finally:
             close_session()
             set_client_factory(default_client_factory)
+            hf_constants.HF_HUB_DISABLE_XET = xet_was_disabled
         return model
 
 
-model = _load_sommelier_model()
+@pytest.fixture(scope="session")
+def sommelier_model():
+    try:
+        return _load_sommelier_model()
+    except Exception as exc:
+        pytest.skip(f"Sommelier embedding model unavailable: {exc}")
 
 
 def get_semantic_similarity(text1, text2, model):
@@ -103,7 +114,9 @@ PROMPT_CASES = load_prompt_cases()
 class TestAuctionFlows:
     @pytest.mark.agents(["farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_sommelier(self, supervisor_client, transport_config, prompt_case):
+    def test_sommelier(
+        self, supervisor_client, transport_config, prompt_case, sommelier_model
+    ):
         logger.info(
             f"\n---Test: test_sommelier with {prompt_case['id']} and transport {transport_config}---"
         )
@@ -116,7 +129,9 @@ class TestAuctionFlows:
         assert "response" in data
         max_similarity = 0
         for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
+            similarity = get_semantic_similarity(
+                data["response"], ref_res, sommelier_model
+            )
             if similarity > max_similarity:
                 max_similarity = similarity
         expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
