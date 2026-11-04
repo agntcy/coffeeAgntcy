@@ -81,11 +81,11 @@
     }
   ],
   "name": "Colombia Coffee Farm",
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "skills": [
     {
-      "id": 601,
-      "name": "retrieval_augmented_generation/retrieval_of_information"
+      "id": 70601,
+      "name": "ai_ml_engineering/retrieval_augmented_generation/rag_pipeline_construction"
     }
   ],
   "version": "1.0.0"
