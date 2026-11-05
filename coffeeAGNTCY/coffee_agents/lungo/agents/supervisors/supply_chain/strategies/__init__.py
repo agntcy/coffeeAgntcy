@@ -26,7 +26,7 @@ def get_strategy(configuration: str, **kwargs: Any):
     ``kwargs`` carry what a strategy needs to talk to an LLM (an LLM
     factory). Unknown names raise ``ValueError``; ``l9_hybrid`` and
     ``l9_full`` raise ``ConfigurationNotImplemented``, so the runner reports
-    ``not_implemented`` even when SUPPLY_CHAIN_L9_ENABLED is true.
+    ``not_implemented``.
     """
     if configuration == "l9_full":
         raise ConfigurationNotImplemented(NOT_IMPLEMENTED_MESSAGE)

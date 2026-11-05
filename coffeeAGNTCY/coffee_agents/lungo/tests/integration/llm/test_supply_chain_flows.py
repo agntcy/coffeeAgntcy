@@ -43,19 +43,11 @@ TRANSPORT_MATRIX = [
     )
 ]
 
-L9_NOT_BUILT = pytest.mark.skip(
-    reason="L9 bridge not built yet (tasks 4.4 and 4.5); also needs L9 switched on"
-)
-
-# One case per configuration. `ambiguous` is the headline case; `disruption`
-# also covers the step where the Moderator announces a change to a party.
+# `ambiguous` is the headline case; `disruption` also covers the step where
+# the Moderator announces a change to a party.
 FLOW_CASES = [
     pytest.param("ambiguous", "baseline", id="ambiguous-baseline"),
     pytest.param("disruption", "baseline", id="disruption-baseline"),
-    pytest.param(
-        "ambiguous", "l9_hybrid", id="ambiguous-l9_hybrid", marks=L9_NOT_BUILT
-    ),
-    pytest.param("ambiguous", "l9_full", id="ambiguous-l9_full", marks=L9_NOT_BUILT),
 ]
 
 

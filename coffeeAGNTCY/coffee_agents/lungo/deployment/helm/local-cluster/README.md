@@ -29,4 +29,3 @@ The umbrella chart deploys the Supply Chain Commitment agents (see [Supply Chain
 
 - `kind-config.yaml` maps NodePort 30085 to the host. The `ui` chart sets `VITE_SUPPLY_CHAIN_APP_API_URL` to `http://127.0.0.1:9095`, the same style of value as for the other supervisors. `values.yaml` sets the Buyer's CORS origins.
 - `config-overrides.yaml.gotmpl` gives the four members the same SLIM, LLM and secret settings as the logistics agents, and gives the Buyer the Agentic Workflows API settings (`workflowApiUrl`, `workflowApiKey`) as the other supervisors have.
-- Every one of the three charts has `config.l9Enabled` (default `false`), rendered as `SUPPLY_CHAIN_L9_ENABLED`. With `false` the Buyer offers and accepts only baseline runs; set it to `true` on all three to allow L9 runs.

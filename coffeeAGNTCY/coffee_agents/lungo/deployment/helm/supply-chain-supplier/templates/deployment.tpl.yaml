@@ -43,17 +43,21 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.probes.endpoint }}
-            port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
+            port: {{ .Values.probes.port | default .Values.service.port }}
+          initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          failureThreshold: {{ .Values.probes.failureThreshold }}
         {{ end }}
         {{ if .Values.probes.livenessProbeEnabled }}
         livenessProbe:
           httpGet:
             path: {{ .Values.probes.endpoint }}
-            port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
+            port: {{ .Values.probes.port | default .Values.service.port }}
+          initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          failureThreshold: {{ .Values.probes.failureThreshold }}
         {{ end }}
         envFrom:
           - configMapRef:

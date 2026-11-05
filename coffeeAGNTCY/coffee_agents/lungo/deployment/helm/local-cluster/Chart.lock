@@ -61,18 +61,18 @@ dependencies:
   version: 0.2.0
 - name: supply-chain-buyer
   repository: file://../supply-chain-buyer
-  version: 0.1.0
+  version: 0.1.1
 - name: supply-chain-supplier
   repository: file://../supply-chain-supplier
-  version: 0.1.0
+  version: 0.1.1
 - name: supply-chain-supplier
   repository: file://../supply-chain-supplier
-  version: 0.1.0
+  version: 0.1.1
 - name: supply-chain-supplier
   repository: file://../supply-chain-supplier
-  version: 0.1.0
+  version: 0.1.1
 - name: supply-chain-logistics
   repository: file://../supply-chain-logistics
-  version: 0.1.0
-digest: sha256:6aeaf2b78bfec2fd5a7b01324e3ba80367b1db6e8b17ed5ab3ca8ca79e078d5f
-generated: "2026-10-28T11:08:46.79361+01:00"
+  version: 0.1.1
+digest: sha256:8eee47a09a2e001a518c1db91014e815444db942150ac595842ce8a3e2141e28
+generated: "2026-10-29T16:00:02.67324+01:00"

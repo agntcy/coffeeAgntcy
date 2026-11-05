@@ -41,9 +41,6 @@ ensure_compose_profile("observability")
 
 _otel_shutdown_done = False
 
-# Passed to every supply chain process so a run needs no ACCORD or CONCORD.
-SUPPLY_CHAIN_L9_OFF = {"SUPPLY_CHAIN_L9_ENABLED": "false"}
-
 AGENTS = {
     # auction agents
     "brazil-farm": {
@@ -82,26 +79,25 @@ AGENTS = {
     # supply chain commitment agents (the Buyer runs in-process, see
     # ``supply_chain_buyer_client``). The suppliers share one module and are
     # told apart by SUPPLIER_ID; AGENT_PORT is their default, set explicitly.
-    # L9 is off until the bridge is built (tasks 4.4 and 4.5).
     "supply-chain-supplier-a": {
         "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
         "ready_pattern": r"Agent ready",
-        "env": {"SUPPLIER_ID": "a", "AGENT_PORT": "9096", **SUPPLY_CHAIN_L9_OFF},
+        "env": {"SUPPLIER_ID": "a", "AGENT_PORT": "9096"},
     },
     "supply-chain-supplier-b": {
         "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
         "ready_pattern": r"Agent ready",
-        "env": {"SUPPLIER_ID": "b", "AGENT_PORT": "9097", **SUPPLY_CHAIN_L9_OFF},
+        "env": {"SUPPLIER_ID": "b", "AGENT_PORT": "9097"},
     },
     "supply-chain-supplier-c": {
         "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
         "ready_pattern": r"Agent ready",
-        "env": {"SUPPLIER_ID": "c", "AGENT_PORT": "9098", **SUPPLY_CHAIN_L9_OFF},
+        "env": {"SUPPLIER_ID": "c", "AGENT_PORT": "9098"},
     },
     "supply-chain-logistics": {
         "cmd": ["python", "-m", "agents.supply_chain.logistics.server"],
         "ready_pattern": r"Agent ready",
-        "env": {"AGENT_PORT": "9099", **SUPPLY_CHAIN_L9_OFF},
+        "env": {"AGENT_PORT": "9099"},
     },
 }
 
@@ -641,7 +637,7 @@ def logistics_supervisor_client(transport_config, monkeypatch):
 def supply_chain_buyer_client(transport_config, monkeypatch, tmp_path):
     """The Supply Chain Commitment Buyer's HTTP app, run in-process.
 
-    L9 is off and run directories go to ``tmp_path``, so a test never writes
+    Run directories go to ``tmp_path``, so a test never writes
     into ``runs/supply_chain``. The Buyer builds its runner in the background;
     the fixture waits for it, which needs no other agent (``/v1/health`` is the
     check that needs the Logistics agent).
@@ -649,8 +645,6 @@ def supply_chain_buyer_client(transport_config, monkeypatch, tmp_path):
     for k, v in _base_env().items():
         monkeypatch.setenv(k, str(v))
     for k, v in transport_config.items():
-        monkeypatch.setenv(k, v)
-    for k, v in SUPPLY_CHAIN_L9_OFF.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("SUPPLY_CHAIN_RUN_DIR", str(tmp_path / "runs"))
     # Quiet the workflow event emitter: no Workflow API runs in these tests.

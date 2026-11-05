@@ -3,6 +3,7 @@
 
 """Buyer HTTP routes: prompts, OASF, explicit-field precedence, NDJSON stream."""
 
+import contextlib
 import json
 
 import pytest
@@ -13,8 +14,6 @@ from agents.supply_chain.common.fixtures import CASES
 
 
 class FakeRunner:
-    l9_enabled = True
-
     def __init__(self):
         self.calls = []
 
@@ -46,29 +45,36 @@ def test_routes_report_initializing_before_the_runner_exists():
     assert c.get("/health").json() == {"status": "ok"}
 
 
+@pytest.mark.parametrize(
+    "name, value",
+    [
+        ("SUPPLY_CHAIN_MAX_ROUNDS", "zero"),
+        ("SUPPLY_CHAIN_MAX_ROUNDS", "0"),
+    ],
+)
+def test_bad_setting_stops_start_up(monkeypatch, name, value):
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ValueError):
+        with TestClient(main.app):
+            pass
+
+
 GOALS = {
     "ambiguous": "DR-1",
     "explicit": "CE-1",
     "infeasible": "IE-1",
     "disruption": "CC-4",
 }
-RUN_TYPES = ("baseline", "l9_hybrid", "l9_full")
 
 
-def test_with_l9_on_twelve_prompts_are_offered_grouped_by_goal(client):
+def test_one_baseline_prompt_is_offered_per_goal(client):
     prompts = client.get("/suggested-prompts").json()["supply_chain"]
 
-    assert len(prompts) == 12
-    assert {(p["case"], p["configuration"]) for p in prompts} == {
-        (c, k) for c in CASES for k in RUN_TYPES
-    }
-    # Grouped by goal, each goal in baseline, hybrid, full order.
-    assert [p["goal"] for p in prompts] == [
-        g for g in GOALS.values() for _ in RUN_TYPES
+    assert [(p["case"], p["configuration"]) for p in prompts] == [
+        (c, "baseline") for c in CASES
     ]
-    assert [p["configuration"] for p in prompts[:3]] == list(RUN_TYPES)
+    assert [p["goal"] for p in prompts] == list(GOALS.values())
     assert all(p["prompt"] and p["description"] for p in prompts)
-    assert all(GOALS[p["case"]] == p["goal"] for p in prompts)
 
 
 def test_every_prompt_tag_equals_its_case_and_configuration(client):
@@ -77,23 +83,6 @@ def test_every_prompt_tag_equals_its_case_and_configuration(client):
     for p in client.get("/suggested-prompts").json()["supply_chain"]:
         assert p["prompt"].startswith("I'd like to have a 1,000-tonne coffee shipment")
         assert parse_tag(p["prompt"]) == (p["case"], p["configuration"])
-
-
-def test_with_l9_off_only_four_baseline_prompts_without_any_l9_mention(client):
-    main.app.state.supply_chain_runner.l9_enabled = False
-    prompts = client.get("/suggested-prompts").json()["supply_chain"]
-
-    assert len(prompts) == 4
-    assert {p["configuration"] for p in prompts} == {"baseline"}
-    assert {p["case"] for p in prompts} == set(CASES)
-    assert not any("l9" in str(p).lower() for p in prompts)
-
-
-def test_before_the_runner_exists_no_l9_prompt_is_offered():
-    if hasattr(main.app.state, "supply_chain_runner"):
-        del main.app.state.supply_chain_runner
-    prompts = TestClient(main.app).get("/suggested-prompts").json()["supply_chain"]
-    assert len(prompts) == 4 and not any("l9" in str(p).lower() for p in prompts)
 
 
 def test_transport_config_is_slim(client):
@@ -161,4 +150,39 @@ def test_an_error_midstream_becomes_a_json_error_line(client):
     ]
 
     assert lines[-1]["response"]["state"] == "error"
+    assert lines[-1]["session_id"] == lines[0]["session_id"]
     assert "secret internal detail" not in json.dumps(lines)
+
+
+def test_the_stream_session_stays_open_until_the_last_event(client, monkeypatch):
+    log = []
+
+    @contextlib.contextmanager
+    def session_start():
+        log.append("start")
+        yield {"executionID": "s1"}
+        log.append("end")
+
+    class Recording(FakeRunner):
+        async def stream(self, prompt, **kwargs):
+            for i in range(2):
+                log.append(f"event {i}")
+                yield {"type": "message", "body": str(i)}
+
+    monkeypatch.setattr(main, "session_start", session_start)
+    main.app.state.supply_chain_runner = Recording()
+    client.post("/agent/prompt/stream", json={"prompt": "p"})
+
+    assert log == ["start", "event 0", "event 1", "end"]
+
+
+def test_a_failed_run_does_not_return_the_exception_text(client):
+    class Broken(FakeRunner):
+        async def run(self, prompt, **kwargs):
+            raise RuntimeError("secret internal detail")
+
+    main.app.state.supply_chain_runner = Broken()
+    response = client.post("/agent/prompt", json={"prompt": "p"})
+
+    assert response.status_code == 500
+    assert "secret internal detail" not in response.text

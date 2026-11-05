@@ -24,18 +24,13 @@ from agents.supervisors.supply_chain.limits import (
     run_root_from_env,
 )
 from agents.supervisors.supply_chain.moderator import Moderator
-from agents.supervisors.supply_chain.selection import (
-    L9_CONFIGURATIONS,
-    L9_DISABLED_MESSAGE,
-    resolve_selection,
-)
+from agents.supervisors.supply_chain.selection import resolve_selection
 from agents.supervisors.supply_chain.strategies import (
     ConfigurationNotImplemented,
     get_strategy,
 )
 from agents.supervisors.supply_chain.transport import GroupTransport
 from agents.supply_chain.common.member import MemberAgent
-from agents.supply_chain.common.skills import l9_enabled
 from common.workflow_context_prop import (
     attach_workflow_context,
     detach_workflow_context,
@@ -63,14 +58,10 @@ class SupplyChainRunner:
         run_root: Path | None = None,
         llm_factory: Callable[..., Any] | None = None,
         model: str = "",
-        l9: bool | None = None,
     ):
         self._transport = transport
         self._llm_factory = llm_factory
-        # Whether ACCORD and CONCORD may run at all (design D12); read at
-        # start-up so a bad value stops the Buyer right away.
-        self.l9_enabled = l9_enabled() if l9 is None else l9
-        self._buyer = buyer or MemberAgent("buyer", llm_factory, l9=self.l9_enabled)
+        self._buyer = buyer or MemberAgent("buyer", llm_factory)
         self._limits = limits or Limits.from_env()
         self._run_root = run_root or run_root_from_env()
         self._model = model
@@ -106,15 +97,6 @@ class SupplyChainRunner:
                 "sources": selection.sources,
                 "message": selection.describe(),
             }
-            if not self.l9_enabled and selection.configuration in L9_CONFIGURATIONS:
-                # No agent is contacted and no run directory is created.
-                yield {
-                    "type": "status",
-                    "state": "l9_disabled",
-                    "message": L9_DISABLED_MESSAGE,
-                }
-                return
-
             try:
                 strategy = get_strategy(
                     selection.configuration, llm_factory=self._llm_factory
@@ -137,7 +119,6 @@ class SupplyChainRunner:
                 emit=queue.put_nowait,
                 meta={
                     "model": self._model,
-                    "l9_available": self.l9_enabled,
                     "selection": selection.sources,
                     "prompt": prompt,
                 },
@@ -175,11 +156,7 @@ class SupplyChainRunner:
             kind = event["type"]
             if kind == "message":
                 result["messages"] += 1
-            elif kind == "status" and event["state"] in (
-                "selected",
-                "not_implemented",
-                "l9_disabled",
-            ):
+            elif kind == "status" and event["state"] in ("selected", "not_implemented"):
                 result[event["state"]] = event
             elif kind in ("record", "verdict"):
                 result[kind] = event[kind]

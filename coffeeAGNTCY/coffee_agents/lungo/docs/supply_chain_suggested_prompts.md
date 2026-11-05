@@ -27,8 +27,7 @@ checker. Only the way the group negotiates differs.
 | How a plan comes about | The Buyer's LLM decides each round: continue, propose a plan, withhold or escalate | CONCORD converges on one plan under a locked contract. The Buyer's LLM then proposes, withholds or escalates | Not designed yet |
 | How a plan is committed | The confirm round: all five parties confirm the same plan version | The same confirm round | The same confirm round |
 | LLM calls per run | Fewest (about 20 to 40 in the first probe) | More, because of the protocol phases | Most |
-| Needs `SUPPLY_CHAIN_L9_ENABLED` on | No, works either way | Yes | Yes |
-| Offered as a suggested prompt | Always | Only when L9 is on | Only when L9 is on |
+| Offered as a suggested prompt | Yes | Later, with the L9 protocols | Later, with the L9 protocols |
 | Role in the demo | Shows the failure, and that it can be silent | Tests whether the protocols prevent it (a hypothesis, not a promise) | Later comparison |
 | Status | Built (task 4.3) | Planned (tasks 4.4 and 4.5) | Declared only. The Buyer answers "not implemented" (task 4.8) |
 
@@ -70,8 +69,8 @@ baseline passed (decisions N27). The mapping of `CE-1` to `explicit` is our read
 use case, which ties `CE-1` to the false commitment rate rather than to one
 case.
 
-**Summary.** Each goal has one case, and each case is offered in every run
-type that is available. The headline pair is `ambiguous` with `baseline`
+**Summary.** Each goal has one case. Today each case is offered as a
+`baseline` prompt; the L9 prompts follow with the L9 protocols. The headline pair is `ambiguous` with `baseline`
 against `ambiguous` with `L9 hybrid`. The prompt describes the request for
 a person to read. The agents' opening request always comes from the case's
 fixed wording, so every run type of a case starts from the same text.
@@ -79,22 +78,25 @@ fixed wording, so every run type of a case starts from the same text.
 ### The full prompt list
 
 Each prompt is the baseline prompt with another run type in the closing tag.
-The tag is what sets the case and the configuration.
+The tag is what sets the case and the configuration. Only the four baseline
+prompts are in `suggested_prompts.json` today. The eight L9 prompts are kept
+here, in their final wording, and will be added with the L9 protocols (see
+[Planned: the L9 switch](#planned-the-l9-switch)).
 
-| Goal | Run type | Prompt | Shown when |
+| Goal | Run type | Prompt | Offered |
 |---|---|---|---|
-| `DR-1` | baseline | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/baseline) | Always |
-| `DR-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 hybrid) | L9 on |
-| `DR-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 full) | L9 on |
-| `CE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/baseline) | Always |
-| `CE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 hybrid) | L9 on |
-| `CE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 full) | L9 on |
-| `IE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/baseline) | Always |
-| `IE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 hybrid) | L9 on |
-| `IE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 full) | L9 on |
-| `CC-4` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/baseline) | Always |
-| `CC-4` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 hybrid) | L9 on |
-| `CC-4` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 full) | L9 on |
+| `DR-1` | baseline | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/baseline) | Now |
+| `DR-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 hybrid) | Later |
+| `DR-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 full) | Later |
+| `CE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/baseline) | Now |
+| `CE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 hybrid) | Later |
+| `CE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 full) | Later |
+| `IE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/baseline) | Now |
+| `IE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 hybrid) | Later |
+| `IE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 full) | Later |
+| `CC-4` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/baseline) | Now |
+| `CC-4` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 hybrid) | Later |
+| `CC-4` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 full) | Later |
 
 ## 3. How a prompt picks the run
 
@@ -112,28 +114,37 @@ not with a model, so the same prompt always picks the same run.
 4. The defaults, `ambiguous` and `baseline`. The first streamed event says
    when a default was used.
 
-**The L9 switch.** `SUPPLY_CHAIN_L9_ENABLED` decides which prompts the chat
-offers. The tag then sets the configuration of the chosen run.
+**A prompt with an L9 tag, typed by hand,** is accepted, and the run ends
+right after the selection with a `not_implemented` status: no agent is
+contacted and no run directory is created.
+
+### Planned: the L9 switch
+
+The L9 protocols (the ACCORD and CONCORD skills) will be added later. With
+them come the eight L9 prompts above and a deployment switch,
+`SUPPLY_CHAIN_L9_ENABLED`, that turns L9 on and off for all five services,
+default on once L9 is implemented. Today there is no switch and no L9 prompt:
+both, and their tests, are to be recreated then. What the switch is meant to
+do:
 
 | `SUPPLY_CHAIN_L9_ENABLED` | Suggested prompts offered | A prompt with an L9 tag, typed by hand |
 |---|---|---|
-| Off (default) | 4, all `baseline`. No prompt mentions L9 | Refused: no agent is contacted, and the first events say L9 is disabled in this deployment |
-| On | 12: each goal in `baseline`, `L9 hybrid` and `L9 full` | Runs with that configuration. `L9 full` answers "not implemented" until it is built |
+| On (default) | 12: each goal in `baseline`, `L9 hybrid` and `L9 full` | Runs with that configuration |
+| Off | 4, all `baseline`. No prompt mentions L9 | Refused: no agent is contacted, and the first events say L9 is disabled in this deployment |
 
-**Summary.** With L9 off, a person using the suggested prompts cannot reach an
-L9 run, so the failing demo stays free of ACCORD and CONCORD by what is on
-offer, not only by what is refused. With L9 on, the choice of prompt is the
-choice of run type, so the paired demo needs no restart and no setting
-change.
+With L9 off, every agent also refuses ACCORD and CONCORD messages, and each
+run's `meta.json` records whether L9 was available. With L9 on, the choice of
+prompt is the choice of run type, so the paired demo needs no restart and no
+setting change.
 
 ## What is built today
 
 - Built: the `baseline` run type (including the disruption flow, task 4.6
-  baseline part), the L9 switch, the closing-tag rule, and
-  `suggested_prompts.json` with the 12 prompts in the wording on this page,
-  grouped by goal and filtered by the switch (4 baseline prompts while L9 is
-  off). The UI shows them in one menu, labelled `SUPPLY_CHAIN` rather than by
-  goal.
+  baseline part), the closing-tag rule, and `suggested_prompts.json` with
+  the 4 baseline prompts in the wording on this page, grouped by goal. The
+  UI shows them in one menu, labelled `SUPPLY_CHAIN` rather than by goal.
+  Agents refuse ACCORD and CONCORD messages as not implemented.
+- Planned: the L9 switch and the 8 L9 prompts (above).
 - Planned: the `l9_hybrid` run (tasks 4.4 and 4.5). `l9_full` answers "not
   implemented" until task 4.8 and its follow-up.
 - No frontend change is needed for the prompts: the chat sends the prompt

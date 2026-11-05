@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: "0.0.1"
 description: A Helm chart for a Supply Chain Commitment supplier agent (deploy once per supplier)
 name: supply-chain-supplier
-version: 0.1.0
+version: 0.1.1

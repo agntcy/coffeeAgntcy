@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -12,12 +13,9 @@ from pathlib import Path
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 import uvicorn
 from agents.supervisors.supply_chain.card import BUYER_CARD
+from agents.supervisors.supply_chain.limits import Limits
 from agents.supervisors.supply_chain.runner import SupplyChainRunner
-from agents.supervisors.supply_chain.selection import (
-    L9_CONFIGURATIONS,
-    L9_DISABLED_MESSAGE,
-    validate_fields,
-)
+from agents.supervisors.supply_chain.selection import validate_fields
 from agents.supervisors.supply_chain.shared import a2a_client_factory, set_factory
 from agents.supervisors.supply_chain.transport import SlimGroupTransport
 from agents.supply_chain.logistics.card import AGENT_CARD as LOGISTICS_CARD
@@ -47,21 +45,31 @@ if not OTEL_SDK_DISABLED:
     register_cleanup_span_processor()
 
 
-def _build_runner() -> SupplyChainRunner:
+# Runs in a background task after the server starts: an exception here is
+# logged once, and from then on the routes that need the runner (the prompt
+# routes and /v1/health) answer 503 "Service initializing" while /health
+# still answers ok. Keep these constructors free of I/O and validation;
+# check settings in lifespan before serving, so a bad value stops start-up.
+def _build_runner(limits: Limits) -> SupplyChainRunner:
     cards = {"logistics": LOGISTICS_CARD, **SUPPLIER_CARDS}
     transport = SlimGroupTransport(
         a2a_client_factory,
         cards,
         interceptors=[EventEmittingInterceptor(caller_card=BUYER_CARD)],
     )
-    return SupplyChainRunner(transport, model=LLM_MODEL)
+    return SupplyChainRunner(transport, model=LLM_MODEL, limits=limits)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # A bad SUPPLY_CHAIN_* limit stops the Buyer at start-up: read before serving.
+    limits = Limits.from_env()
+
     async def init_runner():
         try:
-            app.state.supply_chain_runner = await asyncio.to_thread(_build_runner)
+            app.state.supply_chain_runner = await asyncio.to_thread(
+                _build_runner, limits
+            )
             logger.info("Supply chain runner initialized")
         except Exception as e:
             logger.exception("Background runner init failed: %s", e)
@@ -109,20 +117,18 @@ def _runner(req: Request) -> SupplyChainRunner:
     return runner
 
 
-def _validated(request: PromptRequest, runner: SupplyChainRunner) -> None:
+def _validated(request: PromptRequest) -> None:
     try:
         validate_fields(request.case, request.configuration)
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    if not runner.l9_enabled and request.configuration in L9_CONFIGURATIONS:
-        raise HTTPException(status_code=400, detail=L9_DISABLED_MESSAGE)
 
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest, req: Request):
     """Run to the end and return the selection, record and verdict."""
     runner = _runner(req)
-    _validated(request, runner)
+    _validated(request)
     try:
         with session_start() as session_id:
             result = await runner.run(
@@ -136,7 +142,10 @@ async def handle_prompt(request: PromptRequest, req: Request):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.exception("Operation failed")
-        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="An internal error occurred while processing the request.",
+        ) from e
 
 
 @app.get("/health")
@@ -148,14 +157,22 @@ async def health_check():
 async def connectivity_health(req: Request):
     """Deep liveness: creating a client for the Logistics agent opens a SLIM session."""
     _runner(req)
+    client = None
     try:
-        await asyncio.wait_for(a2a_client_factory.create(LOGISTICS_CARD), timeout=30)
+        client = await asyncio.wait_for(
+            a2a_client_factory.create(LOGISTICS_CARD), timeout=30
+        )
         logger.info("Liveness probe succeeded: SLIM connectivity verified.")
         return {"status": "alive"}
     except asyncio.TimeoutError:
         raise HTTPException(status_code=500, detail="Timeout creating A2A client")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        logger.exception("Liveness probe failed")
+        raise HTTPException(status_code=500, detail="Health check failed") from e
+    finally:
+        if client is not None:
+            with contextlib.suppress(Exception):
+                await client.close()
 
 
 @app.get("/transport/config")
@@ -173,10 +190,12 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
     record and the verdict come last, after the run's ``RUN_END`` message.
     """
     runner = _runner(req)
-    _validated(request, runner)
-    with session_start() as session_id:
+    _validated(request)
 
-        async def stream_generator():
+    async def stream_generator():
+        # The session must stay open until the stream ends: the response is
+        # iterated after this handler has returned.
+        with session_start() as session_id:
             try:
                 async for event in runner.stream(
                     request.prompt,
@@ -199,33 +218,27 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                                 "type": "status",
                                 "state": "error",
                                 "message": "An internal error occurred while processing the request.",
-                            }
+                            },
+                            "session_id": session_id["executionID"],
                         }
                     )
                     + "\n"
                 )
 
-        return StreamingResponse(
-            stream_generator(),
-            media_type="application/x-ndjson",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
-        )
+    return StreamingResponse(
+        stream_generator(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
 
 
 @app.get("/suggested-prompts")
-async def get_prompts(req: Request, pattern: str = "default"):
-    """The suggested prompts, grouped by goal. With L9 off, only baseline ones."""
+async def get_prompts(pattern: str = "default"):
+    """The suggested prompts, grouped by goal."""
     try:
         prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
         data = json.loads(prompts_path.read_text(encoding="utf-8"))
-        prompts = data.get("supply_chain_prompts", [])
-        # Until the runner exists, offer the safe list: no L9 prompt.
-        runner = getattr(req.app.state, "supply_chain_runner", None)
-        if runner is None or not runner.l9_enabled:
-            prompts = [
-                p for p in prompts if p["configuration"] not in L9_CONFIGURATIONS
-            ]
-        return {"supply_chain": prompts}
+        return {"supply_chain": data.get("supply_chain_prompts", [])}
     except Exception as e:
         logger.error(f"Unexpected error while reading prompts: {str(e)}")
         raise HTTPException(

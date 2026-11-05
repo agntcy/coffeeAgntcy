@@ -27,8 +27,6 @@ config:
   # Agentic Workflows API (WORKFLOW_API_URL / WORKFLOW_API_KEY). Rendered only when set.
   workflowApiUrl: ""
   workflowApiKey: ""
-  # SUPPLY_CHAIN_L9_ENABLED: whether ACCORD and CONCORD runs are allowed. With false the Buyer offers and accepts baseline runs only. Default false: set true to allow L9 runs.
-  l9Enabled: false
   corsAllowedOrigins: ""
 #  llmStreaming: False
 

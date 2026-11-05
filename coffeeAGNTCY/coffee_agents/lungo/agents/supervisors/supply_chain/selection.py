@@ -25,12 +25,6 @@ from agents.supply_chain.common.record import Configuration
 logger = logging.getLogger("lungo.supply_chain.selection")
 
 CONFIGURATIONS: tuple[str, ...] = get_args(Configuration)
-# The configurations that need ACCORD and CONCORD (design D12).
-L9_CONFIGURATIONS: tuple[str, ...] = ("l9_hybrid", "l9_full")
-L9_DISABLED_MESSAGE = (
-    "L9 (ACCORD and CONCORD) is disabled in this deployment "
-    "(SUPPLY_CHAIN_L9_ENABLED is off), so only the baseline configuration can run."
-)
 DEFAULT_CASE: CaseId = "ambiguous"
 DEFAULT_CONFIGURATION = "baseline"
 

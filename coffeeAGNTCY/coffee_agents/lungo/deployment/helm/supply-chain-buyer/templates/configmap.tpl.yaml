@@ -19,4 +19,3 @@ data:
   {{- if .Values.config.workflowApiKey }}
   WORKFLOW_API_KEY: {{ .Values.config.workflowApiKey | quote }}
   {{- end }}
-  SUPPLY_CHAIN_L9_ENABLED: {{ .Values.config.l9Enabled | default false | quote }}

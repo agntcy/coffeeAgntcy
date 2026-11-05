@@ -13,5 +13,4 @@ data:
   NATS_SERVER: "{{ .Values.config.natsServer }}"
   SLIM_ALLOW_PLACEHOLDER_SECRET: "{{ .Values.config.slimAllowPlaceholderSecret | default false }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
-  SUPPLY_CHAIN_L9_ENABLED: {{ .Values.config.l9Enabled | default false | quote }}
   AGENT_PORT: {{ .Values.service.port | quote }}

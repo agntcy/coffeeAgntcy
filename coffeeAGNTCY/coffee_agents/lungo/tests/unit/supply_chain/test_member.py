@@ -8,7 +8,11 @@ import json
 import pytest
 
 from agents.supply_chain.common.envelope import Envelope, decode
-from agents.supply_chain.common.member import ConfirmDecision, MemberAgent
+from agents.supply_chain.common.member import (
+    ConfirmDecision,
+    L9NotImplemented,
+    MemberAgent,
+)
 from tests.helpers.supply_chain_fakes import FakeLLM
 
 PARTIES = ["supplier_a", "supplier_b", "supplier_c", "logistics", "buyer"]
@@ -139,6 +143,28 @@ async def test_disruption_flag_is_per_run():
     assert "November 16, 09:00 UTC" in llm.prompt_text(1)
 
 
+@pytest.mark.parametrize("kind", ["accord_request", "concord_request"])
+async def test_l9_request_is_refused_without_calling_llm(kind):
+    llm = FakeLLM()
+    member = MemberAgent("supplier_a", llm)
+    with pytest.raises(L9NotImplemented, match="not implemented yet for supplier_a"):
+        await member.handle(
+            _request(["supplier_a"], kind=kind, configuration="l9_hybrid")
+        )
+    assert llm.calls == []
+    assert member._runs == {}  # no run state was created either
+
+
+@pytest.mark.parametrize("kind", ["accord_request", "concord_request"])
+async def test_l9_request_to_another_party_is_a_noop(kind):
+    llm = FakeLLM()
+    reply = await MemberAgent("supplier_a", llm).handle(
+        _request(["supplier_b"], kind=kind, configuration="l9_hybrid")
+    )
+    assert reply.kind == "noop"
+    assert llm.calls == []
+
+
 async def test_unknown_case_is_rejected():
     with pytest.raises(ValueError):
         await MemberAgent("buyer", FakeLLM("x")).handle(
@@ -157,14 +183,16 @@ async def test_role_instructions_do_not_depend_on_the_configuration():
     assert prompts[0] == prompts[1]
 
 
-async def test_logistics_infeasible_case_has_no_expedited_capacity():
+async def test_logistics_infeasible_case_holds_no_expedited_capacity_record():
     llm = FakeLLM("No expedited capacity.")
     await MemberAgent("logistics", llm).handle(
         _request(["logistics"], case="infeasible")
     )
+    # Decisions N41: Logistics is not told capacity is missing, only that it
+    # holds no record of it.
     assert (
-        "no capacity is available" in llm.prompt_text()
-        and "19,000" not in llm.prompt_text()
+        "no capacity is available" not in llm.prompt_text()
+        and "You hold no capacity record to check it against." in llm.prompt_text()
     )
     llm = FakeLLM("Expedited is possible.")
     await MemberAgent("logistics", llm).handle(_request(["logistics"], case="explicit"))

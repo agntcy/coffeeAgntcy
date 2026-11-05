@@ -59,7 +59,6 @@ export function describeSupplyChainStatus(
       return `Buyer decision in round ${event.round ?? "?"}: ${event.action ?? "?"}`
     case "disruption":
       return `Disruption after plan version ${event.plan_version ?? "?"} was confirmed: a supplier's ready time changed`
-    case "l9_disabled":
     case "not_implemented":
       return event.message ?? event.state
     default:

@@ -28,7 +28,6 @@ from pydantic import BaseModel
 from agents.supply_chain.common import fixtures as fx
 from agents.supply_chain.common import prompts
 from agents.supply_chain.common.envelope import Envelope, Kind, noop, reply
-from agents.supply_chain.common.skills import l9_enabled
 
 logger = logging.getLogger("lungo.supply_chain.member")
 
@@ -59,13 +58,11 @@ LlmFactory = Callable[..., Any]
 L9_KINDS = ("accord_request", "concord_request")
 
 
-class L9Disabled(RuntimeError):
-    """An ACCORD or CONCORD request reached an agent that cannot serve it.
+class L9NotImplemented(RuntimeError):
+    """An ACCORD or CONCORD request reached an agent; the protocol is not built.
 
-    Either the L9 switch is off, or the switch is on but the protocol is not
-    implemented yet. Raised, not answered with protocol content, so the sender
-    sees a failed step (a ``protocol_error`` run, graded ``INVALID``) and a
-    deployment where only some agents have L9 on cannot pass for a working run.
+    Raised, not answered with protocol content, so the sender sees a failed
+    step (a ``protocol_error`` run, graded ``INVALID``).
     """
 
 
@@ -96,16 +93,11 @@ class MemberAgent:
         self,
         party: fx.Party,
         llm_factory: LlmFactory | None = None,
-        *,
-        l9: bool | None = None,
     ):
         if party not in get_args(fx.Party):
             raise ValueError(f"unknown party {party!r}")
         self.party = party
         self._llm_factory = llm_factory
-        # Read once, at start-up, so a bad value stops the agent right away.
-        self.l9_enabled = l9_enabled() if l9 is None else l9
-        logger.info("%s: L9 (ACCORD, CONCORD) enabled: %s", party, self.l9_enabled)
         self._runs: OrderedDict[str, _RunState] = OrderedDict()
 
     def _llm(self) -> Any:
@@ -160,12 +152,10 @@ class MemberAgent:
             return noop(request, self.party)
         if request.kind in L9_KINDS:
             # Before any prompt is built: no model is called.
-            reason = (
-                "SUPPLY_CHAIN_L9_ENABLED is off"
-                if not self.l9_enabled
-                else "the L9 protocol is not implemented yet"
+            raise L9NotImplemented(
+                f"{request.kind} refused: the L9 protocol is not implemented yet "
+                f"for {self.party}"
             )
-            raise L9Disabled(f"{request.kind} refused: {reason} for {self.party}")
 
         state = self._state(request.run_id)
         if request.kind == "event" and request.phase == READY_TIME_CHANGE:

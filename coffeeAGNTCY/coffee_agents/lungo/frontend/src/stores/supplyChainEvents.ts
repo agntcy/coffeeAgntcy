@@ -10,7 +10,7 @@
 
 export interface SupplyChainStatusEvent {
   type: "status"
-  /** e.g. selected, started, round, decision, disruption, error, l9_disabled */
+  /** e.g. selected, started, round, decision, disruption, error, not_implemented */
   state: string
   message?: string
   case?: string

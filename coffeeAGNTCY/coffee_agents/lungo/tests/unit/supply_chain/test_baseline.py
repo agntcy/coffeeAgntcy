@@ -75,7 +75,7 @@ class Run:
     ):
         confirmations = confirmations or {}
         self.llms = {p: PartyLLM(p, *confirmations.get(p, [])) for p in PARTIES}
-        self.members = {p: MemberAgent(p, self.llms[p], l9=True) for p in PARTIES}
+        self.members = {p: MemberAgent(p, self.llms[p]) for p in PARTIES}
         self.buyer_llm = FakeLLM(*decisions)
         self.strategy = BaselineStrategy(self.buyer_llm)
         self.events: list[dict] = []
@@ -549,14 +549,13 @@ def test_the_registry_returns_a_baseline_strategy_with_the_llm_factory():
 
 
 async def test_the_runner_runs_the_real_baseline_strategy_end_to_end(tmp_path):
-    members = {p: MemberAgent(p, PartyLLM(p), l9=True) for p in PARTIES}
+    members = {p: MemberAgent(p, PartyLLM(p)) for p in PARTIES}
     transport = FakeGroupTransport({p: m for p, m in members.items() if p != "buyer"})
     runner = runner_module.SupplyChainRunner(
         transport,
         buyer=members["buyer"],
         run_root=tmp_path / "runs",
         llm_factory=FakeLLM(propose(plan("standard", total=15000))),
-        l9=True,
     )
     result = await runner.run("p", case="ambiguous", configuration="baseline")
 
