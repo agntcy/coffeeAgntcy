@@ -69,7 +69,7 @@ class TestSupplyChainBuyerHealth:
         prompts = client.get("/suggested-prompts").json()["supply_chain"]
         assert prompts, "the baseline prompts must be offered"
         assert {p["configuration"] for p in prompts} == {"baseline"}, (
-            "with L9 off, no L9 prompt is offered"
+            "only the baseline prompts are offered"
         )
 
     def test_buyer_serves_the_oasf_records(
@@ -81,11 +81,17 @@ class TestSupplyChainBuyerHealth:
         assert client.get("/agents/no-such-agent/oasf").status_code == 404
         assert client.get("/agents/..%2Fmain/oasf").status_code == 404
 
-    def test_buyer_refuses_l9_when_it_is_off(
+    def test_buyer_reports_l9_full_is_not_implemented(
         self, supply_chain_buyer_client, transport_config
     ):
+        """l9_full is a known configuration. The runner reports it and stops."""
         resp = supply_chain_buyer_client.post(
             "/agent/prompt",
             json={"prompt": "any", "case": "ambiguous", "configuration": "l9_full"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 200
+        body = resp.json()["response"]
+        assert body["messages"] == 0
+        report = body["not_implemented"]
+        assert report["state"] == "not_implemented"
+        assert "not implemented" in report["message"]
