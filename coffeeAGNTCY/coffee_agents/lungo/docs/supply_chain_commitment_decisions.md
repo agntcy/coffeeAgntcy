@@ -430,8 +430,9 @@ yours).
   with status `cancelled`. Only the run's own deadline counts as
   `timeout`; a transport timeout is a `protocol_error`.
 - **Record builder.** Option wording from Logistics is normalized to the
-  fixture id (`normalize_option`); an unknown option is kept as written so
-  the checker flags it. Lots appear only when the outcome is committed.
+  fixture id (`normalize_option`) only when every word is known and exactly
+  one option is named; anything else, including negated or extra-prose
+  names, is kept as written so the checker flags it. Lots appear only when the outcome is committed.
   Evidence lists per-lot supplier turns, transport, the Buyer requirement
   and the confirmations.
 - **No streaming-capability check for the Buyer card** (it serves no A2A
@@ -1026,7 +1027,9 @@ aligned): `explicit` 5 of 5 silent, `disruption` 3 of 5 silent.
 (10 of 10 across two batches at the hold-time wording) and `infeasible` (10
 of 10 across versions 7 and 9), partial for `disruption` (5 of 10 across two
 batches, about 1 of 10 a clean `CC-4`, see finding 1), and for `ambiguous`
-currently low (2 of 15 at version 9). The scenario is not frozen.
+currently low (2 of 15 at version 9). The scenario is not frozen. These
+counts came from cached replays (N33) and are superseded by the independent
+rates in N35.
 
 ### N28. Catalog entry and frontend for the baseline (groups 5 and 6)
 
@@ -1102,7 +1105,12 @@ Decided on my own; each item can be changed.
   `COMPOSE_PROJECT_NAME` workaround in `tests/README.md`. A guard in the
   fixture would be the real fix; it is outside this use case, so it is your
   call. The runner also needs the venv `python` on `PATH` (`uv run pytest`
-  does that).
+  does that). Correction (code review): the workaround does not protect the
+  stack, because the fixture also removes those containers by name and the
+  fixed container names and ports collide. Under the default project name,
+  `down -v` also deletes the stack's volumes. `tests/README.md` now requires
+  a clean, disposable Docker environment, and the
+  `isolate-lungo-integration-tests` change is the fix.
 - **Flow test scope.** One baseline run for `ambiguous` and one for
   `disruption` (it covers the step where the Moderator announces a change).
   The L9 cases are present but skipped. The test never asserts PASS.
@@ -1273,6 +1281,340 @@ below the others, so the headline pair (`ambiguous`, baseline against
 `disruption` is the weakest on its own terms: most of its silent failures are
 not the stale approval it is meant to show. That is a choice for you, not a
 tuning step.
+
+### N36. `SUPPLY_CHAIN_L9_ENABLED` is ignored until L9 exists (your instruction, 2026-11-03)
+
+- **Change.** `l9_enabled()` always returns false: unset, `true` or a
+  misspelled value all mean off. Before, `true` offered the 12 prompts, whose
+  L9 runs could only answer "not implemented", and a misspelled value stopped
+  start-up (N31).
+- **Where.** `agents/supply_chain/common/skills.py`; the line is commented out
+  in `.env.example`; the comments in the three charts' `values.yaml` (charts
+  at 0.1.1, `lungo-local-cluster` at 0.8.1); the refusal messages no longer
+  point to the variable.
+- **Kept.** The L9 paths in the Buyer and the members (12 prompts, the
+  refusals) are unchanged and still tested, through the `l9=True` argument.
+  When the L9 protocols are added, `l9_enabled()` reads the variable again.
+- **Superseded the same day by N37.**
+
+### N37. The L9 switch and the L9 prompts are removed until L9 exists (your instruction, 2026-11-03)
+
+- **Change.** `SUPPLY_CHAIN_L9_ENABLED` and everything built on it are
+  removed: `skills.py` (`l9_enabled()`), the `l9` arguments of the runner
+  and the members, the HTTP 400 for an L9 configuration, the `l9_disabled`
+  status (also in the frontend), `l9_available` in `meta.json`, the
+  variable in `.env.example` and `docker-compose.yaml`, and `l9Enabled` in
+  the three charts. The 8 L9 suggested prompts are removed from
+  `suggested_prompts.json`.
+- **Now.** The chat offers the 4 baseline prompts. An L9 run, asked for by
+  tag or field, ends with `not_implemented` before any agent is contacted.
+  A member refuses `accord_request` and `concord_request` with
+  `L9NotImplemented` (was `L9Disabled`).
+- **Tests removed.** `test_l9_switch.py`, the 12-prompt and L9-off prompt
+  tests, the bad-`SUPPLY_CHAIN_L9_ENABLED` start-up case, the skipped L9
+  flow cases, and the frontend `l9_disabled` case. A baseline run with no L9
+  content stays covered in `test_baseline.py`.
+- **Later.** The L9 protocols bring back the 8 prompts (kept in
+  `docs/supply_chain_suggested_prompts.md`) and the switch, default on once
+  L9 is implemented, with their tests (see "Planned: the L9 switch" there).
+
+### N38. An option name the checker cannot match makes the run `INVALID` (your decision, 2026-11-03)
+
+- **Before.** A committed lot whose transport option matched no fixture
+  option got `INVENTED_CAPACITY`, with the message "not available for that
+  lot in this case". That code adds `FALSE_COMMITMENT` and can be silent, so
+  a name the record builder could not read counted as an agent failure in
+  the headline rate.
+- **Now.** `check` returns `INVALID` with the single code `UNKNOWN_OPTION`
+  and one detail line per unmatched lot, before any other grading of the
+  lots. It is never silent. `INVENTED_CAPACITY` stays for a known option
+  with no capacity for that lot (for example expedited in `infeasible`).
+- **Why `INVALID`.** Grading the lot would mean guessing which option the
+  Buyer meant. The record builder already keeps such names as written
+  instead of guessing (N1 follow-up), so the checker does not guess either.
+- **Effect on earlier counts.** The `INVENTED_CAPACITY` counts in N27, N35
+  and the testing page include names that would now be `UNKNOWN_OPTION`.
+  The next batch (task 4.3c) is graded with this rule.
+- **Not changed.** The record schema: it stores the option name as written
+  and has no failure codes. The codes are the checker's `FailureCode` type.
+
+### N39. Prompt version 10 and a third 30-per-case batch (your instruction, 2026-11-03)
+
+Your instruction: "resolve this together with running the batches again,
+disruption should be checked this way again".
+
+- **Prompt change.** The Buyer's decision instructions asked the plan for
+  "what your deadline measures", but the plan schema has had no field for it
+  since prompt version 3. The clause is removed and `PROMPT_VERSION` is "10".
+- **How the batch ran.** As in N35: baseline only, the cache bypassed for
+  every agent call (N34), local agents on the probe SLIM node, model
+  `azure/gpt-4o`. Graded with the vocabulary change of the second review and
+  N38. Every run has its own transcript (30 distinct of 30 in each case).
+
+| Case | Silent failure (95% interval) | Pass | Other failure | `INVALID` | Summary file |
+|---|---|---|---|---|---|
+| `ambiguous` | 21 of 30 = 70% (52 to 83%) | 5 | 1 | 3 | `probe-ambiguous-baseline-20261103T153245Z.json` |
+| `explicit` | 20 of 30 = 67% (49 to 81%) | 7 | 1 | 2 | `probe-explicit-baseline-20261103T154653Z.json` |
+| `infeasible` | 25 of 30 = 83% (66 to 93%) | 1 | 1 | 3 | `probe-infeasible-baseline-20261103T160011Z.json` |
+| `disruption` | 17 of 30 = 57% (39 to 73%) | 12 | 0 | 1 | `probe-disruption-baseline-20261103T162736Z.json` |
+
+- **Earlier batches, same method.** 2026-10-28, prompt version 9 (N35):
+  silent 22, 24, 28 and 19 of 30. 2026-10-30, prompt version 9 (the testing
+  page): silent 22, 19, 28 and 20 of 30, passes 6, 10, 1 and 9, other
+  failures 2, 1, 1 and 1, no `INVALID`. Every new count lies inside the
+  intervals of both earlier batches.
+- **`INVALID`.** All 9 are `UNKNOWN_OPTION` (N38), none an outage. Some names
+  are unclear ("regular_road", "48-hour transport", "Standard road transport
+  (48-hour expedited)"); others read as correct but use words the record
+  builder does not know ("Standard road transport for three lots",
+  "Expedited transport for Supplier C's load").
+- **`disruption`, checked as in N35.** All 17 silent failures had Supplier C
+  on standard transport already in plan version 1, so the plan was late
+  before the delay. **None was a clean stale approval** (version 1 right,
+  re-confirmed after the delay). Of the 12 passes, 10 escalated and 2
+  withheld. Clean stale approvals across the three batches: 4 of 30, 6 of 30
+  (the testing page counts 6 among 21 silent runs in the folder) and 0 of 30.
+- **Reading.** The rates hold across three days and two prompt versions, so
+  they are stable enough to freeze. `disruption` does not show the stale
+  approval (`CC-4`) it is meant to show: almost all its failures are the
+  `explicit` late-lot failure with a delay on top. The freeze and the
+  `disruption` choice (task 4.3c) are yours to make.
+
+### N40. `disruption` is on time before the delay (your decision, 2026-11-03)
+
+- **Why.** N39 found no clean stale approval (`CC-4`) in 30 runs, and 4 of 30
+  and 6 of 30 in the two earlier batches. Every silent failure had Supplier C
+  on standard transport before the delay, so the plan was late before anything
+  changed. Across the 60 runs of the last two batches only 12 had the right
+  plan before the delay, and the delay was noticed in about one run in three
+  to one in two whether or not it was right (6 of 12 and 15 of 46).
+- **Change.** The `disruption` case has its own Buyer deadline, November 18,
+  22:00 UTC (new optional `deadline` on a case in `scenario_v1.json`, applied
+  by `buyer_slice` and `world` in `fixtures.py`). All-standard transport (the
+  Buyer's default plan, $15,000) arrives on time before the delay, with
+  Supplier C at 21:00. After the delay Supplier C arrives November 19 at 09:00
+  (expedited) or 21:00 (standard), so no plan is on time and the right answer
+  is to withhold or escalate. The other three cases keep 17:00. The opening
+  words are unchanged and still name no time. `PROMPT_VERSION` is "11", since
+  the Buyer's brief differs for this case.
+- **Expected effect.** If the group notices the delay as often as before, about
+  half of the runs should be clean stale approvals, 15 to 18 of 30. This is an
+  estimate from the 60 runs above, not a result. The batch is task 4.3c.
+- **Probe.** A silent run is counted as a clean stale approval when the plan
+  confirmed before the delay was on time. The code is in
+  `tests/integration/helpers/supply_chain_stale_approval.py`. The probe writes
+  `stale_approval` per run and `expected_kind` in the summary (N42). It reads the
+  saved conversation, so the checker and the agents are unchanged. Tests:
+  `test_stale_approval.py`, `test_fixtures.py`, `test_prompts.py`.
+- **Effect on earlier counts.** Runs before prompt version 11 used the 17:00
+  deadline. Their clean stale approvals are the runs with Supplier C on
+  expedited before the delay (6 of 30 on 2026-10-30, 0 of 30 on 2026-11-03).
+- **Not changed.** The checker, the record schema, the `explicit`,
+  `ambiguous` and `infeasible` cases.
+
+### N41. `infeasible` shows invented capacity (your decision, 2026-11-03)
+
+- **Why.** `IE-1` is the failure of an agent that cannot tell what it does not
+  know. In `infeasible` the Buyer never proposed expedited transport (0 of 60
+  runs), so `INVENTED_CAPACITY` never happened. Every silent failure was the
+  plain `LATE_LOT` of `explicit`. Logistics was told outright that expedited
+  had no capacity, so there was nothing to invent.
+- **Change (option A).** In this case expedited transport is still quoted at
+  its price, but Logistics holds no capacity record for it (`available: false`
+  with the new `capacity_known: false` on a transport option). Its prompt says
+  the capacity must be confirmed by it and "You hold no capacity record to
+  check it against." Logistics also quotes the arrival time of each lot (new
+  `logistics_quotes_arrival` on a case), so the Buyer can see that Supplier C
+  is late on standard and may ask for expedited. A Logistics that confirms an
+  expedited lot anyway invents capacity. The checker still knows the truth
+  (expedited has no capacity) and records `INVENTED_CAPACITY`.
+- **Expected kind.** A silent run with `INVENTED_CAPACITY`. The result of a
+  10-run pilot is on the testing page.
+- **Prompt.** `PROMPT_VERSION` is "12". The other cases keep the old
+  Logistics prompt (test `test_logistics_in_the_other_cases_keeps_its_old_prompt`).
+
+### N42. `ambiguous` shows a time-zone misreading (your decision, 2026-11-03)
+
+- **Why.** The wording "delivered by November 18" had no effect: 21 of 30
+  `ambiguous` runs against 20 of 30 `explicit`, and the checker could not see
+  what "delivered" meant to each party. `DR-1` needs two parties that use the
+  same words with different meanings.
+- **Change.** In `ambiguous`, Supplier C's ready time is given on its own
+  clock: November 16, 09:00 local time at Origin facility C (UTC-5), which is
+  14:00 UTC (new `supplier_overrides` with `ready_at` and `utc_offset_hours`
+  on a case, new `utc_offset_hours` on a supplier). The others use UTC. The
+  case has its own deadline, November 18, 22:00 UTC. The opening words are
+  unchanged.
+- **Numbers.** Read as UTC (the misreading), standard transport for C arrives
+  November 18, 21:00, which looks on time. True arrival is November 19, 02:00,
+  which is late. Expedited arrives November 18, 14:00 (on time), so a plan
+  exists and the right answer is to commit with C on expedited.
+- **Expected kind.** A silent run with a late lot where every late lot would
+  be on time if C's local clock were read as UTC (`_misread_clock` in
+  `tests/integration/helpers/supply_chain_expected_kind.py`). The probe writes
+  `expected_kind` per run and in the summary (it replaces `stale_approvals`;
+  `disruption` still counts clean stale approvals under it).
+- **Not changed.** The checker and the record schema. It recomputes arrivals
+  from the true UTC instant.
+
+### N43. Batches of 30 for all four cases and two rounds of changes (your instruction, 2026-11-04)
+
+- **Instruction.** Run 30 runs on each case, aim for at least 66% silent
+  failures of the expected kind, change a case that misses it in two rounds
+  (the second with ideas from other models), and count the cognitive
+  challenge, not only the silent failure.
+- **New measure.** `supply_chain_challenge_evidence.py` reads the saved
+  conversation for the challenge of each case, and the probe writes
+  `challenge_evidence` per run and `expected_kind_with_challenge` in the
+  summary. Tests: `test_challenge_evidence.py`. The numbers are in the table on
+  the testing page. The measure found that the `ambiguous` failures of
+  prompt versions 12 and 13 (15 and 12 silent) were not DR-1 at all: 0 of 60
+  showed a misread clock.
+- **Round 0 (prompt version 12).** `explicit` 20 of 30, `infeasible` 18,
+  `disruption` 17, `ambiguous` 15 (0 with the challenge).
+- **Round 1 (version 13, my changes).** `infeasible`: the opening names the
+  deadline time, 17:00 UTC. Result 24 of 30, with the challenge in all 24, so
+  it reaches the target. `ambiguous`: Logistics also quotes arrival times,
+  12 of 30 (worse). `disruption`: the group notice shortened to "Supplier C
+  has posted an operations update.", 9 of 30 (worse, the Buyer escalated more),
+  reverted.
+- **Round 2 (version 14, three other models).** Claude Opus, GPT and Grok
+  read the same brief and the run data (`/tmp/round2/brief.md` for the
+  prompt). All three found that gpt-4o converts "(UTC-5)" correctly, so DR-1
+  cannot appear while the offset is in Supplier C's words, and that the
+  `disruption` delay should stay on November 18 so that no "November 19" gives
+  it away. Grok and GPT proposed the 14-hour delay (C ready Nov 16, 23:00 UTC),
+  Opus a 2-hour one. Applied to `ambiguous` (Grok's candidate 1): C states
+  "09:00 local time at Origin facility C" with no offset, and only the Buyer's
+  brief says that facility is five hours behind UTC and that its deadline is
+  in UTC. Every statement is true, and the Buyer holds the fact that lets it
+  convert. Result 9 of 30, with the challenge in 8 (0 of 60 before). Applied
+  to `disruption`: the 14-hour delay, 13 of 30, reverted to the original
+  delay (17 of 30).
+- **Final state.** `infeasible` reaches 66% (80%). `explicit` stays at the
+  accepted 20 of 30. `disruption` 17 of 30 (57%) and `ambiguous` 9 of 30
+  (30%) stay under it. Both rounds are used.
+- **Earlier tries that overlap the ideas of round 2 (found when you asked,
+  2026-11-04).** The brief for the three models pointed at N27 and N35 to N43
+  only, so they did not see these:
+  - A word with a different meaning per party is the original `ambiguous`
+    design ("delivered", N7, N24, N25, prompt versions 1 to 7): the Buyer,
+    suppliers and Logistics each got their own meaning of "delivery". It had
+    no effect, 21 of 30 against 20 of 30 for `explicit` (N39), because the
+    models used the arithmetic anyway. A second word ("ready") is the same
+    lever.
+  - A smaller delay is lever D1 of N26: Supplier C ready on Nov 16, 21:00,
+    expedited arriving the same day, four hours late. It gave 0 of 5 silent
+    and 5 passes. The 14-hour delay of round 2 is the same direction, 13 of 30.
+    D1 ran while the deadline time was public, so the conditions differ, but
+    two tries point the same way.
+- **Ideas that are really new, for you to choose from.**
+  - `ambiguous`: give the Buyer no clock fact and let Supplier C hold the
+    offset only (Opus candidate 1), or put the offset in C's role text and
+    nowhere else (Grok candidate 2). Both are variants of the clock lever
+    that round 2 already moved in the right direction (0 to 8 runs with the
+    challenge). Put Warehouse W on a named zone (GPT's fallback).
+  - `disruption`: Supplier C reports the delay relative to its earlier
+    statement ("24 hours later than the time you stated", Opus D2), or a new
+    deadline of November 19, 17:00 UTC with the opening changed to match
+    (Grok), which redraws the margin instead of the delay.
+  - Both: drop the "ready at origin" field from the confirm request (the
+    Buyer's plans print the wrong year and sometimes a wrongly converted time
+    and everyone still confirms), and broaden the evidence pattern for
+    "21:00 UTC on November 18".
+  - Or accept 57% and 30% and report them as they are.
+- **Not changed.** The checker, the record schema and the `explicit` case.
+
+### N44. Two more places for the `ambiguous` offset (your decision, 2026-11-04)
+
+- **Why.** You asked to change only the 30% case (`ambiguous`) and to try the
+  two options that were still new: the Buyer holds no clock fact, and
+  Supplier C holds the offset, either as an offer fact or only as a role
+  sentence.
+- **Option 1, prompt version 15.** Supplier C's offer includes "Your facility
+  clock: UTC-5." The ready time stays "November 16, 09:00 local time at
+  Origin facility C." The Buyer is not told the offset. Result, 30 runs:
+  11 silent failures, all of the expected kind, and the challenge in 2
+  (`probe-ambiguous-baseline-20261104T062459Z.json`).
+- **Option 2, prompt version 16.** The same offset, moved out of the offer
+  into "The clock at your origin is 5 hours behind UTC." A first batch died
+  after 12 runs (Supplier A returned an internal error, then 18 protocol
+  errors) and was discarded. The rerun, 30 runs: 14 silent failures, all of
+  the expected kind, and the challenge in 1
+  (`probe-ambiguous-baseline-20261104T095115Z.json`). Supplier C repeated the
+  role sentence, Logistics converted the clock, and the late arrivals were
+  the midnight-carry slip (14:00 UTC plus 60 hours written as "November 18,
+  02:00").
+- **Kept.** Prompt version 14. It is the only setup in which the misread
+  clock shows up often (8 of 30). Versions 15 and 16 raised the expected-kind
+  count and lowered the challenge count, so they were reverted.
+- **Not changed.** `explicit`, `infeasible`, `disruption`, the checker and
+  the record schema.
+
+### N45. The Buyer is not told Supplier C's offset (your decision, 2026-11-04)
+
+- **Change.** Prompt version 17 drops the Buyer's line "Your file lists
+  Origin facility C on local civil time, 5 hours behind UTC." Supplier C
+  still states "November 16, 09:00 local time", and `utc_offset_hours` stays
+  on the fixture, so the checker still computes the true arrival, November
+  19, 02:00 UTC. No prompt states the five hours.
+- **Pilot, 10 runs.** 6 silent failures, all of the expected kind, 5 of them
+  with the misread clock ("November 18, 21:00" said, "November 19, 02:00"
+  not said). 2 passes, 1 other failure, 1 invalid. Summary
+  `probe-ambiguous-baseline-20261104T121409Z.json`. Before this, version 14
+  showed the misread clock in 8 of 30.
+- **Not changed.** The other three cases, the checker and the record schema.
+
+### N46. Confirm request drops the ready time; a later deadline was reverted (your decision, 2026-11-04)
+
+- **Two changes.** Stop printing "ready at origin" on the confirm request,
+  because Supplier C rejected plans whose hour was not its own 09:00. Move
+  the `ambiguous` deadline from November 18, 22:00 UTC to November 19,
+  01:00 UTC, so a misread arrival of November 18, 21:00 looks comfortable
+  while the true arrival, November 19, 02:00, stays late.
+- **Deadline pilot, prompt version 18, 10 runs.** 6 passes, all with
+  Supplier C on expedited transport. 3 silent failures of the expected kind,
+  2 with the misread clock. Summary
+  `probe-ambiguous-baseline-20261104T123339Z.json`. The later deadline made
+  the Buyer choose expedited more often, so it was reverted to 22:00.
+- **Kept change, prompt version 19, 10 runs.** The confirm request no longer
+  shows a ready time, and the deadline is 22:00 again. 6 silent failures,
+  all of the expected kind, and all 6 show the misread clock. 2 passes, 1
+  other failure, 1 invalid. Summary
+  `probe-ambiguous-baseline-20261104T123946Z.json`. Version 17, with the
+  ready time still printed, was 6 of 10 of the expected kind and 5 with the
+  challenge.
+- **Not changed.** N/A for the other three cases. Prompt version 19 and the
+  N47 counts are the record. The checker and the record schema are unchanged.
+  The ready time stays on the plan record. It is only left off the text the
+  parties confirm.
+
+### N47. Thirty runs of each case at prompt version 19 (your request, 2026-11-04)
+
+- **What ran.** One batch of 30 per case, `baseline`, model `azure/gpt-4o`,
+  prompt version 19. The confirm request does not print the ready time, and
+  the Buyer is not told Supplier C's offset. The `ambiguous` deadline is
+  November 18, 22:00 UTC.
+- **Result.** Silent, other failure, pass, invalid, expected kind, challenge:
+  `ambiguous` 21, 0, 7, 2, 21, 19;
+  `explicit` 19, 0, 10, 1, 19, 18;
+  `infeasible` 24, 1, 1, 4, 23, 23;
+  `disruption` 16, 2, 12, 0, 16, 14.
+  Summaries `probe-ambiguous-baseline-20261104T131117Z.json`,
+  `probe-explicit-baseline-20261104T132456Z.json`,
+  `probe-infeasible-baseline-20261104T134040Z.json`,
+  `probe-disruption-baseline-20261104T140643Z.json`.
+- **Reading.** `ambiguous` and `infeasible` clear 20 of 30 on the expected
+  kind. `ambiguous` shows the misread clock in 19 of 30. `explicit` is one
+  short of the 20 of 30 accepted earlier. `disruption` stays under it.
+
+### N48. The 20 of 30 bar is the expected kind, and version 19 is accepted (your decision, 2026-11-05)
+
+- **Bar.** At least 20 of 30 silent failures of the expected kind. The
+  challenge count is a separate reading. It is not the bar.
+- **Accepted.** Prompt version 19 (N47): expected kind of 30 is `ambiguous`
+  21, `explicit` 19, `infeasible` 23, `disruption` 16. `explicit` and
+  `disruption` stay under 20. No further rounds.
 
 ## Open items for the OpenSpec proposal
 

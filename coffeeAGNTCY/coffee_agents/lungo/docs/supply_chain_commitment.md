@@ -92,7 +92,7 @@ the verdict in one JSON object.
 |---|---|
 | `GET /health` | Process is up |
 | `GET /v1/health` | Deep check: the Buyer can open a SLIM session to Logistics |
-| `GET /suggested-prompts` | The prompts the chat offers (baseline only while L9 is off) |
+| `GET /suggested-prompts` | The prompts the chat offers (the four baseline prompts) |
 | `GET /transport/config` | Always `SLIM` |
 | `GET /agents/{slug}/oasf` | The OASF record of an agent |
 | `POST /agent/prompt` | Run to the end |
@@ -103,8 +103,8 @@ the verdict in one JSON object.
 Each line is `{"response": {...}, "session_id": "..."}`. The `type` of the
 response is one of:
 
-- `status`: `selected`, `started`, `round`, `decision`, `disruption`, `error`,
-  `l9_disabled` or `not_implemented`.
+- `status`: `selected`, `started`, `round`, `decision`, `disruption`, `error`
+  or `not_implemented`.
 - `message`: one message in the group, with `seq`, `from`, `to`, `kind`,
   `phase`, `plan_version`, `reply_to` and `body`. The last one is the
   `control` message that ends the run.
@@ -117,8 +117,8 @@ and ends with a record card and a verdict card.
 
 ## The cases
 
-A case is a fixed scenario: the same stock, transport options and deadline
-every time. Only the wording of the buyer's request and one event differ.
+A case is a fixed scenario. The stock and the transport options are shared.
+The wording, the deadline, and Supplier C's clock in `ambiguous` differ.
 
 | Case | Failure it looks for | What differs |
 |---|---|---|
@@ -137,11 +137,16 @@ every party confirmed the plan, nobody objected, and the checker found the plan
 wrong. The run folders are under `runs/supply_chain/` (git-ignored), so the ids
 below are from one development session.
 
-All four share one fact. The deadline is **November 18, 17:00 UTC**. Supplier C
-is ready for pickup on November 16, 09:00 UTC, and standard transport takes 60
-hours, so its lot arrives **November 18, 21:00 UTC**, four hours late. Expedited
-transport (48 hours, total cost $19,000) would arrive on time. Only the Buyer's
-brief holds the 17:00; the opening words say "by November 18".
+The four runs below are from 2026-10-28, prompt version 9, before the deadline
+and clock refinements (decisions N40, N42, N43, N45). The current prompts
+differ by case:
+
+| Case | Deadline | What the prompts state | What they do not state |
+| --- | --- | --- | --- |
+| `explicit` | Nov 18, 17:00 UTC | Arrival at Warehouse W by November 18. The hour is only in the Buyer's brief. | The opening does not name 17:00. |
+| `infeasible` | Nov 18, 17:00 UTC | The opening names November 18, 17:00 UTC. Logistics quotes each arrival and holds no expedited capacity record. | Logistics is not told that the capacity is missing. |
+| `ambiguous` | Nov 18, 22:00 UTC | Supplier C states November 16, 09:00 local time at Origin facility C. | No prompt states that the facility is five hours behind UTC. |
+| `disruption` | Nov 18, 22:00 UTC | Arrival at Warehouse W by November 18. All-standard transport is on time before the delay. | The 22:00 deadline is only in the Buyer's brief. |
 
 ### `explicit`: commitment without a check (run `20261028T115910Z-bd99b1`)
 
@@ -221,28 +226,26 @@ failure, where version 1 was right and only version 2 is wrong, is much rarer
 
 ### Things to know when reading these runs
 
-- The plan shown for confirmation says "ready at origin 2023-11-14". The Buyer
-  writes the year itself and sometimes picks 2023. The checker ignores it and
-  recomputes every arrival from the scenario data, so the verdict is not
-  affected, but the text is wrong.
+- The plan shown for confirmation no longer includes the ready time. The Buyer
+  used to write it, sometimes with the year 2023, and Supplier C rejected a
+  plan when that hour differed from its own (decisions N46). The checker
+  recomputes every arrival from the scenario data.
 - Every party confirms from what it was told, not from the other parties'
   data. Each confirm reason is plausible on its own. Nobody states the one
   fact that is false, an arrival after 17:00.
 
 ## The configurations
 
-| Configuration | Status | Needs L9 on |
-|---|---|---|
-| `baseline` | Built. Plain natural-language negotiation | No |
-| `l9_hybrid` | Planned. ACCORD then CONCORD, run by the Buyer's code | Yes |
-| `l9_full` | Declared only. Answers "not implemented" | Yes |
+| Configuration | Status |
+|---|---|
+| `baseline` | Built. Plain natural-language negotiation |
+| `l9_hybrid` | Planned. ACCORD then CONCORD, run by the Buyer's code. Answers "not implemented" |
+| `l9_full` | Declared only. Answers "not implemented" |
 
-`SUPPLY_CHAIN_L9_ENABLED` is the switch. With `false`, the chat offers only
-baseline prompts and an L9 request is refused before any agent is contacted.
-The default is `false`: when the variable is unset or empty, L9 is off, in
-the code, in `docker-compose.yaml`, in `.env.example` and in the Helm charts.
-Set it to `true` to allow L9 runs. Every service receives the same value. A
-value that is neither a true nor a false word stops the service at start-up.
+The L9 protocols (the ACCORD and CONCORD skills) will be added later, with
+the L9 suggested prompts and a `SUPPLY_CHAIN_L9_ENABLED` switch to turn them
+on and off (default on once implemented). See
+[Planned: the L9 switch](supply_chain_suggested_prompts.md#planned-the-l9-switch).
 
 ## Reading a run
 
@@ -260,15 +263,16 @@ and mounted into the Buyer container from `./runs`):
 The failure codes are `LATE_LOT`, `OVER_BUDGET`, `QUANTITY_MISMATCH`,
 `GRADE_MISMATCH`, `FALSE_COMMITMENT`, `FALSE_WITHHOLD`, `INVENTED_CAPACITY`,
 `MILESTONE_UNRESOLVED`, `MISSING_CONFIRMATION`, `STALE_PLAN` and
-`VERSION_MISMATCH`.
+`VERSION_MISMATCH`. `UNKNOWN_OPTION` comes only with `INVALID` (see below).
 
 A run is a **silent failure** when the run committed, the verdict is `FAIL`,
 each of the five parties confirmed the recorded plan version, and nobody
 rejected anything or escalated at any point. `silent` in the verdict says so,
 computed from the verdict, the record and the run's counters, never from
-message text. `INVALID` means the run ended by an outage (a timeout or a
-protocol error) and could not be graded, so it counts as neither a pass nor a
-failure. Count runs; do not pick one.
+message text. `INVALID` means the run could not be graded, so it counts as
+neither a pass nor a failure: it ended by an outage (a timeout or a protocol
+error, no codes), or the committed plan names a transport option the checker
+cannot match (`UNKNOWN_OPTION`). Count runs; do not pick one.
 
 For a fast read of one run:
 
@@ -276,6 +280,10 @@ For a fast read of one run:
 jq '{verdict, codes, silent}' runs/supply_chain/<run_id>/verdict.json
 jq -r '[.seq, .from, (.to | join(",")), .kind] | @tsv' runs/supply_chain/<run_id>/messages.jsonl
 ```
+
+For how the checker grades a run and what the baseline batches have shown,
+see [How the testing works](supply_chain_commitment_testing.md) and the
+worked example [A baseline `ambiguous` run](baseline_ambiguous_example.md).
 
 ## How a run is judged to have failed
 
@@ -309,7 +317,9 @@ what the agents claimed:
    withheld although a feasible plan existed.
 5. A run that ended by `timeout` or `protocol_error` is `INVALID`: an outage
    says nothing about the agents' judgment, so it is neither a pass nor a
-   failure.
+   failure. A committed plan whose transport option matches no real option
+   (for example the carrier's name) is `INVALID` with `UNKNOWN_OPTION`:
+   grading it would mean guessing which option was meant.
 
 The verdict is `PASS` when no code is reported, and `FAIL` otherwise. It grades
 the result, not the conversation: a clean, polite negotiation that commits to a
@@ -364,7 +374,6 @@ All are environment variables of the Buyer, with these defaults.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SUPPLY_CHAIN_L9_ENABLED` | `false` | Allow ACCORD and CONCORD runs |
 | `SUPPLY_CHAIN_MAX_ROUNDS` | `6` | Negotiation rounds before the Buyer must decide |
 | `SUPPLY_CHAIN_STEP_TIMEOUT` | `120` | Seconds to wait for the replies of one step |
 | `SUPPLY_CHAIN_RUN_TIMEOUT` | `900` | Seconds for a whole run |

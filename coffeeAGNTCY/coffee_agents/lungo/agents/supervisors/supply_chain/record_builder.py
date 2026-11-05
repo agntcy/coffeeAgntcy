@@ -30,25 +30,55 @@ class RunFacts:
     log: list[Envelope] = field(default_factory=list)
 
 
-def _words(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+_words = fx.name_words
+
+
+# Words a correct option name may carry beyond the fixture vocabulary.
+# The second line comes from Buyer wordings in real baseline runs.
+_PLAIN_WORDS = frozenset(
+    "the transport freight service option shipping by via for to lot lots "
+    "hours hour h "
+    "delivery transit only optional shipment from origin facility logistics s".split()
+)
+# Never "known", even if a fixture description ever uses one.
+_NEGATORS = frozenset(
+    "not no non nor neither never cannot cant t without except avoid instead "
+    "rather than unlike versus vs unavailable infeasible impossible unable".split()
+)
+_AMOUNT = re.compile(r"\d+[a-z]*")  # "60", "48h"
 
 
 def normalize_option(name: str) -> str:
     """Map the option name the Buyer wrote to a fixture option id.
 
-    The Buyer names an option the way Logistics did ("Standard road
-    transport"). This only maps that wording to the fixture id; a name that
-    matches nothing is kept as written, and the checker then reports it.
+    Exact id or description match wins. Otherwise the text is mapped only if
+    every word is known (fixture vocabulary, a short plain-word list, or an
+    amount such as 48h) and exactly one option id appears as a whole word.
+    Anything else is kept as written, so the checker reports it instead of
+    the mapper guessing.
     """
     wanted = _words(name)
-    for option in fx.load_scenario().logistics.options:
+    scenario = fx.load_scenario()
+    options = scenario.logistics.options
+    for option in options:
         if wanted in (_words(option.id), _words(option.description)):
             return option.id
-    for option in fx.load_scenario().logistics.options:
-        if _words(option.id) in wanted.split():
-            return option.id
-    return name
+    known = set(_PLAIN_WORDS)
+    for text in (
+        scenario.logistics.organization,
+        scenario.logistics.destination,
+        *scenario.suppliers,
+        *(o.id for o in options),
+        *(o.description for o in options),
+    ):
+        known.update(_words(text).split())
+    known -= _NEGATORS
+    tokens = wanted.split()
+    if any(t not in known and not _AMOUNT.fullmatch(t) for t in tokens):
+        return name
+    padded = f" {wanted} "
+    hits = [o.id for o in options if f" {_words(o.id)} " in padded]
+    return hits[0] if len(hits) == 1 else name
 
 
 def _seqs(log: list[Envelope], party: str, kinds: tuple[str, ...]) -> list[int]:

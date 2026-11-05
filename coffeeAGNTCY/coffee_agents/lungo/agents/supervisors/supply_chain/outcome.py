@@ -69,10 +69,9 @@ class PlanProposal(BaseModel):
                 f"{lot.tonnes:g} t, {lot.grade}",
                 f"transport: {lot.transport_option}",
             ]
-            if lot.origin_ready_at:
-                parts.append(
-                    f"ready at origin {lot.origin_ready_at:%Y-%m-%d %H:%M} UTC"
-                )
+            # The ready time is kept on the lot but not shown. Printing it made
+            # Supplier C reject a plan whose hour differed from its own 09:00,
+            # and the Buyer often writes the wrong year (decisions N46).
             # The Buyer's claimed arrival time is kept in the record but is not
             # shown to the parties: each one judges the plan from its own
             # facts and its own meaning of "delivery" (decisions N25, lever D).

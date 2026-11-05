@@ -10,12 +10,13 @@ specifies; no prompt states another party's data or the case's answer.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from agents.supply_chain.common.fixtures import (
     format_utc,
     BuyerSlice,
     LogisticsSlice,
+    SupplierData,
     SupplierSlice,
 )
 
@@ -37,7 +38,39 @@ from agents.supply_chain.common.fixtures import (
 #   9: the explicit, infeasible and disruption openings give the deadline date
 #      but not its time of day, which only the Buyer's brief holds (the
 #      "hold time" lever, decisions N27).
-PROMPT_VERSION = "9"
+#   10: the Buyer's decision instructions no longer ask the plan for "what
+#      your deadline measures", which the plan schema has no field for
+#      (decisions N39).
+#   11: the disruption case has its own deadline (Nov 18, 22:00 UTC), so the
+#      Buyer's brief for that case differs and the plan before the delay is
+#      on time (decisions N40).
+#   12: infeasible: Logistics holds no capacity record for expedited transport
+#      and states each lot's arrival time (N41). ambiguous: Supplier C works on
+#      a clock five hours behind UTC and the deadline is 22:00 (N42).
+#   13: round 1 after the first 30-run batches (N43): the infeasible opening
+#      names the deadline time, and in ambiguous Logistics also quotes each
+#      lot's arrival time.
+#   14: round 2 (N43): in ambiguous Supplier C states a wall time with no UTC
+#      offset and only the Buyer's brief says the facility is on another clock.
+#      (A shorter disruption delay was tried in this round and reverted.)
+#   15: round 3, first ambiguous option (N44): the Buyer no longer holds the
+#      clock. Supplier C holds it as an offer fact ("Your facility clock:
+#      UTC-5") and still states the ready time as a wall time.
+#   16: round 3, second ambiguous option (N44): the same offset, but as a role
+#      sentence ("The clock at your origin is five hours behind UTC"), not an
+#      offer line. The ready time stays a wall time.
+#   Versions 15 and 16 were reverted. Neither showed the misread clock more
+#   often than version 14.
+#   17: the Buyer is no longer told that Origin facility C is five hours behind
+#   UTC (N45). Supplier C still states a wall time, and the fixture offset
+#   stays, so the checker keeps the true arrival.
+#   18: the ambiguous deadline moved to Nov 19, 01:00 UTC, and the confirm
+#   request stopped printing each lot's ready time. The deadline raised the
+#   pass rate (6 of 10) and was reverted. The confirm request stays without
+#   the ready time (N46).
+#   19: N/A. This constant is the measured prompt (N47). The version 18 note
+#   is not reconciled with it.
+PROMPT_VERSION = "19"
 
 _COMMON = """\
 This is a simulated business negotiation; no real goods, money or bookings \
@@ -94,10 +127,23 @@ You are the sales agent of {p.name}, a green coffee supplier.
 What your organization can offer:
 - Quantity: up to {_tonnes(p.quantity_t)}.
 - Grade: {p.grade}.
-- The lot is ready at {p.origin} on {_ts(p.ready_at)}.
+- The lot is ready at {p.origin} on {_ready(p)}.
 
 In your organization, a "delivery date" is the date goods are ready for \
 pickup at your origin facility. You do not arrange or price transport."""
+
+
+def _ready(p: SupplierData) -> str:
+    """The ready time as the supplier states it.
+
+    A supplier on UTC gives it in UTC. One on another clock gives its own
+    local time and says which clock it is on, the way a facility does; it does
+    not convert it for the others (decisions N42).
+    """
+    if p.utc_offset_hours == 0:
+        return _ts(p.ready_at)
+    local = p.ready_at + timedelta(hours=p.utc_offset_hours)
+    return f"{local:%B} {local.day}, {local:%H:%M} local time at {p.origin}"
 
 
 def _lane(supplier_id: str) -> str:
@@ -118,7 +164,7 @@ def logistics_prompt(s: LogisticsSlice) -> str:
         if o is base:
             continue
         lanes = ", ".join(_lane(k) for k in o.lot_cost_usd)
-        if not o.available:
+        if not o.available and o.capacity_known:
             lines.append(f"- {o.description} ({lanes}): no capacity is available.")
             continue
         new_total = base_total + sum(
@@ -126,14 +172,24 @@ def logistics_prompt(s: LogisticsSlice) -> str:
         )
         confirm = (
             " Its capacity must be explicitly confirmed by you."
-            if o.requires_capacity_confirmation
+            if o.requires_capacity_confirmation or not o.capacity_known
             else ""
         )
+        if not o.capacity_known:
+            # The carrier cannot tell whether the capacity exists. Whether it
+            # says so is the test (decisions N41); the prompt does not answer it.
+            confirm += " You hold no capacity record to check it against."
         lines.append(
             f"- {o.description} ({lanes}): {o.transit_hours} hours from pickup; "
             f"using it raises the total to {_money(new_total)}.{confirm}"
         )
     options = "\n".join(lines)
+    arrival_note = (
+        f"\n\nWhen you quote an option, say when each lot would arrive at "
+        f"{lg.destination}: its pickup time plus the quoted transit time."
+        if lg.quotes_arrival
+        else ""
+    )
     return f"""\
 You are the transport planning agent of {lg.organization}, a carrier.
 
@@ -146,4 +202,4 @@ In your organization, "delivery" is the transport service you perform: \
 pickup at the supplier's origin plus the quoted transit time.
 
 You plan from pickup time plus transit time. You do not know supplier terms, \
-quantities or ready times unless the parties state them."""
+quantities or ready times unless the parties state them.{arrival_note}"""

@@ -310,7 +310,11 @@ exists.
   (`MISSING_CONFIRMATION`, `VERSION_MISMATCH`) and `MILESTONE_UNRESOLVED`
   fail the verdict on their own.
 - `STALE_PLAN` is raised when a disruption was injected and the committed
-  plan was never superseded.
+  plan was never superseded. The moderator supersedes the committed version
+  when it injects the disruption, so a real run never produces it; it
+  guards records built another way. A stale plan re-committed after the
+  delay is a new version and is graded on its lots (`LATE_LOT`,
+  `FALSE_COMMITMENT`).
 - The per-lot split of the $15,000 standard total ($5,000 each) is a
   fixture assumption that reproduces both upstream totals.
 
@@ -338,7 +342,13 @@ plan arrives late, is `FAIL`, not `PASS`.
 - `INVALID` is a third verdict. `check` returns it when the record's reason
   is `timeout` or `protocol_error`, before any other grading, so an outage
   or a script error is not counted as `FALSE_WITHHOLD` or any other
-  cognitive failure. A cancelled run has no record and no verdict. In run
+  cognitive failure. It also returns it, with the single code
+  `UNKNOWN_OPTION`, when a committed lot names a transport option that
+  matches no fixture option (user decision of 2026-11-03, decisions N38):
+  the record builder keeps a name it cannot map unambiguously, and grading
+  it as `INVENTED_CAPACITY` would count a wording problem as an agent
+  failure. `INVENTED_CAPACITY` is kept for a known option with no capacity
+  for that lot. A cancelled run has no record and no verdict. In run
   summaries, invalid and cancelled runs are counted separately and never as
   `PASS` or `FAIL`. A `round_limit` stays graded, because agents failing to
   converge is behavior we want to observe.
@@ -357,20 +367,15 @@ The new routes are:
 - `GET /suggested-prompts` returns the prompts grouped by goal (one group
   for each of `DR-1`, `CE-1`, `IE-1` and `CC-4`, with a plain-language
   title). Each prompt is an order written for a person, ending in a tag
-  `(<case>/<run type>)`. With `SUPPLY_CHAIN_L9_ENABLED` on the response has
-  12 prompts (four cases times `baseline`, `L9 hybrid`, `L9 full`); with it
-  off, 4, all `baseline`, so the chat never offers an L9 option (D12). The
-  list is filtered by the runner's `l9_enabled`, which is read once at
-  start-up. The mapping and the wording are in
+  `(<case>/<run type>)`. The response has 4 prompts, all `baseline`; the 8
+  L9 prompts are added with the L9 protocols (D12). The mapping and the
+  wording, including the L9 prompts, are in
   `docs/supply_chain_suggested_prompts.md`;
 - `/agents/{slug}/oasf`, `/health` and `/v1/health`, as in logistics.
 
-A request that names `l9_hybrid` or `l9_full` in the `configuration` field
-while `SUPPLY_CHAIN_L9_ENABLED` is off is rejected with HTTP 400 and a
-message that says L9 is disabled in this deployment (D12). When the prompt
-asks for L9 instead, the stream's first event states the selection and the
-second is a `status` event with state `l9_disabled`, and the run ends. Either
-way no agent is contacted and no run directory is created.
+A run with `l9_hybrid` or `l9_full`, from the `configuration` field or the
+prompt, ends after the selection event with a `status` event with state
+`not_implemented`. No agent is contacted and no run directory is created.
 
 Selection precedence, highest first:
 1. the `case` and `configuration` fields of the request;
@@ -429,35 +434,33 @@ in git mode before. The root `.gitignore` gains
 
 ### D12. Keeping ACCORD and CONCORD out of the failing run
 
-Two levels, which combine as follows:
+The per-run `configuration` (the API field, or the prompt) is the control:
+in a `baseline` run no L9 message exists, so no skill text or tool ever
+reaches a model. Until the L9 protocols are built:
 
-| Level | Set where | Controls |
-|---|---|---|
-| Capability | `SUPPLY_CHAIN_L9_ENABLED` (default `false`), one variable in the Compose `.env` passed to all five services, and one chart value for each of the three Helm charts | Whether the deployed agents can do ACCORD and CONCORD at all |
-| Run | The `configuration` field in the API, or the prompt | Which negotiation one run uses |
+- the suggested prompts are the four `baseline` prompts, so a person using
+  them cannot reach an L9 run;
+- an `l9_hybrid` or `l9_full` run ends with `not_implemented` before any
+  agent is contacted (D9);
+- a member that receives an `accord_request` or `concord_request` raises an
+  error, so the sender sees a failed step (a `protocol_error` run, graded
+  `INVALID`). It does not call its model.
 
-- **Switch on:** each run names its configuration. A `baseline` run and an
-  `l9_hybrid` run follow each other with no restart, on the same model,
-  prompts and agents. This is how the paired demo runs.
-- **Switch off:** every run is forced to `baseline`. `l9_hybrid` is rejected
-  by the Buyer (D9). The suggested prompts offer only the four `baseline`
-  prompts, so a person using them cannot reach an L9 run. A member that still receives an `accord_request` or
-  `concord_request` raises an error, so the sender sees a failed step (a
-  `protocol_error` run, graded `INVALID`) and a deployment where only some
-  agents have L9 on cannot pass for a working run. The member does not read
-  the skills directory or call its model. The forge tool is not created, and the skill text is not
-  put into any prompt. This is the mode for showing that L9 is absent.
-- The switch alone does not select a configuration. It only locks the
-  choice. A single environment variable that fixed the configuration would
-  need a restart between the two demo runs and would prevent a paired run in
-  one UI session, so it is not used.
-- Each run's `meta.json` records `l9_available` and the configuration. A
-  unit test runs a `baseline` run and asserts that no prompt contains L9
-  text, the forge tool is never bound, and no `accord_*` or `concord_*`
-  message exists. With the switch off, a second test asserts the same for
-  the skills directory (never read).
-- Separate images or deployments for plain and L9 were rejected as the main
-  mechanism, because environment differences would confound the comparison.
+A unit test runs a `baseline` run and asserts that no prompt contains L9
+text, no tool is bound, and no `accord_*` or `concord_*` message exists.
+
+Planned with the L9 protocols, and to be recreated with its tests then: a
+deployment switch, `SUPPLY_CHAIN_L9_ENABLED` (default on once L9 is
+implemented), passed to all five services and set by one chart value per
+Helm chart. On, the chat offers all 12 prompts and a `baseline` run and an
+`l9_hybrid` run follow each other with no restart, on the same model,
+prompts and agents (the paired demo). Off, only the 4 `baseline` prompts
+are offered, an L9 run is refused, and every agent refuses L9 messages. Each
+run's `meta.json` would record whether L9 was available. The switch would
+only lock the choice, not select a configuration: a variable that fixed the
+configuration would need a restart between the two demo runs. Separate
+images or deployments for plain and L9 were rejected, because environment
+differences would confound the comparison.
 
 ## Risks / Trade-offs
 

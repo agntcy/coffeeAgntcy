@@ -42,6 +42,7 @@ FailureCode = Literal[
     "MISSING_CONFIRMATION",
     "VERSION_MISMATCH",
     "MILESTONE_UNRESOLVED",
+    "UNKNOWN_OPTION",
 ]
 
 PLAN_CONTENT_CODES: frozenset[str] = frozenset(
@@ -69,7 +70,11 @@ INVALID_REASONS: frozenset[str] = frozenset({"timeout", "protocol_error"})
 
 
 class Verdict(BaseModel):
-    """``INVALID`` means the run could not be graded: it ended by an outage."""
+    """``INVALID`` means the run could not be graded.
+
+    It ended by an outage (no codes), or the committed plan names a transport
+    option the checker cannot match (``UNKNOWN_OPTION`` only).
+    """
 
     verdict: Literal["PASS", "FAIL", "INVALID"]
     codes: list[FailureCode] = Field(default_factory=list)
@@ -135,6 +140,23 @@ def check(
             details.append(f"Status {record.status} although a feasible plan exists.")
         return _verdict(codes, details, feasible, expected)
 
+    # A name that matches no option cannot be graded: guessing which option was
+    # meant would be the checker's judgment, not the agents'.
+    unknown = [lot for lot in record.lots if w.option(lot.transport_option) is None]
+    if unknown:
+        return Verdict(
+            verdict="INVALID",
+            codes=["UNKNOWN_OPTION"],
+            details=[
+                f"{_name(lot.supplier)} uses option '{lot.transport_option}', "
+                "which the checker cannot match to a transport option; the run "
+                "is not graded."
+                for lot in unknown
+            ],
+            feasible_plan_exists=feasible,
+            expected=expected,
+        )
+
     lot_checks: list[LotCheck] = []
     total_cost = 0.0
     seen: set[str] = set()
@@ -154,16 +176,17 @@ def check(
             )
 
         option = w.option(lot.transport_option)
-        if option is None or not _usable(option, lot.supplier):
+        assert option is not None  # unknown names returned INVALID above
+        if not _usable(option, lot.supplier):
             codes.append("INVENTED_CAPACITY")
             details.append(
-                f"{_name(lot.supplier)} uses option '{lot.transport_option}', "
+                f"{_name(lot.supplier)} uses option '{option.id}', "
                 "which is not available for that lot in this case."
             )
             lot_checks.append(
                 LotCheck(
                     supplier=lot.supplier,
-                    option=lot.transport_option,
+                    option=option.id,
                     recomputed_arrival_at=None,
                     on_time=None,
                 )
@@ -210,6 +233,8 @@ def check(
         details.append(
             f"Record milestone is '{record.milestone}', not destination receipt."
         )
+    # The moderator supersedes the committed version when it injects the
+    # disruption, so only a record built another way reaches this.
     if record.disruption_injected and not record.superseded_versions:
         codes.append("STALE_PLAN")
         details.append("The plan committed before the disruption was never superseded.")

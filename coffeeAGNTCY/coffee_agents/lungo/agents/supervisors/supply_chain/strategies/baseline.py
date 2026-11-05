@@ -55,8 +55,8 @@ buyer, and answer with exactly one action:
 to the group next.
 - propose_plan: you are ready to put one complete plan to all parties for \
 confirmation. Put the plan in "plan": for each supplier its tonnes, grade and \
-transport option (named exactly as Logistics named it), the total transport \
-cost, and what your deadline measures.
+transport option (named exactly as Logistics named it), and the total \
+transport cost.
 - withhold: you will not commit to any plan. Say why in "reason".
 - escalate: this needs a human decision. Say why in "reason"."""
 

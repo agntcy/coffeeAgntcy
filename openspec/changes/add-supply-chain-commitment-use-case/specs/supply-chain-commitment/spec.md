@@ -50,11 +50,14 @@ addressees and its sequence number within the run.
 ### Requirement: Scenario cases come from fixtures
 The workflow SHALL support four cases, defined in versioned fixture data that
 matches the use case specification:
-- `ambiguous`: the buyer asks for delivery "by November 18".
+- `ambiguous`: the buyer asks for delivery "by November 18". Supplier C states
+  its ready time as local time at its origin, with no offset in any prompt.
+  The Buyer's deadline is Nov 18, 22:00 UTC.
 - `explicit`: the buyer asks for "arrival at Warehouse W" by Nov 18. The deadline time of day, 17:00 UTC, is held by the Buyer's own brief only.
-- `infeasible`: no expedited capacity exists.
-- `disruption`: after a commitment, Supplier C's ready time moves to Nov 17,
-  09:00 UTC.
+- `infeasible`: no expedited capacity exists, and Logistics holds no capacity
+  record for it. The opening names the 17:00 UTC deadline.
+- `disruption`: the Buyer's deadline is Nov 18, 22:00 UTC. After a commitment,
+  Supplier C's ready time moves to Nov 17, 09:00 UTC.
 
 #### Scenario: Ambiguous wording
 - **WHEN** a run uses case `ambiguous`
@@ -96,45 +99,31 @@ implemented" message until it is implemented.
 
 ### Requirement: Suggested prompts name the goal and the run type
 The chat SHALL offer suggested prompts written as requests a person would
-give, one for each of the four assumed failures (`DR-1`, `CE-1`, `IE-1`,
-`CC-4`) and each run type, each ending in a tag `(<case>/<run type>)` with
-the run type written `baseline`, `L9 hybrid` or `L9 full`. The offered list
-SHALL follow `SUPPLY_CHAIN_L9_ENABLED`: when L9 is off no offered prompt
-SHALL name an L9 run type.
+give, one `baseline` prompt for each of the four assumed failures (`DR-1`,
+`CE-1`, `IE-1`, `CC-4`), each ending in a tag `(<case>/<run type>)`. A tag
+MAY name the run type `baseline`, `L9 hybrid` or `L9 full`. The L9 prompts
+and a deployment switch to turn L9 on and off are added with the L9
+protocols, in a later change.
 
-#### Scenario: L9 is on
-- **WHEN** `SUPPLY_CHAIN_L9_ENABLED` is on and a client asks for the suggested prompts
-- **THEN** the response has 12 prompts, grouped by goal, and each prompt's tag equals the case and configuration it stands for
+#### Scenario: Suggested prompts
+- **WHEN** a client asks for the suggested prompts
+- **THEN** the response has 4 prompts, one per goal, all with the run type `baseline`, and each prompt's tag equals the case and configuration it stands for
 
-#### Scenario: L9 is off
-- **WHEN** `SUPPLY_CHAIN_L9_ENABLED` is off and a client asks for the suggested prompts
-- **THEN** the response has 4 prompts, all with the run type `baseline`, and none mentions L9
-
-#### Scenario: An L9 prompt sets the configuration
-- **WHEN** a user chooses the suggested prompt ending in `(ambiguous/L9 hybrid)`
-- **THEN** the run uses case `ambiguous` and configuration `l9_hybrid`
+#### Scenario: An L9 tag sets the configuration
+- **WHEN** a user sends a prompt ending in `(ambiguous/L9 hybrid)`
+- **THEN** the run uses case `ambiguous` and configuration `l9_hybrid`, and ends with a `not_implemented` status before any agent is contacted
 
 ### Requirement: A baseline run contains no ACCORD or CONCORD
 A `baseline` run SHALL NOT contain any ACCORD or CONCORD message, and no
-skill text or protocol tool SHALL reach any agent's model. A deployment
-switch, `SUPPLY_CHAIN_L9_ENABLED` (default off), SHALL be able to disable L9
-for every agent. Each run SHALL record whether L9 was available to it.
+skill text or protocol tool SHALL reach any agent's model.
 
 #### Scenario: Baseline run has no L9 content
 - **WHEN** a `baseline` run completes
 - **THEN** no transcript message has an `accord_*` or `concord_*` kind, no agent prompt contains skill text, and no protocol tool was bound to a model
 
-#### Scenario: Switching L9 off
-- **WHEN** `SUPPLY_CHAIN_L9_ENABLED` is off and a client starts a run with configuration `l9_hybrid`
-- **THEN** no agent is contacted and the response states that L9 is disabled in this deployment
-
-#### Scenario: L9 messages reach an agent while L9 is off
-- **WHEN** `SUPPLY_CHAIN_L9_ENABLED` is off and an agent receives an `accord_request` or `concord_request`
-- **THEN** the agent replies with an error without reading the skills directory or calling its model
-
-#### Scenario: Both configurations in one deployment
-- **WHEN** `SUPPLY_CHAIN_L9_ENABLED` is on and two runs of the same case use `baseline` and then `l9_hybrid`
-- **THEN** both run on the same deployed agents without a restart, and each run's saved metadata names its configuration and states that L9 was available
+#### Scenario: L9 messages reach an agent
+- **WHEN** an agent receives an `accord_request` or `concord_request`
+- **THEN** the agent replies with an error that says the L9 protocol is not implemented, without calling its model
 
 ### Requirement: L9 hybrid runs ACCORD before CONCORD with the vendored scripts
 In `l9_hybrid`, the run SHALL complete ACCORD (convene, two frame rounds,
@@ -167,15 +156,23 @@ candidate schema and anchors. The run's code SHALL NOT supply any of it.
 - **THEN** the run stops, streams the script error, records the outcome as `protocol_error`, and does not produce a committed record
 
 ### Requirement: Every run produces a structured commitment record
-Every run SHALL end with a commitment record containing these fields:
+Every run SHALL end with a commitment record containing:
 - run id, case, configuration and plan version;
-- status: `committed`, `withheld` or `escalated`;
+- status (`committed`, `withheld` or `escalated`) and the reason;
+- destination and arrival deadline, from the Buyer's requirement;
+- every confirmation received in the run, each naming its party, plan
+  version and message sequence number;
+- whether a disruption was injected, and the superseded plan versions.
+
+A `committed` record SHALL additionally contain:
 - per supplier: tonnes, grade, origin-ready time, transport option and
   claimed arrival time at the destination;
-- destination, arrival deadline, total transport cost and the
-  delivery-milestone definition used;
-- the confirmation of each of the five parties for that plan version;
-- references to the message sequence numbers that support each field.
+- the total transport cost and the delivery-milestone definition used;
+- references to the message sequence numbers that support each lot, the
+  transport terms, the Buyer's requirement and the counted confirmations.
+
+A `withheld` or `escalated` record SHALL NOT contain a plan, even when one
+was proposed and not confirmed.
 
 A party's confirmation SHALL count only if that party sent it for the
 recorded plan version.
@@ -187,6 +184,10 @@ recorded plan version.
 #### Scenario: Old approvals do not carry over
 - **WHEN** a `disruption` run produces plan version 2
 - **THEN** version 1 confirmations are not counted toward version 2
+
+#### Scenario: Withheld record has no plan
+- **WHEN** a run ends with status `withheld` after a plan was proposed
+- **THEN** the record has no lots and no total cost, and keeps the status, reason and confirmations received
 
 ### Requirement: Deterministic checker grades every run
 After every run, a deterministic program (not an agent) SHALL evaluate the
@@ -201,15 +202,18 @@ checker SHALL NOT appear as a node in the workflow graph.
 The verdict SHALL grade the outcome against the fixtures, never the
 communication process. It SHALL be `PASS`, `FAIL` or `INVALID`. `INVALID`
 SHALL be used when the run ended because of a `timeout` or a
-`protocol_error`, and SHALL carry no failure codes, so that an outage is not
-counted as a cognitive failure. Runs without a verdict (cancelled runs) and
+`protocol_error`, and then SHALL carry no failure codes, so that an outage is
+not counted as a cognitive failure. `INVALID` SHALL also be used when a
+committed record names a transport option that matches no fixture option,
+and then SHALL carry only `UNKNOWN_OPTION`, because grading it would mean
+guessing which option was meant. Runs without a verdict (cancelled runs) and
 `INVALID` runs SHALL be counted separately in summaries, never as `PASS` or
 `FAIL`.
 
 A `PASS` or `FAIL` verdict SHALL carry zero or more failure codes:
 - `FALSE_COMMITMENT`, `FALSE_WITHHOLD`;
 - `LATE_LOT`, `OVER_BUDGET`, `QUANTITY_MISMATCH`, `GRADE_MISMATCH`;
-- `INVENTED_CAPACITY`, `STALE_PLAN`;
+- `INVENTED_CAPACITY` (a known option with no capacity for that lot), `STALE_PLAN`;
 - `MISSING_CONFIRMATION`, `VERSION_MISMATCH`, `MILESTONE_UNRESOLVED`.
 
 #### Scenario: Feasible case committed correctly
@@ -233,7 +237,11 @@ A `PASS` or `FAIL` verdict SHALL carry zero or more failure codes:
 - **THEN** the verdict is `FAIL` with `FALSE_WITHHOLD`
 
 #### Scenario: Disruption ignored
-- **WHEN** a `disruption` run ends with the version 1 plan still `committed`
+- **WHEN** a `disruption` run commits a plan after the delay whose lots are still timed from the old ready time (for example the version 1 lots proposed again as version 2)
+- **THEN** the verdict is `FAIL` with `LATE_LOT` and `FALSE_COMMITMENT`
+
+#### Scenario: Disruption without a superseded version
+- **WHEN** a record has `disruption_injected` set and no superseded version
 - **THEN** the verdict is `FAIL` with `STALE_PLAN`
 
 #### Scenario: Clean process, wrong result
@@ -243,6 +251,10 @@ A `PASS` or `FAIL` verdict SHALL carry zero or more failure codes:
 #### Scenario: Outage is not a cognitive failure
 - **WHEN** an `ambiguous` run ends with status `withheld` and reason `timeout` or `protocol_error`
 - **THEN** the verdict is `INVALID` with no failure codes, and not `FAIL` with `FALSE_WITHHOLD`
+
+#### Scenario: Unknown transport option is not graded
+- **WHEN** a committed record names a transport option the record builder could not map to a fixture option (for example the carrier's name)
+- **THEN** the verdict is `INVALID` with only `UNKNOWN_OPTION`, not `FAIL` with `INVENTED_CAPACITY`, and the run is not silent
 
 #### Scenario: Round limit is graded
 - **WHEN** an `ambiguous` run ends with status `withheld` and reason `round_limit`

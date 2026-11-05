@@ -3,6 +3,11 @@
 Paths are relative to `coffeeAGNTCY/coffee_agents/lungo/` unless they start
 with `/` (repo root).
 
+This branch delivers the baseline. The baseline rates are accepted (4.3c,
+decision N48, 2026-11-05). Still open: 9.1 and 9.2 (headline pair, CHANGELOG
+and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
+4.8 (L9 work). Do not archive or sync this change until they land.
+
 ## 1. Spike and vendoring
 
 - [x] 1.1 Spike the App SDK group chat against the installed SDK (0.6.0)
@@ -10,19 +15,21 @@ with `/` (repo root).
       broadcast replies are routed. Record the outcome and the transport
       decision in `design.md` under D3. Verify: D3 names the chosen API
       and the reasons, and task 7.2 checks one reply per addressee live.
-- [x] 1.2 Copy the four skills from upstream commit `948730e` into
+- [ ] 1.2 Copy the four skills from upstream commit `948730e` into
       `third_party/l9_skills/`, unmodified, and write `PROVENANCE.md` (URL,
       commit, versions, date, the no-licence and do-not-push note, a
       sha256 manifest). Add `tests/unit/supply_chain/test_l9_vendor_integrity.py`.
       Verify: the test passes and `diff -r` against the upstream clone shows
-      no differences.
-- [x] 1.3 Add `--exclude-dir third_party` to `/scripts/checks/check_dashes.bash`
+      no differences. Not on the baseline branch; lands with the L9 work (4.4).
+- [ ] 1.3 Add `--exclude-dir third_party` to `/scripts/checks/check_dashes.bash`
       and `/scripts/checks/fix_dashes.bash`. Make `find_strings.bash` honor
       `--exclude-dir` and `--exclude-glob` in git mode too (as exclude
       pathspecs). Extend the bats tests with exclusion cases, and add the
       lungo `runs/` path to the root `/.gitignore`. Verify: the affected
       bats files and `check_dashes.bash` pass under bash 5 with the
       vendored files present, and shellcheck and shfmt are clean.
+      Not on the baseline branch; lands with 1.2. The lungo `runs/` entry
+      in `/.gitignore` is already done.
 
 ## 2. Shared core: fixtures, envelope, record, checker
 
@@ -55,11 +62,11 @@ with `/` (repo root).
 
 - [x] 3.1 Implement the supplier agent (`agents/supply_chain/supplier/`:
       card, agent, executor, server; `SUPPLIER_ID` selects the slice and the
-      card name). It includes the negotiation, confirm, ACCORD-receiver and
-      CONCORD-receiver handlers, and the `concord_forge` tool, which runs a
-      subprocess without a shell. Verify: unit tests with a fake LLM cover
-      the noop gate, the single-Message reply, the forge tool invocation,
-      and ACCORD memory independence (no peer replies in the prompt).
+      card name) with the negotiation and confirm handlers. ACCORD and
+      CONCORD requests raise `L9NotImplemented` (`L9Disabled` until N37). The ACCORD-receiver and
+      CONCORD-receiver handlers and the `concord_forge` tool are not on the
+      baseline branch (tasks 4.4 and 4.5). Verify: unit tests with a fake
+      LLM cover the noop gate and the single-Message reply.
 - [x] 3.2 Implement the Logistics agent (`agents/supply_chain/logistics/`)
       on the same pattern. Verify: the same unit tests pass for Logistics,
       and the case overrides change capacity in `infeasible`.
@@ -93,6 +100,10 @@ with `/` (repo root).
       `configuration`, 12 prompts with L9 on, 4 and none mentioning L9 with
       L9 off, and that the existing `test_buyer_api.py` assertions are
       updated.
+      Update 2026-11-03 (your instruction, decisions N37): the 8 L9 prompts
+      and the `l9_enabled` filter are removed; `suggested_prompts.json` has
+      the 4 baseline prompts. The L9 prompts stay in the doc and come back
+      with the L9 protocols.
 - [x] 4.2 Implement the moderator run loop: per-step `broadcast_message`
       group sessions (D3), `seq`
       assignment, the transcript, the run directory files, the timeouts and
@@ -118,21 +129,32 @@ with `/` (repo root).
       not silent; `PASS` and `INVALID` are never silent; timeout and
       `protocol_error` on a feasible case are `INVALID`, `round_limit` is
       `FALSE_WITHHOLD`), and the existing checker tests still pass.
+      Update 2026-11-03 (decisions N38): `check` also returns `INVALID`, with
+      the single code `UNKNOWN_OPTION`, when a committed lot names a
+      transport option that matches no fixture option (was
+      `INVENTED_CAPACITY`). Covered in `test_checker.py` and the verdict
+      card test. No JSON Schema lists the verdict codes; they are the
+      checker's `FailureCode` type.
 - [x] 4.2d Add the deployment switch `SUPPLY_CHAIN_L9_ENABLED` (D12, added
       2026-10-27). The Buyer rejects `l9_hybrid` with HTTP 400 when off
       (also in the runner, so no agent is contacted); members reply with an
       error to `accord_request` and `concord_request` without reading the
-      skills directory, and never create the forge tool; `meta.json`
-      records `l9_available`. Verify: unit tests for the spec scenarios in
-      "A baseline run contains no ACCORD or CONCORD" (a baseline run with a
-      fake LLM: no L9 text in any prompt, forge tool never bound, no
-      protocol kinds; switch off: the skills directory is never read).
+      skills directory. The `concord_forge` tool does not exist on the
+      baseline branch. `meta.json` records `l9_available`. Verify: unit
+      tests for the spec scenarios in "A baseline run contains no ACCORD or
+      CONCORD" (a baseline run with a fake LLM: no L9 text in any prompt,
+      no tool bound to any model, no protocol kinds; switch off: the skills
+      directory is never read).
+      Update 2026-11-03 (your instruction, decisions N37): the switch is
+      removed, with its tests, the `l9_disabled` status and `l9_available`.
+      Members still refuse L9 messages, as not implemented. The switch is
+      to be recreated with the L9 protocols (default on).
 - [x] 4.3 Implement the `baseline` strategy plus the confirm round and the
       record builder (D4, D6). Verify: a fake-LLM test drives a commit, a
       withhold and a party rejection, and checks that the record status and
       confirmations follow D6. The test also asserts, for the real
-      baseline strategy, what `test_l9_switch.py` asserts for a scripted
-      one: no skill text in any prompt, no forge tool bound, no `accord_*`
+      baseline strategy, what `test_l9_switch.py` (removed in N37) asserted
+      for a scripted one: no skill text in any prompt, no tool bound to any model, no `accord_*`
       or `concord_*` message.
 - [x] 4.3b Live baseline probe (added 2026-10-27, user decision "probe
       first"). Run case `ambiguous` with `baseline` against the real model
@@ -145,7 +167,7 @@ with `/` (repo root).
       applies (the failure is the aim; accepting the rate is not the path).
       Result of the first probe: 0 of 5 (see decisions N22), so 4.3c is
       open.
-- [ ] 4.3c Refine the failing scenario (added 2026-10-27, user decision "we
+- [x] 4.3c Refine the failing scenario (added 2026-10-27, user decision "we
       refine the examples until they fail silently"). Starting with
       `ambiguous` and `baseline`, change one thing at a time, re-run the
       probe (at least five runs per version), and stop when the baseline
@@ -191,8 +213,19 @@ with `/` (repo root).
       `explicit` 10 of 10 silent, `infeasible` 5 of 5, `disruption` 2 of 5
       (about 1 in 10 a clean stale-approval failure), but `ambiguous` fell to
       2 of 15 with unchanged inputs (it was 10 of 10 at versions 6 and 7).
-      Not frozen: baseline results vary between batches, so larger samples,
-      repeated on another day, are needed first.
+      Progress (decisions N33 to N35): the N26 and N27 batches replayed
+      cached model answers, so their counts were not rates. With the cache
+      bypassed (N34), 30 independent runs per case at prompt version 9 gave
+      silent failures in `ambiguous` 22 of 30, `explicit` 24 of 30,
+      `infeasible` 28 of 30 and `disruption` 19 of 30 (about 4 of 30 a
+      clean stale approval). Not frozen: the freeze needs the same batch
+      on a later day, and the user decides what `disruption` should show
+      (N35).
+      Accepted (decision N48, 2026-11-05): the 20 of 30 bar is silent
+      failures of the expected kind, not the challenge count. Prompt version
+      19 stands: expected kind of 30 is `ambiguous` 21, `explicit` 19,
+      `infeasible` 23, `disruption` 16. `explicit` and `disruption` are
+      under 20 and are accepted. No further rounds.
 - [ ] 4.4 Implement the L9 bridge (`common/l9_bridge.py`) over the vendored
       initiator scripts. Verify: unit tests run the real scripts against
       canned receiver replies through a full ACCORD lock and a CONCORD
@@ -268,14 +301,14 @@ with `/` (repo root).
 ## 7. Local run: Compose and Makefile
 
 - [x] 7.1 Add the `supply_chain` profile services to `docker-compose.yaml`
-      (buyer, three supplier instances, logistics; the vendored skills in
-      the build context), add the profile to `.env.example`
+      (buyer, three supplier instances, logistics), add the profile to `.env.example`
       `COMPOSE_PROFILES`, and add Makefile targets. Verify: `docker compose
       --profile       supply_chain config` is valid and `docker compose --profile
       supply_chain up --build` reaches "Agent ready" for all members. The
       `.env.example` also has `SUPPLY_CHAIN_L9_ENABLED=false` (the default
       everywhere, N31), passed to all five services (D12); with `false` the
-      services start and refuse L9.
+      services start and refuse L9. Since N37 the variable is removed from
+      `.env.example` and the compose file, until the L9 protocols are added.
       Status: files and `config` check done. You rebuilt the stack with
       `docker compose up -d --build` on 2026-10-28 and reported that everything
       works (the profile comes from `COMPOSE_PROFILES` in `.env`, so
@@ -288,8 +321,11 @@ with `/` (repo root).
       every step's addressees each replied exactly once. Verify: the suites
       pass locally with SLIM up, and `tests/README.md` is updated.
       Status: health tests (8) and the two baseline flow runs pass with SLIM up
-      (L9 cases skipped until 4.4 and 4.5); `tests/README.md` updated. Run them
-      under another `COMPOSE_PROJECT_NAME` to protect a running stack (N30).
+      (the skipped L9 cases were removed in N37, to be added with 4.4 and 4.5); `tests/README.md` updated. They can
+      remove a running development stack and, under the default project
+      name, its volumes; run them only in a clean, disposable Docker
+      environment until the `isolate-lungo-integration-tests` change lands
+      (N30).
 - [x] 7.3 Write `docs/supply_chain_commitment.md` (how to run, the cases,
       the configurations, the limits, reading the run files; link
       `docs/supply_chain_suggested_prompts.md` for the run types and
@@ -314,6 +350,8 @@ with `/` (repo root).
       Status: `helm template` and `helm lint` pass for all three charts;
       `l9Enabled=false` renders `"false"`; the Buyer renders NodePort 30085 with
       `environment=local`; the workflow API keys appear only on the Buyer.
+      Update 2026-11-03 (N37): `l9Enabled` is removed from the three charts
+      until the L9 protocols are added.
 - [x] 8.2 Wire `local-cluster`: dependencies (supplier aliased three
       times), values (CORS, `VITE_SUPPLY_CHAIN_APP_API_URL`), overrides
       (SLIM targets, workflow API for the Buyer), the kind NodePort 30085,

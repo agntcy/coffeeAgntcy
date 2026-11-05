@@ -10,12 +10,13 @@ and the moderator's disruption injection use the full ``World`` view.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 SCENARIO_PATH = FIXTURES_DIR / "scenario_v1.json"
@@ -48,7 +49,12 @@ class SupplierData(_Frozen):
     quantity_t: float
     grade: str
     origin: str
+    # The true instant, in UTC. The checker uses only this.
     ready_at: datetime
+    # The origin facility's clock, in hours from UTC. When it is not zero the
+    # supplier's prompt gives the ready time on that clock and does not say
+    # "UTC", the way a facility states its own time (decisions N42).
+    utc_offset_hours: int = 0
 
 
 class TransportOption(_Frozen):
@@ -56,14 +62,43 @@ class TransportOption(_Frozen):
     description: str
     transit_hours: int
     lot_cost_usd: dict[SupplierId, float]
+    # The truth, used by the checker.
     available: bool
     requires_capacity_confirmation: bool
+    # False when the carrier holds no capacity record for this option, so its
+    # prompt cannot say whether capacity exists (decisions N41). Then
+    # ``available`` is a fact no party holds.
+    capacity_known: bool = True
+
+
+def name_words(text: str) -> str:
+    """Lowercase words only, the form option names are compared in."""
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
 
 
 class LogisticsData(_Frozen):
     organization: str
     destination: str
     options: tuple[TransportOption, ...]
+    # The carrier states when each lot would arrive when it quotes an option
+    # (decisions N41), so the Buyer can see a late lot.
+    quotes_arrival: bool = False
+
+    @model_validator(mode="after")
+    def _names_are_unique(self) -> LogisticsData:
+        # The agents only see descriptions and the record maps them back to an
+        # id, so no id or description may read the same as another option's.
+        owner: dict[str, str] = {}
+        for option in self.options:
+            if option.id in owner.values():
+                raise ValueError(f"duplicate transport option id {option.id!r}")
+            for name in {name_words(option.id), name_words(option.description)}:
+                if owner.setdefault(name, option.id) != option.id:
+                    raise ValueError(
+                        f"transport options {owner[name]!r} and {option.id!r} "
+                        f"share the name {name!r}"
+                    )
+        return self
 
 
 class Disruption(_Frozen):
@@ -73,11 +108,25 @@ class Disruption(_Frozen):
     group_notice: str
 
 
+class SupplierOverride(_Frozen):
+    """What differs for one supplier in one case; ``None`` keeps the shared value."""
+
+    ready_at: datetime | None = None
+    utc_offset_hours: int | None = None
+
+
 class Case(_Frozen):
     description: str
     buyer_wording: str
     logistics_overrides: dict[str, dict[str, bool]]
     disruption: Disruption | None
+    # The Buyer's deadline for this case when it differs from the shared one
+    # (decisions N40: ``disruption`` is on time before the delay).
+    deadline: datetime | None = None
+    # A supplier whose ready time or clock differs in this case (decisions N42).
+    supplier_overrides: dict[SupplierId, SupplierOverride] = {}
+    # Logistics states each lot's arrival time when it quotes (decisions N41).
+    logistics_quotes_arrival: bool = False
 
 
 class Scenario(_Frozen):
@@ -95,6 +144,9 @@ class BuyerSlice(_Frozen):
     case: CaseId
     buyer: BuyerData
     opening_wording: str
+    # Facilities whose clock is not UTC: (origin, hours from UTC). Only the
+    # Buyer holds this; a supplier states its own wall time (decisions N43).
+    facility_clocks: tuple[tuple[str, int], ...] = ()
 
 
 class SupplierSlice(_Frozen):
@@ -131,8 +183,26 @@ def format_utc(value: datetime) -> str:
     return f"{value:%B} {value.day}, {value:%H:%M} UTC"
 
 
+def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    keys = [key for key, _ in pairs]
+    duplicates = sorted({key for key in keys if keys.count(key) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate keys in scenario file: {duplicates}")
+    return dict(pairs)
+
+
 def load_scenario(path: Path = SCENARIO_PATH) -> Scenario:
-    return Scenario.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    data = json.loads(
+        path.read_text(encoding="utf-8"), object_pairs_hook=_no_duplicate_keys
+    )
+    return Scenario.model_validate(data)
+
+
+def _buyer_for(scenario: Scenario, case_id: CaseId) -> BuyerData:
+    deadline = scenario.cases[case_id].deadline
+    if deadline is None:
+        return scenario.buyer
+    return scenario.buyer.model_copy(update={"deadline": deadline})
 
 
 def _logistics_for(scenario: Scenario, case_id: CaseId) -> LogisticsData:
@@ -140,13 +210,21 @@ def _logistics_for(scenario: Scenario, case_id: CaseId) -> LogisticsData:
     options = tuple(
         o.model_copy(update=overrides.get(o.id, {})) for o in scenario.logistics.options
     )
-    return scenario.logistics.model_copy(update={"options": options})
+    return scenario.logistics.model_copy(
+        update={
+            "options": options,
+            "quotes_arrival": scenario.cases[case_id].logistics_quotes_arrival,
+        }
+    )
 
 
 def _supplier_for(
     scenario: Scenario, supplier_id: SupplierId, case_id: CaseId, disrupted: bool
 ) -> SupplierData:
     data = scenario.suppliers[supplier_id]
+    override = scenario.cases[case_id].supplier_overrides.get(supplier_id)
+    if override is not None:
+        data = data.model_copy(update=override.model_dump(exclude_none=True))
     disruption = scenario.cases[case_id].disruption
     if disrupted and disruption is not None and disruption.supplier == supplier_id:
         return data.model_copy(update={"ready_at": disruption.ready_at})
@@ -155,10 +233,17 @@ def _supplier_for(
 
 def buyer_slice(case_id: CaseId, scenario: Scenario | None = None) -> BuyerSlice:
     scenario = scenario or load_scenario()
+    clocks = tuple(
+        (data.origin, data.utc_offset_hours)
+        for sid in scenario.suppliers
+        for data in [_supplier_for(scenario, sid, case_id, False)]
+        if data.utc_offset_hours != 0
+    )
     return BuyerSlice(
         case=case_id,
-        buyer=scenario.buyer,
+        buyer=_buyer_for(scenario, case_id),
         opening_wording=scenario.cases[case_id].buyer_wording,
+        facility_clocks=clocks,
     )
 
 
@@ -190,7 +275,7 @@ def world(
     return World(
         case=case_id,
         disrupted=disrupted,
-        buyer=scenario.buyer,
+        buyer=_buyer_for(scenario, case_id),
         suppliers={
             s: _supplier_for(scenario, s, case_id, disrupted)
             for s in scenario.suppliers

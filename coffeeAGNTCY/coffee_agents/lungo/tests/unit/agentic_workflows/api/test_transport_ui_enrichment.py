@@ -60,6 +60,12 @@ _TRANSPORT_CASES: tuple[TransportCase, ...] = (
         expected_label="Transport: SLIM",
     ),
     TransportCase(
+        case_id="secure_group_collaboration",
+        chat_api_target="supply_chain",
+        expected_message_transport="SLIM",
+        expected_label="Transport: SLIM",
+    ),
+    TransportCase(
         case_id="a2a_http",
         chat_api_target="discovery",
         expected_message_transport=None,

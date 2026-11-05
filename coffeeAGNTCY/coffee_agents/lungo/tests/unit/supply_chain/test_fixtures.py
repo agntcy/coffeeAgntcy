@@ -3,7 +3,7 @@
 
 """Fixture numbers match the use case, and slices hold only their own party."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -81,6 +81,71 @@ def test_disruption_moves_supplier_c_only_when_injected():
     ).supplier.ready_at == _utc(15)
 
 
+def test_only_ambiguous_and_disruption_have_their_own_deadline():
+    """Decisions N40 and N42: 22:00 there, the shared 17:00 everywhere else."""
+    for case in ("ambiguous", "disruption"):
+        assert f.buyer_slice(case).buyer.deadline == _utc(18, 22)
+        assert f.world(case).buyer.deadline == _utc(18, 22)
+    for case in ("explicit", "infeasible"):
+        assert f.buyer_slice(case).buyer.deadline == _utc(18, 17)
+        assert f.world(case).buyer.deadline == _utc(18, 17)
+
+
+def test_disruption_all_standard_is_on_time_before_the_delay_and_late_after():
+    before, after = f.world("disruption"), f.world("disruption", disrupted=True)
+    standard = before.option("standard")
+    assert all(
+        before.arrival(s, standard) <= before.buyer.deadline for s in f.SUPPLIERS
+    )
+    # After the delay only Supplier C moves, and no option gets it there on time.
+    assert after.arrival("supplier_a", standard) <= after.buyer.deadline
+    assert after.arrival("supplier_b", standard) <= after.buyer.deadline
+    for option in (standard, after.option("expedited")):
+        assert after.arrival("supplier_c", option) > after.buyer.deadline
+
+
+def test_ambiguous_supplier_c_works_on_a_clock_five_hours_behind_utc():
+    """Decisions N42: 09:00 local is 14:00 UTC; the others are unchanged."""
+    c = f.supplier_slice("supplier_c", "ambiguous").supplier
+    assert c.utc_offset_hours == -5
+    assert c.ready_at == _utc(16, 14)
+    for sid, day in (("supplier_a", 14), ("supplier_b", 15)):
+        other = f.supplier_slice(sid, "ambiguous").supplier
+        assert other.utc_offset_hours == 0 and other.ready_at == _utc(day)
+    for case in ("explicit", "infeasible", "disruption"):
+        shared = f.supplier_slice("supplier_c", case).supplier
+        assert shared.utc_offset_hours == 0 and shared.ready_at == _utc(16)
+
+
+def test_ambiguous_standard_looks_on_time_in_utc_but_is_late():
+    w = f.world("ambiguous")
+    standard, expedited = w.option("standard"), w.option("expedited")
+    c = w.suppliers["supplier_c"]
+    # Read as if 09:00 were UTC: Nov 18, 21:00, before the 22:00 deadline.
+    naive = _utc(16, 9) + timedelta(hours=standard.transit_hours)
+    assert naive == _utc(18, 21) and naive <= w.buyer.deadline
+    # The true arrival is Nov 19, 02:00, after it. Expedited is on time.
+    assert w.arrival("supplier_c", standard) == _utc(19, 2) > w.buyer.deadline
+    assert w.arrival("supplier_c", expedited) == _utc(18, 14) <= w.buyer.deadline
+    assert c.ready_at == _utc(16, 14)
+
+
+def test_infeasible_expedited_capacity_is_a_fact_nobody_holds():
+    """Decisions N41: the truth is "no capacity", but Logistics has no record."""
+    lg = f.logistics_slice("infeasible").logistics
+    expedited = next(o for o in lg.options if o.id == "expedited")
+    assert expedited.available is False and expedited.capacity_known is False
+    assert lg.quotes_arrival is True
+    # Ambiguous quotes arrival times too (decisions N43), but only infeasible
+    # lacks a capacity record.
+    assert f.logistics_slice("ambiguous").logistics.quotes_arrival is True
+    for case in ("ambiguous", "explicit", "disruption"):
+        other = f.logistics_slice(case).logistics
+        assert all(o.capacity_known for o in other.options)
+    for case in ("explicit", "disruption"):
+        assert f.logistics_slice(case).logistics.quotes_arrival is False
+
+
 def test_ambiguous_wording_names_no_milestone():
     wording = f.buyer_slice("ambiguous").opening_wording
     assert "delivered by November 18" in wording
@@ -91,7 +156,7 @@ def test_ambiguous_wording_names_no_milestone():
 @pytest.mark.parametrize("case", f.CASES)
 def test_slices_hold_only_their_own_party(case):
     buyer = f.buyer_slice(case).model_dump()
-    assert set(buyer) == {"case", "buyer", "opening_wording"}
+    assert set(buyer) == {"case", "buyer", "opening_wording", "facility_clocks"}
     for sid in f.SUPPLIERS:
         sl = f.supplier_slice(sid, case).model_dump()
         assert set(sl) == {"case", "supplier_id", "supplier"}
@@ -103,3 +168,48 @@ def test_slices_hold_only_their_own_party(case):
         and "budget" not in str(lg)
         and "quantity" not in str(lg)
     )
+
+
+def _logistics(*options: tuple[str, str]) -> dict:
+    return {
+        "organization": "Carrier",
+        "destination": "Warehouse W",
+        "options": [
+            {
+                "id": option_id,
+                "description": description,
+                "transit_hours": 60,
+                "lot_cost_usd": {"supplier_a": 5000},
+                "available": True,
+                "requires_capacity_confirmation": False,
+            }
+            for option_id, description in options
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        [("standard", "Standard road transport"), ("standard", "Road freight")],
+        [("standard", "Road transport"), ("slow", "road-transport")],
+        [("standard", "Standard road transport"), ("slow", "Standard")],
+    ],
+    ids=["same id", "same description", "description reads as another id"],
+)
+def test_option_names_must_be_unique(options):
+    with pytest.raises(ValueError, match="duplicate transport option id|share"):
+        f.LogisticsData.model_validate(_logistics(*options))
+
+
+def test_shipped_options_are_unique():
+    f.LogisticsData.model_validate(f.load_scenario().logistics.model_dump())
+
+
+def test_a_duplicate_key_in_the_scenario_file_is_rejected(tmp_path):
+    text = f.SCENARIO_PATH.read_text(encoding="utf-8")
+    duplicated = text.replace('"suppliers": {', '"suppliers": {"supplier_a": {}, ', 1)
+    path = tmp_path / "scenario.json"
+    path.write_text(duplicated, encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate keys.*supplier_a"):
+        f.load_scenario(path)

@@ -10,9 +10,8 @@ times, with the real language model, and counts the verdicts.
 What runs for real: a SLIM server (you start it), the four supplier and
 logistics servers as separate processes, the SDK transport, the moderator,
 the baseline strategy, the checker, and the model configured in ``.env``.
-Every run directory is kept under ``runs/supply_chain/``. L9 is switched off
-for every process (``SUPPLY_CHAIN_L9_ENABLED=false``), so the runs show that
-the skills are not needed to produce the result.
+Every run directory is kept under ``runs/supply_chain/``. No L9 protocol
+exists yet, so the runs show the result without the skills.
 
 This sends the negotiation to the configured model: about 20 to 40 calls a
 run. Credentials come from ``.env`` and are never printed.
@@ -45,7 +44,6 @@ import supply_chain_slim_check as harness  # noqa: E402  (shared child-process h
 
 LUNGO_ROOT = harness.LUNGO_ROOT
 sys.path.insert(0, str(LUNGO_ROOT))
-
 SERVER_FILES = {
     "supplier_a": "agents/supply_chain/supplier/server.py",
     "supplier_b": "agents/supply_chain/supplier/server.py",
@@ -58,7 +56,6 @@ def start_agents(log_dir: Path, secret: str) -> list[subprocess.Popen]:
     procs = []
     for i, party in enumerate(harness.AGENTS):
         env = harness._child_env(log_dir, secret)
-        env["SUPPLY_CHAIN_L9_ENABLED"] = "false"
         env["AGENT_PORT"] = str(harness.FIRST_PORT + i)
         if party != "logistics":
             env["SUPPLIER_ID"] = party.removeprefix("supplier_")
@@ -83,6 +80,16 @@ def _clip(text: str, n: int = 260) -> str:
 async def one_run(
     runner, case: str, configuration: str, index: int, total: int
 ) -> dict:
+    # Imported here, after ``probe`` has set the environment the agents read.
+    from tests.integration.helpers.supply_chain_challenge_evidence import (
+        challenge_evidence,
+    )
+    from tests.integration.helpers.supply_chain_expected_kind import expected_kind
+    from tests.integration.helpers.supply_chain_stale_approval import (
+        clean_stale_approval,
+        plan_before_delay,
+    )
+
     run_id = None
     record = verdict = None
     async for event in runner.stream(
@@ -104,6 +111,8 @@ async def one_run(
         for line in (run_dir / "messages.jsonl").read_text().splitlines()
     ]
     signals = outcome.get("signals", {})
+    before_delay = plan_before_delay(messages)
+    deadline = datetime.fromisoformat(record["arrival_deadline"])
     return {
         "run_id": run_id,
         "status": record["status"],
@@ -111,6 +120,25 @@ async def one_run(
         "verdict": verdict["verdict"],
         "codes": verdict["codes"],
         "silent": verdict["silent"],
+        # Only ``disruption`` has a plan before a delay. A silent failure whose
+        # plan before the delay was on time is a clean stale approval (N40).
+        "plan_before_delay": before_delay,
+        "stale_approval": clean_stale_approval(
+            case, verdict["silent"], messages, deadline
+        ),
+        # A silent failure of the kind the case is built to show (N40 to N42).
+        "expected_kind": expected_kind(
+            case,
+            silent=verdict["silent"],
+            codes=verdict["codes"],
+            record=record,
+            messages=messages,
+            deadline=deadline,
+        ),
+        # The conversation shows the cognitive challenge of the case (N43).
+        "challenge_evidence": challenge_evidence(
+            case, silent=verdict["silent"], messages=messages
+        ),
         "rounds": signals.get("rounds"),
         "plans_proposed": signals.get("plans_proposed"),
         "rejected_replies": signals.get("rejected_replies"),
@@ -160,7 +188,6 @@ async def probe(case: str, configuration: str, runs: int, secret: str) -> list[d
         SLIM_SHARED_SECRET=secret,
         OTEL_SDK_DISABLED="true",
         EMIT_WORKFLOW_EVENTS="false",
-        SUPPLY_CHAIN_L9_ENABLED="false",
     )
     from agents.supervisors.supply_chain.card import BUYER_CARD
     from agents.supervisors.supply_chain.runner import SupplyChainRunner
@@ -177,7 +204,7 @@ async def probe(case: str, configuration: str, runs: int, secret: str) -> list[d
         interceptors=[EventEmittingInterceptor(caller_card=BUYER_CARD)],
     )
     runner = SupplyChainRunner(transport, model=LLM_MODEL)
-    print(f"model: {LLM_MODEL}; L9 available: {runner.l9_enabled}", flush=True)
+    print(f"model: {LLM_MODEL}", flush=True)
 
     results = []
     for index in range(1, runs + 1):
@@ -239,6 +266,13 @@ def main() -> int:
             k: counts.get(k, 0)
             for k in ("silent_failure", "other_failure", "pass", "invalid")
         },
+        # Silent failures of the kind the case is built to show (N40 to N42).
+        "expected_kind": sum(bool(r.get("expected_kind")) for r in results),
+        # Expected kind AND the challenge shown in the conversation (N43).
+        "expected_kind_with_challenge": sum(
+            bool(r.get("expected_kind") and r.get("challenge_evidence"))
+            for r in results
+        ),
         "results": results,
         "finished_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -255,6 +289,10 @@ def main() -> int:
     print("\n== counts ==")
     for key, value in summary["counts"].items():
         print(f"{key:15} {value}")
+    print(f"{'expected_kind':15} {summary['expected_kind']}")
+    print(
+        f"{'with_challenge':15} {summary['expected_kind_with_challenge']}"
+    )
     print(f"summary: {out}")
     return 0
 

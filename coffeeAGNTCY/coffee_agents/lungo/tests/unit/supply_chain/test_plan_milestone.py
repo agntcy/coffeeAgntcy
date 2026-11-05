@@ -22,6 +22,26 @@ def test_the_milestone_is_not_in_the_schema_the_model_sees():
     assert "milestone" not in str(schema)
 
 
+def test_the_decision_instructions_do_not_ask_for_a_milestone():
+    """Decisions N39: the plan has no field for it, so the prompt must not ask."""
+    from agents.supervisors.supply_chain.strategies.baseline import (
+        DECISION_INSTRUCTIONS,
+    )
+
+    assert "deadline measures" not in DECISION_INSTRUCTIONS
+    assert "milestone" not in DECISION_INSTRUCTIONS
+
+
+def test_the_decision_instructions_do_not_ask_for_a_milestone():
+    """Decisions N39: the plan has no field for it, so the prompt must not ask."""
+    from agents.supervisors.supply_chain.strategies.baseline import (
+        DECISION_INSTRUCTIONS,
+    )
+
+    assert "deadline measures" not in DECISION_INSTRUCTIONS
+    assert "milestone" not in DECISION_INSTRUCTIONS
+
+
 def test_the_milestone_defaults_to_unspecified_and_is_not_rendered():
     plan = PlanProposal(lots=[_lot()], total_cost_usd=15000)
     assert plan.milestone == "unspecified"
@@ -57,5 +77,20 @@ def test_the_confirm_request_does_not_show_claimed_arrival_times():
     text = plan.render(1)
     assert "arrival" not in text
     assert "2026-11-17" not in text
-    assert "ready at origin 2026-11-14 09:00 UTC" in text
+    assert "ready at origin" not in text
+    assert plan.lots[0].origin_ready_at is not None
     assert plan.lots[0].claimed_arrival_at is not None
+
+
+def test_the_ready_time_is_kept_and_not_shown():
+    """Decisions N46: the confirm request no longer prints the ready time."""
+    from datetime import datetime, timedelta, timezone
+
+    for ready in (
+        datetime(2026, 11, 14, 9, tzinfo=timezone(timedelta(hours=2))),
+        datetime(2026, 11, 14, 9),
+    ):
+        lot = _lot().model_copy(update={"origin_ready_at": ready})
+        text = PlanProposal(lots=[lot]).render(1)
+        assert "ready at origin" not in text
+        assert lot.origin_ready_at == ready

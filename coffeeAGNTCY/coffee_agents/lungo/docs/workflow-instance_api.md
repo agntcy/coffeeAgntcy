@@ -198,7 +198,7 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
 }
 ```
 
-Each value is a `WorkflowSummary`: `name`, `pattern`, `pattern_category`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, or `discovery`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
+Each value is a `WorkflowSummary`: `name`, `pattern`, `pattern_category`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, `discovery`, or `supply_chain`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
 
 **Source of truth:** catalog rows declare `pattern_category`, `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
 
@@ -279,11 +279,11 @@ An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri`
 | `identity_app_slug` | `lungo.identityAppSlug` |
 | `verification_status_override` | `lungo.verificationStatusOverride` |
 
-**Transport nodes** (`type: transport` or leftover `transportNode`) when catalog `chat_api_target` is `exchange` or `logistics`:
+**Transport nodes** (`type: transport` or leftover `transportNode`) when catalog `chat_api_target` is `exchange`, `logistics`, or `supply_chain`:
 
 | Wire field | Example | Notes |
 |------------|---------|-------|
-| `message_transport` | `"SLIM"` | Deployment message transport (`DEFAULT_MESSAGE_TRANSPORT` for exchange; `"SLIM"` for logistics) |
+| `message_transport` | `"SLIM"` | Deployment message transport (`DEFAULT_MESSAGE_TRANSPORT` for exchange; `"SLIM"` for logistics and supply_chain) |
 | `label` | `"Transport: SLIM"` | Replaces the generic catalog `"Transport"` label |
 
 When `chat_api_target` is `discovery` or absent, transport nodes are returned unchanged.

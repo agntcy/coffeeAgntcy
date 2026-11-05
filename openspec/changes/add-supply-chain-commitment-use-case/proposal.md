@@ -56,21 +56,18 @@ recorded in
     follow-up change.
 - **Keeping ACCORD and CONCORD out of the failing run.** The per-run
   `configuration` is the main control: in a `baseline` run no L9 message
-  exists, so no skill text or tool ever reaches a model. A deployment switch,
-  `SUPPLY_CHAIN_L9_ENABLED` (default off), sits above it. When it is off,
-  every agent refuses L9 messages, never reads the skills directory and never
-  creates the forge tool, and the Buyer rejects `l9_hybrid`. Each run records
-  whether L9 was available.
-- **Suggested prompts that follow the switch.** The chat offers one request
-  for each of the four assumed failures (`DR-1`, `CE-1`, `IE-1`, `CC-4`) and
-  each run type, written as an order a person would give, for example "I'd
-  like to have a 1,000-tonne coffee shipment delivered by November 18, with
-  total transport cost at or below $20,000 (ambiguous/baseline)". The closing
-  tag `(<case>/<run type>)` sets the case and the configuration with a fixed
-  rule. When `SUPPLY_CHAIN_L9_ENABLED` is off, only the 4 `baseline` prompts
-  are offered. When it is on, the 12 prompts cover `baseline`, `L9 hybrid`
-  and `L9 full`, and each L9 prompt sets its configuration through its tag.
-  The prompts and the run-type differences are in
+  exists, so no skill text or tool ever reaches a model. Until the L9
+  protocols are built, every agent refuses L9 messages and an L9 run ends
+  with "not implemented". A deployment switch, `SUPPLY_CHAIN_L9_ENABLED`
+  (default on once implemented), is planned with the L9 protocols.
+- **Suggested prompts.** The chat offers one `baseline` request for each of
+  the four assumed failures (`DR-1`, `CE-1`, `IE-1`, `CC-4`), written as an
+  order a person would give, for example "I'd like to have a 1,000-tonne
+  coffee shipment delivered by November 18, with total transport cost at or
+  below $20,000 (ambiguous/baseline)". The closing tag
+  `(<case>/<run type>)` sets the case and the configuration with a fixed
+  rule. The `L9 hybrid` and `L9 full` prompts are added with the L9
+  protocols. The prompts and the run-type differences are in
   `coffeeAGNTCY/coffee_agents/lungo/docs/supply_chain_suggested_prompts.md`.
 - **Structured commitment record and checker.** Every run produces a
   commitment record. A deterministic checker evaluates it against the

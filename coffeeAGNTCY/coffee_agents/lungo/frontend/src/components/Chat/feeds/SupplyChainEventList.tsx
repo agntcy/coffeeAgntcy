@@ -244,7 +244,9 @@ export function SupplyChainVerdictCard({
       ) : null}
       {verdict.verdict === "INVALID" ? (
         <Typography variant="body2" component="div">
-          The run ended by an outage and could not be graded.
+          {verdict.codes.includes("UNKNOWN_OPTION")
+            ? "The plan names a transport option the checker cannot match, so the run could not be graded."
+            : "The run ended by an outage and could not be graded."}
         </Typography>
       ) : null}
       {verdict.codes.length > 0 ? (

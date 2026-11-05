@@ -174,9 +174,20 @@ describe("SupplyChainEventList", () => {
   it("explains INVALID", () => {
     renderEvents([verdict({ verdict: "INVALID", codes: [], details: [] })])
 
-    expect(screen.getByTestId("supply-chain-verdict")).toHaveTextContent(
-      "could not be graded",
-    )
+    const card = screen.getByTestId("supply-chain-verdict")
+    expect(card).toHaveTextContent("ended by an outage")
+    expect(card).toHaveTextContent("could not be graded")
+  })
+
+  it("explains INVALID for an unknown transport option", () => {
+    renderEvents([
+      verdict({ verdict: "INVALID", codes: ["UNKNOWN_OPTION"], details: [] }),
+    ])
+
+    const card = screen.getByTestId("supply-chain-verdict")
+    expect(card).toHaveTextContent("cannot match")
+    expect(card).not.toHaveTextContent("outage")
+    expect(card).toHaveTextContent("UNKNOWN_OPTION")
   })
 })
 
@@ -191,8 +202,8 @@ describe("describeSupplyChainStatus", () => {
       "Buyer decision in round 3: propose_plan",
     ],
     [
-      { type: "status", state: "l9_disabled", message: "L9 is off" },
-      "L9 is off",
+      { type: "status", state: "not_implemented", message: "Not built yet" },
+      "Not built yet",
     ],
     [{ type: "status", state: "started" }, null],
     [{ type: "status", state: "error", message: "boom" }, null],
