@@ -35,34 +35,6 @@ _WEATHER_MCP_ARGS = {
 }
 
 
-def _drop_shared_slim_connection() -> None:
-    """Forget the process-wide SLIM connection so the next call opens a new one.
-
-    Every SLIM transport in this process shares one connection. A previous
-    test can disconnect it and leave the cached id in place. The next
-    ``set_route`` is then rejected with "connection not found".
-    """
-    import agntcy_app_sdk.transport.slim.common as slim_common
-
-    slim_common.global_slim = None
-    slim_common.global_connection_id = None
-    slim_common.global_slim_service = None
-    slim_common.global_slim_insecure = None
-    slim_common.global_slim_endpoint = None
-    slim_common.global_slim_auth = None
-
-
-async def _call_weather(loopback_mcp_client):
-    """Call the weather tool, and once more on a fresh connection if needed."""
-    try:
-        return await loopback_mcp_client(**_WEATHER_MCP_ARGS)
-    except (Exception, ExceptionGroup) as exc:
-        if "connection not found" not in str(exc).lower():
-            raise
-        _drop_shared_slim_connection()
-        return await loopback_mcp_client(**_WEATHER_MCP_ARGS)
-
-
 @pytest.mark.parametrize(
     "transport_config",
     [TRANSPORT_MATRIX[0]],
@@ -106,7 +78,7 @@ async def test_weather_mcp_open_meteo_stub_success_returns_forecast(
         "\n---Test: weather-mcp Open-Meteo stub success (%s)---",
         transport_config,
     )
-    result = await _call_weather(loopback_mcp_client)
+    result = await loopback_mcp_client(**_WEATHER_MCP_ARGS)
 
     assert _is_valid_weather_forecast(result), (
         f"Expected valid forecast text, got: {result!r}"
