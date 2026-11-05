@@ -77,6 +77,12 @@ needs a way to drop `container_name`, which Compose cannot express as an
 empty default. The override touches only what the suite uses and leaves the
 dev stack byte-for-byte the same.
 
+The it file is always the last `-f`: after `docker-compose.yaml` and after
+`docker-compose.override.yaml` when that file exists next to
+`docker-compose.yaml` (the lungo directory, not the process working
+directory). Compose applies files in order, so a developer override placed
+after it would restore fixed names and ports.
+
 Unused ports (SLIM 46358, NATS 4223/6222/8222, collector 4317 and 13133)
 are not published. Task 1.1 confirms nothing in the suite uses them.
 
@@ -104,7 +110,12 @@ known from the first line.
 `docker_helpers` builds every compose command with
 `-p lungo-it-<8 random hex chars>`, generated once per session in
 `ports.py` next to the ports, and the compose environment carries the
-`LUNGO_IT_*` port variables. `down()` keeps `-v --remove-orphans`: scoped
+`LUNGO_IT_*` port variables. `compose_env()` returns `os.environ` plus
+those variables, not a replacement environment, because compose
+interpolates `WORKFLOW_API_KEY` and the rest of `.env` from it. The
+`LUNGO_IT_*` variables are also written into `os.environ`, so a compose call
+that inherits the environment interpolates the override the same way.
+`down()` keeps `-v --remove-orphans`: scoped
 to the session project, both only affect what the session created.
 `remove_container_if_exists()` and its five calls are removed. With no
 fixed names left, there is nothing by name to clean.
@@ -143,6 +154,10 @@ its own table.
   set, so an in-process import of a farm card shows the default port. The
   auction tests use SLIM and NATS only, so the HTTP URL is not used. Task
   1.1 confirms it.
+- [Agent processes still bind `0.0.0.0`] → they listen on all interfaces
+  on a per-session port for the length of the run, as they do today on
+  fixed ports. Binding them to loopback needs agent code changes, a
+  non-goal here.
 - [The suite's ClickHouse and Grafana are no longer reachable from the
   host] → nothing in the suite reads them. A developer who wants to look at
   a test run's traces can still `docker compose -p <name> port` after adding

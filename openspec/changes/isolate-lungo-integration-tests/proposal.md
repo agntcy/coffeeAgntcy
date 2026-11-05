@@ -13,8 +13,8 @@ force-removes `lungo-slim`, `lungo-nats`, `lungo-otel-collector`,
 suite tears down the developer's stack and deletes its volumes. CI never
 notices, because every runner is a clean machine.
 
-The workaround in `tests/README.md` (`COMPOSE_PROJECT_NAME=lungo-it`) does
-not work: the 29 fixed `container_name` entries in `docker-compose.yaml`
+Running the suite under another project name
+(`COMPOSE_PROJECT_NAME=lungo-it`) does not help: the 29 fixed `container_name` entries in `docker-compose.yaml`
 and the fixed host ports still collide. Current practice is the opposite
 of what the suite does: tests use dynamic host ports and a project name
 of their own, and tear down only what they started.
@@ -41,7 +41,7 @@ of their own, and tear down only what they started.
   `127.0.0.1:46357` and `nats://127.0.0.1:4222` in nine test modules) and
   the health tests all read from it.
 - **Documentation.** `tests/README.md` states that the suite runs beside a
-  running stack, drops the wrong `COMPOSE_PROJECT_NAME` advice, and says how
+  running stack, replaces the temporary clean-environment warning, and says how
   to clean up a project left by an interrupted run.
 
 Out of scope: the dev stack's own ports and container names, corto and

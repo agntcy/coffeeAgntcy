@@ -6,7 +6,7 @@ The suite validates:
 
 - Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS: LLM cases in `tests/integration/llm/`, docker-only checks in `tests/integration/`.
 - Logistics Supervisor (farm, accountant, shipper, helpdesk): health in `tests/integration/`, prompt flows in `tests/integration/llm/`.
-- Supply Chain Commitment (Buyer, three suppliers, Logistics): health in `tests/integration/`, baseline runs against the real model in `tests/integration/llm/`. The L9 cases there are skipped until the L9 bridge is built.
+- Supply Chain Commitment (Buyer, three suppliers, Logistics): health in `tests/integration/`, baseline runs against the real model in `tests/integration/llm/`. L9 cases are added with the L9 protocols.
 - Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`tests/integration/live/`).
 - Agent process orchestration, startup readiness gating, and HTTP supervisor APIs.
 
@@ -128,9 +128,14 @@ the flow test never asserts a verdict. How the checker decides is in
 
 The session fixture runs `docker compose down -v --remove-orphans` for the
 compose project when pytest starts and again when it exits, including on
-`--collect-only`. To keep a running development stack, run the integration
-tests under another project name, for example
-`COMPOSE_PROJECT_NAME=lungo-it uv run pytest tests/integration/test_supply_chain_health.py -q`.
+`--collect-only`, and force-removes the `lungo-slim`, `lungo-nats`,
+`lungo-otel-collector`, `lungo-clickhouse-server` and `grafana-lungo`
+containers by name. The suite is not safe to run where a development stack
+or its data must be kept: a different `COMPOSE_PROJECT_NAME` does not
+protect it, and under the default project name `down -v` deletes the stack's
+volumes, including `zot-storage` and the Directory's Postgres data. Use a
+clean, disposable Docker environment until the
+`isolate-lungo-integration-tests` OpenSpec change is implemented.
 
 Live uvicorn/SSE:
 

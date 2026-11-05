@@ -18,8 +18,9 @@ All paths are under `coffeeAGNTCY/coffee_agents/lungo/`.
       SLIM, NATS and OTLP HTTP ports, one port per `AGENTS` name and the
       `lungo-it-<hex>` project name once per process, using
       `free_tcp_port()`, and exposes the endpoint constants,
-      `agent_port(name)`, `PROJECT_NAME` and `compose_env()` (the
-      `LUNGO_IT_*` variables). Verify: new
+      `agent_port(name)`, `PROJECT_NAME` and `compose_env()` (`os.environ`
+      plus the `LUNGO_IT_*` variables, which are also written into
+      `os.environ`). Verify: new
       `tests/unit/test_integration_ports.py` passes, covering distinct
       ports, loopback endpoints, the project-name pattern, the same values
       on repeated access, and an unknown agent name raising.
@@ -28,17 +29,33 @@ All paths are under `coffeeAGNTCY/coffee_agents/lungo/`.
       tests/integration/docker-compose.it.yaml config` with the three
       `LUNGO_IT_*` variables set shows no `container_name` and only the
       three loopback ports for the five services, and the same command
-      without the override still shows the dev ports and names.
+      without the override still shows the dev ports and names. Render the
+      same command again with a sample `docker-compose.override.yaml` that
+      sets a `container_name` and a port for `slim`, placed before the it
+      file: the it file still wins.
 
 ## 3. Compose helpers
 
-- [ ] 3.1 Make every command in `helpers/docker_helpers.py` use
-      `-p ports.PROJECT_NAME`, the override file and `ports.compose_env()`;
-      remove `remove_container_if_exists()`. Verify: extend
-      `tests/unit/test_docker_helpers_diagnostics.py` (or a sibling
-      module) so that `up`, `down` and the service lookups are asserted to
-      pass the project name and both files, and that `down` never runs
-      without `-p`.
+- [ ] 3.1 Make every Compose command in `helpers/docker_helpers.py` use
+      `-p ports.PROJECT_NAME`, the override file (last `-f`, D1) and
+      `ports.compose_env()`, by making `_compose_cmd(files)` add `-p` and
+      append the it file after the given files. `_run` takes the same
+      `files` list as a parameter (`_run(cmd, files)`), and both commands
+      it builds on failure (`config --services` and `logs`) are built with
+      `_compose_cmd(files)`, not by slicing `cmd` (the slice keeps only
+      `docker compose`) and not by filtering the `.yaml` arguments out of
+      `cmd` (that would pass the it file twice once the helper adds it).
+      The `ps` calls in `_container_id` and the `logs` call in
+      `_compose_logs` pass `ports.compose_env()` too. `docker inspect` in
+      `_inspect_state_health` and `docker logs` by container id do not:
+      they address an id, not the project. Build `files` in `conftest.py`
+      from `LUNGO_DIR`, not the process working directory (it checks
+      `Path("docker-compose.override.yaml")` relative to the working
+      directory today). Remove `remove_container_if_exists()`.
+      Verify: extend `tests/unit/test_docker_helpers_diagnostics.py` (or
+      a sibling module) so that `up`, `down`, the service lookups and both
+      failure-path commands are asserted to pass the project name and
+      both files exactly once, and that `down` never runs without `-p`.
 
 ## 4. Conftest and test modules
 
@@ -55,12 +72,13 @@ All paths are under `coffeeAGNTCY/coffee_agents/lungo/`.
       `llm/test_logistics_supervisor_flows.py`, `llm/test_supply_chain_flows.py`
       and `test_supply_chain_health.py` with the `ports` constants, and the
       health-port table in `test_supply_chain_health.py` with
-      `ports.agent_port()`. Verify: `rg -n '127\.0\.0\.1:(46357|4222|4318)|909[0-9]|999[7-9]' tests/integration`
-      finds nothing outside `ports.py` and comments.
-- [ ] 4.3 Update `tests/README.md`: replace the `COMPOSE_PROJECT_NAME`
-      paragraph with how the suite isolates itself, the Compose 2.24
-      minimum, and how to find and remove a `lungo-it-*` project left by a
-      killed run. Verify: `task links:check` and `task dashes:check` pass.
+      `ports.agent_port()`. Verify: `rg -n '127\.0\.0\.1:(46357|4222|4318)|\b909[0-9]\b|\b999[7-9]\b' tests/integration -g '!supply_chain_probe.py' -g '!supply_chain_slim_check.py'`
+      finds nothing outside `ports.py` and comments. The two manual
+      scripts start their own SLIM on 56357 and are out of scope.
+- [ ] 4.3 Update `tests/README.md`: replace the temporary
+      clean-environment paragraph with how the suite isolates itself, the
+      Compose 2.24 minimum, and how to find and remove a `lungo-it-*`
+      project left by a killed run. Verify: `task links:check` and `task dashes:check` pass.
 
 ## 5. Integration checks
 
