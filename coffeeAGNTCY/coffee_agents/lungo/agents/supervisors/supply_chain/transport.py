@@ -10,6 +10,8 @@ session with the addressed agents and each addressee answers the sender only.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
@@ -65,15 +67,49 @@ class SlimGroupTransport:
         self._interceptors = list(interceptors)
         self._party_by_card_name = {card.name: party for party, card in cards.items()}
         self._client: Any | None = None
+        self._client_lock = asyncio.Lock()
+        self._client_users: dict[int, int] = {}
 
-    async def _get_client(self, anchor: AgentCard) -> Any:
+    @contextlib.asynccontextmanager
+    async def _lease_client(self, anchor: AgentCard):
         # The client's own card only names the broadcast topic; the recipient
         # list decides who is invited.
-        if self._client is None:
-            self._client = await self._client_factory.create(
-                anchor, interceptors=self._interceptors
-            )
-        return self._client
+        async with self._client_lock:
+            if self._client is None:
+                self._client = await self._client_factory.create(
+                    anchor, interceptors=self._interceptors
+                )
+            client = self._client
+            key = id(client)
+            self._client_users[key] = self._client_users.get(key, 0) + 1
+        broken = False
+        try:
+            yield client
+        except A2ABroadcastError as e:
+            # A missing-reply timeout stays reusable (timed_out, transport_error
+            # None). A transport failure after some replies arrives wrapped.
+            broken = e.transport_error is not None
+            raise
+        except asyncio.CancelledError:
+            # The broadcast was in flight. The next run starts a new client.
+            broken = True
+            raise
+        except Exception:
+            broken = True
+            raise
+        finally:
+            # Concurrent runs share the client: close a broken one only
+            # after its last user is done.
+            async with self._client_lock:
+                if broken and self._client is client:
+                    self._client = None
+                self._client_users[key] -= 1
+                close = self._client_users[key] == 0 and self._client is not client
+                if close:
+                    del self._client_users[key]
+            if close:
+                with contextlib.suppress(Exception):
+                    await client.close()
 
     async def broadcast(
         self, request: Envelope, recipients: Sequence[Party], *, timeout: float
@@ -93,18 +129,18 @@ class SlimGroupTransport:
         )
         context = ClientCallContext(state={"broadcast_agent_cards": cards})
         try:
-            client = await self._get_client(cards[0])
-            # The event middleware pairs a request with its replies by trace
-            # id, so the call and its replies run inside one span. Without it
-            # the middleware warns and drops every inbound event.
-            with _tracer.start_as_current_span("supply_chain.broadcast"):
-                responses = await client.broadcast_message(
-                    message,
-                    recipients=[get_agent_identifier(card) for card in cards],
-                    context=context,
-                    timeout=timeout,
-                    broadcast_topic=_channel(request),
-                )
+            async with self._lease_client(cards[0]) as client:
+                # The event middleware pairs a request with its replies by trace
+                # id, so the call and its replies run inside one span. Without it
+                # the middleware warns and drops every inbound event.
+                with _tracer.start_as_current_span("supply_chain.broadcast"):
+                    responses = await client.broadcast_message(
+                        message,
+                        recipients=[get_agent_identifier(card) for card in cards],
+                        context=context,
+                        timeout=timeout,
+                        broadcast_topic=_channel(request),
+                    )
         except A2ABroadcastError as e:
             raise TransportError(f"broadcast incomplete: {e}") from e
         except Exception as e:
@@ -118,13 +154,15 @@ class SlimGroupTransport:
         envelope = decode(get_message_text(message))
         if envelope is None:
             raise TransportError("a reply is not a supply chain envelope")
-        # The sender named inside the envelope must be the agent whose card
-        # stamped the reply, so one agent cannot answer as another.
+        # The envelope's sender must match the card name the replying executor
+        # put in the message metadata. This catches a reply built for the wrong
+        # party; it is not authentication (the metadata is self-declared).
         stamped = self._party_by_card_name.get(
             str(message_metadata(message).get("name") or "")
         )
         if stamped != envelope.sender:
             raise TransportError(
-                f"reply claims sender {envelope.sender!r} but came from {stamped!r}"
+                f"reply claims sender {envelope.sender!r} "
+                f"but the metadata name maps to {stamped!r}"
             )
         return envelope

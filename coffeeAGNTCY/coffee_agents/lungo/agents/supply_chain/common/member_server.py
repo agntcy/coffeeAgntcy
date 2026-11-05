@@ -11,6 +11,7 @@ tests patch, and delegates to the functions here.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from os import getenv
 
@@ -61,8 +62,9 @@ def make_liveness_probe(client_name: str, peer_card: AgentCard):
                 shared_secret_identity=getenv("SLIM_SHARED_SECRET") or None,
             ),
         )
+        client = None
         try:
-            await asyncio.wait_for(
+            client = await asyncio.wait_for(
                 A2AClientFactory(config).create(peer_card), timeout=30
             )
             logger.info("Liveness probe succeeded: SLIM connectivity verified.")
@@ -73,6 +75,10 @@ def make_liveness_probe(client_name: str, peer_card: AgentCard):
             )
         except Exception as e:
             return JSONResponse({"error": f"Error occurred: {e!s}"}, status_code=500)
+        finally:
+            if client is not None:
+                with contextlib.suppress(Exception):
+                    await client.close()
 
     return liveness_probe
 
@@ -97,8 +103,9 @@ async def run_http_server(server: A2AServerConfig, liveness_probe, port: int) ->
     try:
         userver = Server(Config(app=app_, host="0.0.0.0", port=port, loop="asyncio"))
         await userver.serve()
-    except Exception as e:
-        logger.error("HTTP server encountered an error: %s", e)
+    except Exception:
+        logger.exception("HTTP server encountered an error")
+        raise
 
 
 async def serve_a2a(factory, request_handler, agent_card: AgentCard) -> None:

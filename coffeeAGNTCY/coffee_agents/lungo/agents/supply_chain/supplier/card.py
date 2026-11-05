@@ -65,4 +65,11 @@ def build_agent_card(supplier_id: SupplierId) -> AgentCard:
 
 
 AGENT_CARDS: dict[SupplierId, AgentCard] = {s: build_agent_card(s) for s in SUPPLIERS}
-AGENT_CARD = AGENT_CARDS[supplier_id_from_env()]
+
+
+def __getattr__(name: str) -> AgentCard:
+    # Resolved on use, so modules that import only AGENT_CARDS never read
+    # SUPPLIER_ID.
+    if name == "AGENT_CARD":
+        return AGENT_CARDS[supplier_id_from_env()]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
