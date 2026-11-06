@@ -678,27 +678,6 @@ def supply_chain_buyer_client(transport_config, monkeypatch, tmp_path):
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
-        _forget_shared_slim_connection()
-
-
-def _forget_shared_slim_connection() -> None:
-    """Drop the SDK's cached process-wide SLIM connection.
-
-    Every SLIM transport in the pytest process shares one connection, cached in
-    ``agntcy_app_sdk.transport.slim.common``. The Buyer's ``/v1/health`` closes
-    the client it opens, and closing a SLIM transport disconnects that shared
-    connection but leaves its id cached. The next test that uses SLIM would be
-    handed the dead id and fail with "connection not found". Forgetting the
-    cache makes the next transport open a new connection.
-    """
-    import agntcy_app_sdk.transport.slim.common as slim_common
-
-    slim_common.global_slim = None
-    slim_common.global_connection_id = None
-    slim_common.global_slim_service = None
-    slim_common.global_slim_insecure = None
-    slim_common.global_slim_endpoint = None
-    slim_common.global_slim_auth = None
 
 
 @pytest.fixture

@@ -47,6 +47,23 @@ class TransportError(Exception):
     """A step could not be delivered, or a reply could not be read."""
 
 
+def _report_broken_connection(client: Any) -> None:
+    """Tell the SDK that the SLIM connection under ``client`` may be dead.
+
+    Every SLIM transport in the process shares one connection, and closing the
+    discarded client only gives back its own share. While another transport
+    still holds a share, the SDK keeps handing the same connection to the next
+    client, which would be built on the connection that just failed. Reporting
+    it makes the next client open a new one. Transports already on the old
+    connection keep it until the last of them closes. A client without a SLIM
+    transport (a test double) has nothing to report.
+    """
+    report = getattr(getattr(client, "transport", None), "mark_connection_broken", None)
+    if report is not None:
+        with contextlib.suppress(Exception):
+            report()
+
+
 class GroupTransport(Protocol):
     async def broadcast(
         self, request: Envelope, recipients: Sequence[Party], *, timeout: float
@@ -83,19 +100,23 @@ class SlimGroupTransport:
             key = id(client)
             self._client_users[key] = self._client_users.get(key, 0) + 1
         broken = False
+        # A broken client is dropped. Only a transport failure says the shared
+        # SLIM connection under it may be dead too; a cancel or a missing-reply
+        # timeout says nothing about the connection.
+        connection_broken = False
         try:
             yield client
         except A2ABroadcastError as e:
             # A missing-reply timeout stays reusable (timed_out, transport_error
             # None). A transport failure after some replies arrives wrapped.
-            broken = e.transport_error is not None
+            broken = connection_broken = e.transport_error is not None
             raise
         except asyncio.CancelledError:
             # The broadcast was in flight. The next run starts a new client.
             broken = True
             raise
         except Exception:
-            broken = True
+            broken = connection_broken = True
             raise
         finally:
             # Concurrent runs share the client: close a broken one only
@@ -103,6 +124,8 @@ class SlimGroupTransport:
             async with self._client_lock:
                 if broken and self._client is client:
                     self._client = None
+                    if connection_broken:
+                        _report_broken_connection(client)
                 self._client_users[key] -= 1
                 close = self._client_users[key] == 0 and self._client is not client
                 if close:

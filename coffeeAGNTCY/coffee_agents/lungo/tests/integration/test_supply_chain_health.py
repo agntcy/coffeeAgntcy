@@ -59,6 +59,30 @@ class TestSupplyChainBuyerHealth:
         assert resp.status_code == 200
         assert resp.json().get("status") == "alive"
 
+    @pytest.mark.agents(SUPPLY_CHAIN_MEMBERS)
+    @pytest.mark.usefixtures("agents_up")
+    def test_buyer_stays_alive_after_every_probe_closed_its_client(
+        self, supply_chain_buyer_client, transport_config
+    ):
+        """A probe closes the client it opens; that must not cut anyone's connection.
+
+        Every SLIM transport in a process shares one connection. The Buyer's
+        probe needs the Logistics member to answer over SLIM, so it also fails
+        if that member's own probe disconnected the connection its server uses.
+        Each probe runs more than once: the next caller used to be handed the
+        connection the previous probe had closed.
+        """
+        for member, port in MEMBER_PORTS.items():
+            for _ in range(2):
+                resp = httpx.get(f"http://127.0.0.1:{port}/v1/health", timeout=45)
+                assert resp.status_code == 200, f"{member} probe failed"
+                assert resp.json().get("status") == "alive", member
+
+        for attempt in range(3):
+            resp = supply_chain_buyer_client.get("/v1/health")
+            assert resp.status_code == 200, f"Buyer probe {attempt + 1} failed"
+            assert resp.json().get("status") == "alive"
+
     def test_buyer_answers_the_cheap_routes_without_agents(
         self, supply_chain_buyer_client, transport_config
     ):
