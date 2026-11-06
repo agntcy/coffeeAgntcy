@@ -27,6 +27,7 @@ from agents.supervisors.supply_chain.outcome import Outcome, PlanProposal
 from agents.supervisors.supply_chain.record_builder import RunFacts, build_record
 from agents.supervisors.supply_chain.transport import GroupTransport, TransportError
 from agents.supply_chain.common import fixtures as fx
+from agents.supervisors.supply_chain.case_kind import mark_case_kind
 from agents.supply_chain.common.checker import check, mark_silent
 from agents.supply_chain.common.envelope import RUN_END, Envelope, Kind
 from agents.supply_chain.common.member import READY_TIME_CHANGE, REPLY_KIND, MemberAgent
@@ -379,6 +380,9 @@ class Moderator:
 
         record = build_record(outcome, self.facts())
         verdict = mark_silent(check(record, self.case), record, outcome.signals)
+        verdict = mark_case_kind(
+            verdict, record, self.case, [self._entry(e) for e in self.log]
+        )
         record_data = record.model_dump(mode="json")
         verdict_data = verdict.model_dump(mode="json")
         self._write_json(

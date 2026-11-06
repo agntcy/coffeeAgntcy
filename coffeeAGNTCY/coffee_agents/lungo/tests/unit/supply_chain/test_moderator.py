@@ -262,6 +262,11 @@ async def test_run_writes_files_and_streams_record_and_verdict_last(world):
     assert world.transport.calls[-1][0].seq < last_message["seq"]
     assert result.record["status"] == "withheld"
     assert result.verdict["codes"] == ["FALSE_WITHHOLD"]  # explicit case is feasible
+    assert result.verdict["case_kind"] == {
+        "goal": "CE-1",
+        "label": "Unchecked claim",
+        "produced": False,
+    }
 
 
 async def test_checker_passes_a_withheld_infeasible_run(tmp_path):
@@ -420,6 +425,12 @@ async def test_a_unanimous_late_commitment_is_streamed_and_saved_as_silent(tmp_p
     assert streamed["verdict"]["silent"] is True
     saved = json.loads((world.run_dir / "verdict.json").read_text())
     assert saved["silent"] is True
+    # The verdict also says which kind this case is built to show, and that this
+    # run produced it: a late lot that looks on time if the local clock is UTC.
+    expected = {"goal": "DR-1", "label": "Misread clock", "produced": True}
+    assert result.verdict["case_kind"] == expected
+    assert streamed["verdict"]["case_kind"] == expected
+    assert saved["case_kind"] == expected
 
 
 async def test_a_rejection_signal_makes_the_failure_not_silent(tmp_path):
@@ -427,6 +438,8 @@ async def test_a_rejection_signal_makes_the_failure_not_silent(tmp_path):
     result = await world.moderator.run(_commit_late(rejected_replies=2))
     assert result.verdict["verdict"] == "FAIL"
     assert result.verdict["silent"] is False
+    # Not silent, so the run did not produce the case's target kind.
+    assert result.verdict["case_kind"]["produced"] is False
 
 
 async def test_a_run_that_ends_by_timeout_is_invalid_not_a_cognitive_failure(tmp_path):

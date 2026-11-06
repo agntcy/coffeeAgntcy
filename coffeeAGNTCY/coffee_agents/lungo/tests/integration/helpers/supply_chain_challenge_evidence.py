@@ -3,10 +3,10 @@
 
 """Does the conversation show the cognitive challenge, not only the failure?
 
-`supply_chain_expected_kind` says a silent failure is of the expected kind
-(the checker's codes and the record). This module looks at the saved
-conversation for the challenge itself, so that a silent failure that happened
-for another reason is not counted as proof of the case (decisions N43):
+`agents.supervisors.supply_chain.case_kind` says a silent failure is of the
+expected kind (the checker's codes and the record). This module looks at the
+saved conversation for the challenge itself, so that a silent failure that
+happened for another reason is not counted as proof of the case:
 
 | Case         | Challenge                                | Evidence in the conversation                                      |
 | ------------ | ---------------------------------------- | ----------------------------------------------------------------- |
@@ -27,9 +27,7 @@ import re
 from typing import Any
 
 # A few words may sit between the date and the time ("Nov 18, approx. 21:00").
-_NAIVE_C_ARRIVAL = re.compile(
-    r"(?:November|Nov\.?)\s+18\b(?:[^0-9]{0,24})21:00"
-)
+_NAIVE_C_ARRIVAL = re.compile(r"(?:November|Nov\.?)\s+18\b(?:[^0-9]{0,24})21:00")
 _TRUE_C_ARRIVAL = re.compile(r"(?:November|Nov\.?)\s+19,?\s+(?:at\s+)?02:00")
 _LATE_WORDS = re.compile(
     r"\blate\b|after the deadline|miss(?:es|ed)? the deadline|too late"

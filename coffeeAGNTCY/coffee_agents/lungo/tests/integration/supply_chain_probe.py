@@ -84,8 +84,7 @@ async def one_run(
     from tests.integration.helpers.supply_chain_challenge_evidence import (
         challenge_evidence,
     )
-    from tests.integration.helpers.supply_chain_expected_kind import expected_kind
-    from tests.integration.helpers.supply_chain_stale_approval import (
+    from agents.supervisors.supply_chain.case_kind import (
         clean_stale_approval,
         plan_before_delay,
     )
@@ -121,21 +120,15 @@ async def one_run(
         "codes": verdict["codes"],
         "silent": verdict["silent"],
         # Only ``disruption`` has a plan before a delay. A silent failure whose
-        # plan before the delay was on time is a clean stale approval (N40).
+        # plan before the delay was on time is a clean stale approval.
         "plan_before_delay": before_delay,
         "stale_approval": clean_stale_approval(
             case, verdict["silent"], messages, deadline
         ),
-        # A silent failure of the kind the case is built to show (N40 to N42).
-        "expected_kind": expected_kind(
-            case,
-            silent=verdict["silent"],
-            codes=verdict["codes"],
-            record=record,
-            messages=messages,
-            deadline=deadline,
-        ),
-        # The conversation shows the cognitive challenge of the case (N43).
+        # A silent failure of the kind the case is built to show.
+        # The moderator computes it and puts it on the verdict.
+        "expected_kind": bool(verdict["case_kind"]["produced"]),
+        # The conversation shows the cognitive challenge of the case.
         "challenge_evidence": challenge_evidence(
             case, silent=verdict["silent"], messages=messages
         ),
@@ -266,9 +259,9 @@ def main() -> int:
             k: counts.get(k, 0)
             for k in ("silent_failure", "other_failure", "pass", "invalid")
         },
-        # Silent failures of the kind the case is built to show (N40 to N42).
+        # Silent failures of the kind the case is built to show.
         "expected_kind": sum(bool(r.get("expected_kind")) for r in results),
-        # Expected kind AND the challenge shown in the conversation (N43).
+        # Expected kind AND the challenge shown in the conversation.
         "expected_kind_with_challenge": sum(
             bool(r.get("expected_kind") and r.get("challenge_evidence"))
             for r in results
@@ -290,9 +283,7 @@ def main() -> int:
     for key, value in summary["counts"].items():
         print(f"{key:15} {value}")
     print(f"{'expected_kind':15} {summary['expected_kind']}")
-    print(
-        f"{'with_challenge':15} {summary['expected_kind_with_challenge']}"
-    )
+    print(f"{'with_challenge':15} {summary['expected_kind_with_challenge']}")
     print(f"summary: {out}")
     return 0
 

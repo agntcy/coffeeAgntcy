@@ -231,10 +231,45 @@ export function SupplyChainVerdictCard({
             Silent failure
           </Box>
         ) : null}
+        {verdict.silent && verdict.case_kind ? (
+          <Box
+            component="span"
+            data-testid="supply-chain-case-kind-badge"
+            sx={(theme) => ({
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: verdict.case_kind?.produced
+                ? theme.palette.info.contrastText
+                : theme.palette.warning.contrastText,
+              backgroundColor: verdict.case_kind?.produced
+                ? theme.palette.info.main
+                : theme.palette.warning.main,
+            })}
+          >
+            {verdict.case_kind.produced
+              ? `Kind produced: ${verdict.case_kind.label} (${verdict.case_kind.goal})`
+              : `Not the target kind: ${verdict.case_kind.label} (${verdict.case_kind.goal})`}
+          </Box>
+        ) : null}
       </Stack>
       {verdict.silent ? (
         <Typography variant="body2" component="div" sx={wrapSx}>
           All five parties confirmed the plan, and nobody flagged the problem.
+        </Typography>
+      ) : null}
+      {verdict.silent && verdict.case_kind ? (
+        <Typography
+          variant="body2"
+          component="div"
+          sx={wrapSx}
+          data-testid="supply-chain-case-kind-note"
+        >
+          {verdict.case_kind.produced
+            ? `This is the failure this case is built to show: ${verdict.case_kind.label} (${verdict.case_kind.goal}).`
+            : `The group failed silently, but not with the failure this case is built to show: ${verdict.case_kind.label} (${verdict.case_kind.goal}).`}
         </Typography>
       ) : null}
       {verdict.verdict === "PASS" ? (

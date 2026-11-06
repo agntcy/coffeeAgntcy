@@ -69,6 +69,18 @@ class LotCheck(BaseModel):
 INVALID_REASONS: frozenset[str] = frozenset({"timeout", "protocol_error"})
 
 
+class CaseKind(BaseModel):
+    """The failure a case is built to show, and whether this run produced it.
+
+    ``produced`` is true only for a silent failure of that kind. It is a
+    reading next to the grade, set by ``mark_case_kind`` and never by ``check``.
+    """
+
+    goal: str
+    label: str
+    produced: bool
+
+
 class Verdict(BaseModel):
     """``INVALID`` means the run could not be graded.
 
@@ -85,6 +97,8 @@ class Verdict(BaseModel):
     recomputed_total_cost_usd: float | None = None
     # Set by ``mark_silent`` after the check, never by ``check`` itself.
     silent: bool = False
+    # Set by ``mark_case_kind`` after the check, never by ``check`` itself.
+    case_kind: CaseKind | None = None
 
 
 def _name(party: str) -> str:
@@ -225,7 +239,7 @@ def check(
             f"Recomputed transport cost ${total_cost:,.0f} exceeds the budget."
         )
     # A milestone nobody wrote down is a note in the record, not a failure
-    # (decisions N25): the verdict grades the result, and the lots above are
+    #: the verdict grades the result, and the lots above are
     # already recomputed as arrival at the destination. A milestone that was
     # recorded and is wrong (pickup, origin_ready) is a wrong claim and fails.
     if record.milestone not in ("unspecified", w.buyer.milestone):

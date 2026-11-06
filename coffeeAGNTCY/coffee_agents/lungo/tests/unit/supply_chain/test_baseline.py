@@ -402,6 +402,13 @@ async def test_confirming_the_same_plan_after_the_disruption_is_a_silent_failure
     assert {"LATE_LOT", "FALSE_COMMITMENT"} <= set(result.verdict["codes"])
     assert "STALE_PLAN" not in result.verdict["codes"]
     assert result.verdict["silent"] is True
+    # The plan before the delay (all on time with C expedited) was right, so the
+    # silent failure is the stale approval this case is built to show.
+    assert result.verdict["case_kind"] == {
+        "goal": "CC-4",
+        "label": "Stale approval",
+        "produced": True,
+    }
 
 
 async def test_withholding_after_the_disruption_is_the_right_answer(tmp_path):

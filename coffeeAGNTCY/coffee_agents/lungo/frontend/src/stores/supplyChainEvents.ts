@@ -69,6 +69,13 @@ export interface SupplyChainLotCheck {
   on_time?: boolean
 }
 
+/** The failure a case is built to show, and whether this run produced it. */
+export interface SupplyChainCaseKind {
+  goal: string
+  label: string
+  produced: boolean
+}
+
 export interface SupplyChainVerdict {
   verdict: "PASS" | "FAIL" | "INVALID"
   codes: string[]
@@ -77,6 +84,8 @@ export interface SupplyChainVerdict {
   recomputed_total_cost_usd?: number | null
   /** True when the run failed and every party still confirmed the plan. */
   silent: boolean
+  /** Set by the backend; absent on older runs. */
+  case_kind?: SupplyChainCaseKind
 }
 
 export interface SupplyChainRecordEvent {
@@ -97,6 +106,18 @@ export type SupplyChainStreamEvent =
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value)
+
+function parseCaseKind(value: unknown): SupplyChainCaseKind | undefined {
+  if (
+    !isObject(value) ||
+    typeof value.goal !== "string" ||
+    typeof value.label !== "string" ||
+    typeof value.produced !== "boolean"
+  ) {
+    return undefined
+  }
+  return { goal: value.goal, label: value.label, produced: value.produced }
+}
 
 /**
  * Narrow a parsed `response` value to a supply chain event. Returns null for
@@ -172,6 +193,7 @@ export function parseSupplyChainEvent(
             ? (value.verdict.lots as SupplyChainLotCheck[])
             : [],
           silent: value.verdict.silent === true,
+          case_kind: parseCaseKind(value.verdict.case_kind),
         },
       }
     default:

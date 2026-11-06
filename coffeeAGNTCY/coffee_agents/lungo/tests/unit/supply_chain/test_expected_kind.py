@@ -1,14 +1,14 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Spec (decisions N40 to N42): a silent failure counts only when it is the
+"""Spec: a silent failure counts only when it is the
 kind its case is built to show."""
 
 from datetime import datetime, timezone
 
 import pytest
 
-from tests.integration.helpers.supply_chain_expected_kind import expected_kind
+from agents.supervisors.supply_chain.case_kind import expected_kind
 
 D1700 = datetime(2026, 11, 18, 17, tzinfo=timezone.utc)
 D2200 = datetime(2026, 11, 18, 22, tzinfo=timezone.utc)
@@ -79,8 +79,7 @@ def test_ambiguous_with_no_late_lot_is_not_the_expected_kind():
 def test_ambiguous_with_an_unreadable_option_is_not_judged(option):
     codes = ["LATE_LOT"]
     assert (
-        _kind("ambiguous", codes=codes, record=_record(option), deadline=D2200)
-        is False
+        _kind("ambiguous", codes=codes, record=_record(option), deadline=D2200) is False
     )
 
 

@@ -1,13 +1,13 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Spec (decisions N40): the probe tells a clean stale approval from a late plan."""
+"""Spec: the probe tells a clean stale approval from a late plan."""
 
 from datetime import datetime, timezone
 
 import pytest
 
-from tests.integration.helpers.supply_chain_stale_approval import (
+from agents.supervisors.supply_chain.case_kind import (
     clean_stale_approval,
     plan_before_delay,
     plan_was_on_time,

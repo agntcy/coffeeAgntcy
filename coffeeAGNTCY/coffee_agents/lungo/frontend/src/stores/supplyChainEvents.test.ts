@@ -66,6 +66,27 @@ describe("parseSupplyChainEvent", () => {
     expect(loud?.type === "verdict" && loud.verdict.silent).toBe(false)
   })
 
+  it("keeps a well formed case kind and drops a malformed one", () => {
+    const base = { verdict: "FAIL", codes: [], silent: true }
+    const good = parseSupplyChainEvent({
+      type: "verdict",
+      verdict: {
+        ...base,
+        case_kind: { goal: "CC-4", label: "Stale approval", produced: true },
+      },
+    })
+    const bad = parseSupplyChainEvent({
+      type: "verdict",
+      verdict: { ...base, case_kind: { goal: "CC-4", produced: "yes" } },
+    })
+    expect(good?.type === "verdict" && good.verdict.case_kind).toEqual({
+      goal: "CC-4",
+      label: "Stale approval",
+      produced: true,
+    })
+    expect(bad?.type === "verdict" && bad.verdict.case_kind).toBeUndefined()
+  })
+
   it("rejects an unknown verdict value", () => {
     expect(
       parseSupplyChainEvent({ type: "verdict", verdict: { verdict: "MAYBE" } }),

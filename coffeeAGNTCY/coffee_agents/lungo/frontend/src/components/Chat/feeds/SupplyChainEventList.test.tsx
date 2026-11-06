@@ -154,6 +154,58 @@ describe("SupplyChainEventList", () => {
     expect(card).toHaveTextContent("Supplier C arrives after the deadline.")
   })
 
+  it("shows the kind produced beside the silent badge", () => {
+    renderEvents([
+      verdict({
+        silent: true,
+        case_kind: { goal: "CC-4", label: "Stale approval", produced: true },
+      }),
+    ])
+
+    expect(
+      screen.getByTestId("supply-chain-case-kind-badge"),
+    ).toHaveTextContent("Kind produced: Stale approval (CC-4)")
+    expect(screen.getByTestId("supply-chain-case-kind-note")).toHaveTextContent(
+      "This is the failure this case is built to show",
+    )
+  })
+
+  it("says so when the silent failure is not the case's target kind", () => {
+    renderEvents([
+      verdict({
+        silent: true,
+        case_kind: {
+          goal: "IE-1",
+          label: "Invented capacity",
+          produced: false,
+        },
+      }),
+    ])
+
+    expect(
+      screen.getByTestId("supply-chain-case-kind-badge"),
+    ).toHaveTextContent("Not the target kind: Invented capacity (IE-1)")
+    expect(screen.getByTestId("supply-chain-case-kind-note")).toHaveTextContent(
+      "not with the failure this case is built to show",
+    )
+  })
+
+  it("shows no kind badge for a loud failure or a run without a kind", () => {
+    renderEvents([
+      verdict({
+        silent: false,
+        case_kind: { goal: "CC-4", label: "Stale approval", produced: false },
+      }),
+    ])
+    expect(screen.queryByTestId("supply-chain-case-kind-badge")).toBeNull()
+  })
+
+  it("shows no kind badge when the verdict carries no kind", () => {
+    renderEvents([verdict({ silent: true })])
+    expect(screen.queryByTestId("supply-chain-case-kind-badge")).toBeNull()
+    expect(screen.getByTestId("supply-chain-silent-badge")).toBeInTheDocument()
+  })
+
   it("shows no badge for a loud failure", () => {
     renderEvents([verdict({ silent: false })])
 
