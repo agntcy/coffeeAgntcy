@@ -41,7 +41,6 @@ case and the other a more complex MAS:
 - **Lungo**: A more advanced setup that will evolve over time as we mature components.
 
   There are two setups:
-
   1. pub/sub A2A over NATS as default transport along with streaming support, and
   2. group communication over SLIM as default along with streaming support.
 
@@ -58,15 +57,15 @@ case and the other a more complex MAS:
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.6.0
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.6.1
 - [SLIM](https://github.com/agntcy/slim) = v2.2.0
-- [NATS](https://github.com/nats-io/nats-server) = latest
-- [A2A](https://github.com/a2aproject/a2a-python) = v1.1.0
+- [NATS](https://github.com/nats-io/nats-server) = v2.15.0
+- [A2A](https://github.com/a2aproject/a2a-python) = v1.2.3
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.30.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.11
 - [Observe SDK](https://github.com/agntcy/observe) = 1.0.49
 - [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
-- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.8.0
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.8.1
 
 ---
 
@@ -80,9 +79,9 @@ For a common understanding, please see the [terminologies used](docs/TERMINOLOGY
 
 |                            Milestone                            | Version (intended) |                    Focus Area                    | Release Date (intended) |
 | :-------------------------------------------------------------: | :----------------: | :----------------------------------------------: | :---------------------: |
-| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1) |       0.1.0        | Backend live events & Frontend dynamic animation |       (May)             |
-|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)   |      (0.2.0)       |    Breadth of patterns, Recruit & Collaborate    |       (June)            |
-| [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |      (0.3.0)       |         Internet of Cognition alignment          |       (July)            |
+| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1) |       0.1.0        | Backend live events & Frontend dynamic animation |          (May)          |
+|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)   |      (0.2.0)       |    Breadth of patterns, Recruit & Collaborate    |         (June)          |
+| [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |      (0.3.0)       |         Internet of Cognition alignment          |         (July)          |
 
 ---
 
