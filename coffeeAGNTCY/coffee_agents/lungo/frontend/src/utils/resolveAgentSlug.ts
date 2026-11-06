@@ -69,8 +69,17 @@ function slugFromLabels(
     if (label === "brazil" && label_subtitle?.includes("coffee farm")) {
       return "brazil-coffee-farm"
     }
+    if (label_subtitle?.includes("moderator")) {
+      return "supply-chain-buyer-agent"
+    }
     if (label === "buyer" || label_subtitle?.includes("logistics agent")) {
       return "logistics-supervisor-agent"
+    }
+    if (label === "supplier a") return "supply-chain-supplier-a"
+    if (label === "supplier b") return "supply-chain-supplier-b"
+    if (label === "supplier c") return "supply-chain-supplier-c"
+    if (label === "logistics" && label_subtitle?.includes("carrier")) {
+      return "supply-chain-logistics-agent"
     }
     if (label === "tatooine" && label_subtitle?.includes("coffee farm")) {
       return "tatooine-farm-agent"

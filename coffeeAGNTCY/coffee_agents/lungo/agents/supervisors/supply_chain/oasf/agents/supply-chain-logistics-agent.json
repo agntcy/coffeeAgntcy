@@ -1,0 +1,81 @@
+{
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false"
+  },
+  "authors": [
+    "agntcy/coffee-agntcy-maintainers"
+  ],
+  "created_at": "2026-10-27T12:00:00Z",
+  "description": "A carrier that confirms transport options, capacity and cost for a supply commitment negotiation.",
+  "domains": [
+    {
+      "id": 801,
+      "name": "transportation/logistics"
+    },
+    {
+      "id": 804,
+      "name": "transportation/supply_chain"
+    }
+  ],
+  "modules": [
+    {
+      "data": {
+        "card_data": {
+          "additionalInterfaces": [
+            {
+              "transport": "slim",
+              "url": "slim://slim:46357/lungo/agents/supply-chain-logistics-agent"
+            }
+          ],
+          "capabilities": {
+            "streaming": true
+          },
+          "defaultInputModes": [
+            "text"
+          ],
+          "defaultOutputModes": [
+            "text"
+          ],
+          "description": "A carrier that confirms transport options, capacity and cost for a supply commitment negotiation.",
+          "name": "Logistics agent",
+          "preferredTransport": "slim",
+          "protocolVersion": "0.3.0",
+          "skills": [
+            {
+              "description": "States this carrier's transport options, transit times, costs and capacity, and confirms or declines a transport plan.",
+              "examples": [
+                "Which transport options do you have to Warehouse W?",
+                "Can you confirm expedited capacity for this lot?",
+                "Do you confirm this plan?"
+              ],
+              "id": "confirm_transport",
+              "name": "Confirm Transport",
+              "tags": [
+                "coffee",
+                "logistics",
+                "transport",
+                "negotiation"
+              ]
+            }
+          ],
+          "supportsAuthenticatedExtendedCard": false,
+          "url": "slim://slim:46357/lungo/agents/supply-chain-logistics-agent",
+          "version": "1.0.0"
+        },
+        "card_schema_version": "v1.0.0"
+      },
+      "name": "integration/a2a"
+    }
+  ],
+  "name": "Logistics agent",
+  "schema_version": "1.0.0",
+  "skills": [
+    {
+      "id": 1004,
+      "name": "agent_orchestration/agent_coordination"
+    }
+  ],
+  "version": "1.0.0"
+}

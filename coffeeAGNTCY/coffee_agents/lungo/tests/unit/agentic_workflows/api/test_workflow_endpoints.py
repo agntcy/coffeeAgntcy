@@ -368,6 +368,48 @@ def test_get_group_messaging_topology_enriches_transport_node(
     assert node["label"] == "Transport: SLIM"
 
 
+def test_get_supply_chain_commitment_topology(catalog_client: TestClient) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Supply Chain Commitment/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    topology = resp.json()["starting_topology"]
+    nodes = topology["nodes"]
+
+    transport_nodes = _transport_nodes(topology)
+    assert len(transport_nodes) == 1
+    assert transport_nodes[0]["message_transport"] == "SLIM"
+    assert transport_nodes[0]["label"] == "Transport: SLIM"
+
+    assert [n["type"] for n in nodes].count("group") == 1
+    agent_labels = sorted(n["label"] for n in nodes if n["type"] == "agent")
+    assert agent_labels == [
+        "Buyer",
+        "Logistics",
+        "Supplier A",
+        "Supplier B",
+        "Supplier C",
+    ]
+    # The checker and the commitment record are not agents in the group.
+    assert not any(
+        word in n["label"].lower() for n in nodes for word in ("checker", "record")
+    )
+
+
+def test_get_supply_chain_commitment_summary(catalog_client: TestClient) -> None:
+    resp = catalog_client.get("/agentic-workflows/Supply Chain Commitment/")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["pattern"] == "Secure Group Collaboration"
+    assert body["pattern_category"] == "Multi-Agent Communication & Collaboration"
+    assert body["use_case"] == "Coffee Agntcy"
+    assert body["scenario"] == "Supply Chain Commitment"
+    assert body["supports_sse"] is True
+    assert body["supports_streaming"] is False
+    assert body["chat_api_target"] == "supply_chain"
+
+
 def test_get_publish_subscribe_topology_enriches_transport_node(
     catalog_client: TestClient,
 ) -> None:

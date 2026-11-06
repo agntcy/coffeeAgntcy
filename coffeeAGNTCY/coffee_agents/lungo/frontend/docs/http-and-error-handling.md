@@ -15,7 +15,7 @@ How the app builds URLs, performs network calls, logs failures, and shows errors
 
 | Layer | Role |
 |--------|------|
-| `urls.ts` | Single source for paths, `joinBaseUrl`, `joinHttpRequest`, `LUNGO_FRONTEND_URLS.apiPaths`, exchange / logistics / discovery / agentic-workflows bases |
+| `urls.ts` | Single source for paths, `joinBaseUrl`, `joinHttpRequest`, `LUNGO_FRONTEND_URLS.apiPaths`, exchange / logistics / supply chain / discovery / agentic-workflows bases |
 | `HttpRequestTarget` | `{ url, endpointLabel }` passed into fetch options and stored on streaming stores |
 | `workflowChatRouting.ts` | **Catalog chat**: agent prompt, prompt stream, suggested prompts from `WorkflowSummary` (`chat_api_target`, `supports_streaming`) |
 | `httpRequestTargets.ts` | **Legacy / fixed-base** builders (about, identity badge/policy, OASF, pattern-based transport, agentic pattern chat, documentation paths) |

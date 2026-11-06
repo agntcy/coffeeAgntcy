@@ -155,21 +155,24 @@ describe("fetchWorkflowSummaries", () => {
     expect(summaries.map((s) => s.name)).toEqual(["Good"])
   })
 
-  it("drops invalid chat_api_target to null", async () => {
+  it.each([
+    { sent: "nonsense", expected: null },
+    { sent: "supply_chain", expected: "supply_chain" },
+  ])("parses chat_api_target $sent", async ({ sent, expected }) => {
     stubFetch({
-      Weird: {
-        name: "Weird",
+      Row: {
+        name: "Row",
         pattern: "publish_subscribe",
         pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
-        chat_api_target: "nonsense",
+        chat_api_target: sent,
       },
     })
 
     const summaries = await fetchWorkflowSummaries()
 
-    expect(summaries[0].chat_api_target).toBeNull()
+    expect(summaries[0].chat_api_target).toBe(expected)
   })
 
   it.each([

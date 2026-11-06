@@ -65,6 +65,15 @@ function iconKindFromSlug(slug: string): TopologyNodeIconKind | null {
   if (slug.includes(TopologyNodeIconKind.Supervisor)) {
     return TopologyNodeIconKind.Supervisor
   }
+  if (slug.includes("supply-chain-buyer")) {
+    return TopologyNodeIconKind.Supervisor
+  }
+  if (slug.includes("supply-chain-supplier")) {
+    return TopologyNodeIconKind.Farm
+  }
+  if (slug.includes("supply-chain-logistics")) {
+    return TopologyNodeIconKind.Shipping
+  }
   if (slug.includes(TopologyNodeIconKind.Recruiter)) {
     return TopologyNodeIconKind.Recruiter
   }
@@ -105,6 +114,10 @@ function iconKindFromLabels(
   }
 
   if (label_subtitle.includes("coffee farm")) return TopologyNodeIconKind.Farm
+  if (/^supplier [a-z]$/.test(label)) return TopologyNodeIconKind.Farm
+  if (label === "logistics" && label_subtitle.includes("carrier")) {
+    return TopologyNodeIconKind.Shipping
+  }
   if (label === "shipper") return TopologyNodeIconKind.Shipping
   if (label === "accountant") return TopologyNodeIconKind.Accountant
 

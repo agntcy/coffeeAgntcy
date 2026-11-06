@@ -172,7 +172,10 @@ export function resolveGithubFromAgentRecordUri(
   return undefined
 }
 
-/** Label / type fallbacks for catalog workflows until the API supplies these fields. */
+/**
+ * Label / type fallbacks for catalog workflows until the API supplies these fields.
+ * A group node is a container, not an agent: it never gets a directory slug here.
+ */
 export function enrichAgenticTopologyWellKnownUi(
   data: CustomNodeData,
   wire: TopologyNodeWire,
@@ -201,8 +204,6 @@ export function enrichAgenticTopologyWellKnownUi(
       githubLink: data.githubLink ?? safeUrl(transportUrl),
       agentDirectoryLink:
         data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
-      directoryAgentSlug:
-        data.directoryAgentSlug ?? "logistics-supervisor-agent",
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
     }
   }

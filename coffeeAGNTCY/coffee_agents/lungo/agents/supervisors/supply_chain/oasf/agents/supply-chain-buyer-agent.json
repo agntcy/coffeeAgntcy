@@ -1,0 +1,72 @@
+{
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false"
+  },
+  "authors": [
+    "agntcy/coffee-agntcy-maintainers"
+  ],
+  "created_at": "2026-10-27T12:00:00Z",
+  "description": "A procurement agent that negotiates a coffee supply commitment with three suppliers and a logistics provider.",
+  "domains": [
+    {
+      "id": 801,
+      "name": "transportation/logistics"
+    },
+    {
+      "id": 804,
+      "name": "transportation/supply_chain"
+    }
+  ],
+  "modules": [
+    {
+      "data": {
+        "card_data": {
+          "capabilities": {
+            "streaming": true
+          },
+          "defaultInputModes": [
+            "text"
+          ],
+          "defaultOutputModes": [
+            "text"
+          ],
+          "description": "A procurement agent that negotiates a coffee supply commitment with three suppliers and a logistics provider.",
+          "name": "Buyer agent",
+          "protocolVersion": "0.3.0",
+          "skills": [
+            {
+              "description": "Moderates a negotiation between a buyer, three suppliers and a logistics provider, and records whether a commitment was made.",
+              "examples": [
+                "Run the explicit case with the baseline configuration.",
+                "Run the infeasible case with L9."
+              ],
+              "id": "negotiate_supply_commitment",
+              "name": "Negotiate Supply Commitment",
+              "tags": [
+                "coffee",
+                "supply chain",
+                "negotiation"
+              ]
+            }
+          ],
+          "supportsAuthenticatedExtendedCard": false,
+          "url": "",
+          "version": "1.0.0"
+        },
+        "card_schema_version": "v1.0.0"
+      },
+      "name": "integration/a2a"
+    }
+  ],
+  "name": "Buyer agent",
+  "schema_version": "1.0.0",
+  "skills": [
+    {
+      "id": 1004,
+      "name": "agent_orchestration/agent_coordination"
+    }
+  ],
+  "version": "1.0.0"
+}

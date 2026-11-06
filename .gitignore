@@ -217,3 +217,6 @@ todo.local.md
 # Written to the repo root by scripts/ci-gate/wait-for-sibling-runs.sh
 # (task ci-gate:wait); only meaningful inside a live CI run.
 /runs.json
+
+# Supply Chain Commitment run artifacts (transcripts, records, verdicts).
+/coffeeAGNTCY/coffee_agents/lungo/runs/

@@ -1,0 +1,516 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+"""SlimGroupTransport with a fake SLIM client (design D3, live finding 4.2b)."""
+
+from __future__ import annotations
+
+import asyncio
+
+import pytest
+from a2a.types import Message, Part, Role, SendMessageResponse
+from agntcy_app_sdk import get_agent_identifier
+from agntcy_app_sdk.semantic.a2a import A2ABroadcastError
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+
+from agents.supervisors.supply_chain import transport as transport_module
+from agents.supervisors.supply_chain.transport import (
+    SlimGroupTransport,
+    TransportError,
+    _channel,
+)
+from agents.supply_chain.common.envelope import Envelope
+from agents.supply_chain.logistics.card import AGENT_CARD as LOGISTICS_CARD
+from agents.supply_chain.supplier.card import AGENT_CARDS as SUPPLIER_CARDS
+
+CARDS = {"logistics": LOGISTICS_CARD, **SUPPLIER_CARDS}
+
+
+def _request(seq: int = 1, to=("supplier_a",)) -> Envelope:
+    return Envelope(
+        run_id="r1",
+        seq=seq,
+        sender="buyer",
+        to=tuple(to),
+        kind="negotiation",
+        body="offer",
+    )
+
+
+def _reply(
+    request: Envelope, party: str, *, card_name: str | None = None
+) -> SendMessageResponse:
+    envelope = Envelope(
+        run_id=request.run_id,
+        seq=request.seq,
+        sender=party,
+        to=(request.sender,),
+        kind="negotiation",
+        reply_to=request.seq,
+        body="ok",
+    )
+    name = card_name if card_name is not None else CARDS[party].name
+    return SendMessageResponse(
+        message=Message(
+            message_id=f"m-{party}",
+            role=Role.ROLE_AGENT,
+            metadata={"name": name},
+            parts=[Part(text=envelope.encode())],
+        )
+    )
+
+
+class FakeSlimClient:
+    def __init__(self, factory: FakeClientFactory):
+        self._factory = factory
+        self.closed = False
+
+    async def close(self) -> None:
+        self.closed = True
+
+    async def broadcast_message(
+        self, message, *, recipients, context, timeout, broadcast_topic=None
+    ):
+        self._factory.calls.append(
+            {
+                "recipients": recipients,
+                "cards": context.state["broadcast_agent_cards"],
+                "timeout": timeout,
+                "topic": broadcast_topic,
+            }
+        )
+        self._factory.span_contexts.append(trace.get_current_span().get_span_context())
+        if self._factory.error is not None:
+            raise self._factory.error
+        return self._factory.replies
+
+
+class FakeClientFactory:
+    def __init__(self, replies=(), error: Exception | None = None):
+        self.replies = list(replies)
+        self.error = error
+        self.calls: list[dict] = []
+        self.span_contexts: list = []
+        self.created: list[tuple] = []
+        self.clients: list[FakeSlimClient] = []
+
+    async def create(self, card, interceptors=()):
+        # Yield, so a second first broadcast can reach the client lock.
+        await asyncio.sleep(0)
+        client = FakeSlimClient(self)
+        self.clients.append(client)
+        self.created.append((card, list(interceptors)))
+        return client
+
+
+async def test_each_step_uses_a_channel_of_its_own():
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    for seq in (1, 2, 3):
+        request = _request(seq)
+        factory.replies = [_reply(request, "supplier_a")]
+        await transport.broadcast(request, ["supplier_a"], timeout=5)
+    topics = [call["topic"] for call in factory.calls]
+    assert len(set(topics)) == 3
+    assert topics[0] == _channel(_request(1)) == "lungo/agents/scc-r1-1"
+
+
+async def test_channel_differs_between_runs_with_the_same_seq():
+    other = _request(1).model_copy(update={"run_id": "r2"})
+    assert _channel(_request(1)) != _channel(other)
+
+
+async def test_recipients_are_the_addressed_agents_only():
+    request = _request(to=("supplier_c", "logistics"))
+    factory = FakeClientFactory(
+        [_reply(request, "supplier_c"), _reply(request, "logistics")]
+    )
+    transport = SlimGroupTransport(factory, CARDS)
+    replies = await transport.broadcast(
+        request, ["supplier_c", "logistics"], timeout=7.5
+    )
+    call = factory.calls[0]
+    assert call["recipients"] == [
+        get_agent_identifier(SUPPLIER_CARDS["supplier_c"]),
+        get_agent_identifier(LOGISTICS_CARD),
+    ]
+    assert call["cards"] == [SUPPLIER_CARDS["supplier_c"], LOGISTICS_CARD]
+    assert call["timeout"] == 7.5
+    assert [r.sender for r in replies] == ["supplier_c", "logistics"]
+
+
+async def test_the_client_is_created_once_with_the_interceptors():
+    sentinel = object()
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, CARDS, interceptors=[sentinel])
+    for seq in (1, 2):
+        request = _request(seq)
+        factory.replies = [_reply(request, "supplier_a")]
+        await transport.broadcast(request, ["supplier_a"], timeout=5)
+    assert len(factory.created) == 1
+    assert factory.created[0][1] == [sentinel]
+
+
+async def test_no_recipients_means_no_call():
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    assert await transport.broadcast(_request(), [], timeout=5) == []
+    assert factory.calls == [] and factory.created == []
+
+
+async def test_an_unknown_recipient_is_refused_before_any_call():
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, {"logistics": LOGISTICS_CARD})
+    with pytest.raises(TransportError, match="supplier_a"):
+        await transport.broadcast(_request(), ["supplier_a"], timeout=5)
+    assert factory.calls == []
+
+
+async def test_a_reply_cannot_claim_another_sender():
+    request = _request(to=("supplier_a",))
+    forged = _reply(request, "supplier_a", card_name=SUPPLIER_CARDS["supplier_b"].name)
+    transport = SlimGroupTransport(FakeClientFactory([forged]), CARDS)
+    with pytest.raises(TransportError, match="claims sender"):
+        await transport.broadcast(request, ["supplier_a"], timeout=5)
+
+
+async def test_a_reply_without_a_card_name_is_refused():
+    request = _request()
+    nameless = _reply(request, "supplier_a", card_name="")
+    transport = SlimGroupTransport(FakeClientFactory([nameless]), CARDS)
+    with pytest.raises(TransportError, match="claims sender"):
+        await transport.broadcast(request, ["supplier_a"], timeout=5)
+
+
+async def test_a_reply_that_is_not_an_envelope_is_refused():
+    reply = SendMessageResponse(
+        message=Message(
+            message_id="m",
+            role=Role.ROLE_AGENT,
+            metadata={"name": SUPPLIER_CARDS["supplier_a"].name},
+            parts=[Part(text="hello")],
+        )
+    )
+    transport = SlimGroupTransport(FakeClientFactory([reply]), CARDS)
+    with pytest.raises(TransportError, match="not a supply chain envelope"):
+        await transport.broadcast(_request(), ["supplier_a"], timeout=5)
+
+
+async def test_a_reply_without_a_message_is_refused():
+    transport = SlimGroupTransport(FakeClientFactory([SendMessageResponse()]), CARDS)
+    with pytest.raises(TransportError, match="no message"):
+        await transport.broadcast(_request(), ["supplier_a"], timeout=5)
+
+
+async def test_a_broadcast_error_becomes_a_transport_error():
+    error = A2ABroadcastError(
+        expected=2, received=1, missing_recipients=["supplier_b"], timed_out=True
+    )
+    transport = SlimGroupTransport(FakeClientFactory(error=error), CARDS)
+    with pytest.raises(TransportError, match="broadcast incomplete.*supplier_b"):
+        await transport.broadcast(_request(), ["supplier_a"], timeout=5)
+
+
+async def test_any_other_error_becomes_a_transport_error():
+    transport = SlimGroupTransport(
+        FakeClientFactory(error=RuntimeError("session closed")), CARDS
+    )
+    with pytest.raises(TransportError, match="broadcast failed: session closed"):
+        await transport.broadcast(_request(), ["supplier_a"], timeout=5)
+
+
+async def test_concurrent_first_broadcasts_share_one_client():
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    requests = [_request(1), _request(2)]
+    factory.replies = [_reply(requests[0], "supplier_a")]
+    await asyncio.gather(
+        *(transport.broadcast(r, ["supplier_a"], timeout=5) for r in requests)
+    )
+    assert len(factory.created) == 1
+
+
+async def test_a_failed_client_is_closed_and_replaced():
+    factory = FakeClientFactory(error=RuntimeError("session closed"))
+    transport = SlimGroupTransport(factory, CARDS)
+    with pytest.raises(TransportError, match="broadcast failed"):
+        await transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+    assert factory.clients[0].closed
+    factory.error = None
+    request = _request(2)
+    factory.replies = [_reply(request, "supplier_a")]
+    await transport.broadcast(request, ["supplier_a"], timeout=5)
+    assert len(factory.created) == 2
+
+
+async def test_a_cancelled_broadcast_replaces_the_client():
+    class CancelFactory(FakeClientFactory):
+        def __init__(self):
+            super().__init__()
+            self.started = asyncio.Event()
+            self.hang = True
+
+        async def create(self, card, interceptors=()):
+            client = _CancelClient(self)
+            self.clients.append(client)
+            self.created.append((card, list(interceptors)))
+            return client
+
+    class _CancelClient(FakeSlimClient):
+        async def broadcast_message(
+            self, message, *, recipients, context, timeout, broadcast_topic=None
+        ):
+            factory = self._factory
+            if factory.hang:
+                factory.hang = False
+                factory.started.set()
+                await asyncio.Event().wait()
+            return await super().broadcast_message(
+                message,
+                recipients=recipients,
+                context=context,
+                timeout=timeout,
+                broadcast_topic=broadcast_topic,
+            )
+
+    factory = CancelFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    task = asyncio.create_task(
+        transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+    )
+    await factory.started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert factory.clients[0].closed
+    request = _request(2)
+    factory.replies = [_reply(request, "supplier_a")]
+    await transport.broadcast(request, ["supplier_a"], timeout=5)
+    assert len(factory.created) == 2
+
+
+async def test_an_incomplete_broadcast_keeps_the_client():
+    factory = FakeClientFactory(
+        error=A2ABroadcastError(
+            expected=1, received=0, missing_recipients=["supplier_a"], timed_out=True
+        )
+    )
+    transport = SlimGroupTransport(factory, CARDS)
+    for seq in (1, 2):
+        with pytest.raises(TransportError, match="broadcast incomplete"):
+            await transport.broadcast(_request(seq), ["supplier_a"], timeout=5)
+    assert len(factory.created) == 1
+    assert not factory.clients[0].closed
+
+
+async def test_a_failure_does_not_close_a_client_another_run_is_using():
+    ok, bad = _request(1), _request(2)
+    release = asyncio.Event()
+    closed_while_in_use = []
+
+    class SplitClient(FakeSlimClient):
+        async def broadcast_message(
+            self, message, *, recipients, context, timeout, broadcast_topic=None
+        ):
+            if broadcast_topic == _channel(ok):
+                await release.wait()
+                closed_while_in_use.append(self.closed)
+                return [_reply(ok, "supplier_a")]
+            raise RuntimeError("session closed")
+
+    class SplitFactory(FakeClientFactory):
+        async def create(self, card, interceptors=()):
+            client = SplitClient(self)
+            self.clients.append(client)
+            self.created.append((card, list(interceptors)))
+            return client
+
+    factory = SplitFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    good = asyncio.create_task(transport.broadcast(ok, ["supplier_a"], timeout=5))
+    await asyncio.sleep(0)
+    with pytest.raises(TransportError, match="broadcast failed"):
+        await transport.broadcast(bad, ["supplier_a"], timeout=5)
+    release.set()
+    assert [r.sender for r in await good] == ["supplier_a"]
+    assert closed_while_in_use == [False]
+    assert factory.clients[0].closed
+
+
+async def test_a_transport_failure_after_some_replies_replaces_the_client():
+    factory = FakeClientFactory(
+        error=A2ABroadcastError(
+            expected=2,
+            received=1,
+            missing_recipients=["supplier_b"],
+            transport_error=RuntimeError("connection reset"),
+        )
+    )
+    transport = SlimGroupTransport(factory, CARDS)
+    with pytest.raises(TransportError, match="broadcast incomplete"):
+        await transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+    assert factory.clients[0].closed
+
+
+async def test_a_step_runs_inside_one_span_for_the_event_middleware(monkeypatch):
+    """The event middleware needs a trace id to pair a request with its replies."""
+    monkeypatch.setattr(
+        transport_module, "_tracer", TracerProvider().get_tracer("test")
+    )
+    factory = FakeClientFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    seen = []
+    for seq in (1, 2):
+        request = _request(seq)
+        factory.replies = [_reply(request, "supplier_a")]
+        await transport.broadcast(request, ["supplier_a"], timeout=5)
+        seen.append(factory.span_contexts[-1])
+    assert all(context.is_valid for context in seen)
+    assert seen[0].trace_id != seen[1].trace_id
+    # The span ends with the step.
+    assert not trace.get_current_span().get_span_context().is_valid
+
+
+class FakeSlimTransport:
+    """The part of the SDK transport that reports a dead shared connection."""
+
+    def __init__(self, fails: bool = False):
+        self.reported = 0
+        self._fails = fails
+
+    def mark_connection_broken(self) -> None:
+        self.reported += 1
+        if self._fails:
+            raise RuntimeError("report failed")
+
+
+class ReportingFactory(FakeClientFactory):
+    """Clients that carry a SLIM transport, like the SDK's experimental client."""
+
+    def __init__(self, *args, report_fails: bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._report_fails = report_fails
+
+    async def create(self, card, interceptors=()):
+        client = await super().create(card, interceptors)
+        client.transport = FakeSlimTransport(self._report_fails)
+        return client
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        RuntimeError("session closed"),
+        A2ABroadcastError(
+            expected=2,
+            received=1,
+            missing_recipients=["supplier_b"],
+            transport_error=RuntimeError("connection reset"),
+        ),
+    ],
+    ids=["unexpected error", "transport failure after some replies"],
+)
+async def test_a_transport_failure_reports_the_shared_connection_as_broken(error):
+    """Closing the dropped client only gives back its share of the connection.
+
+    While another transport still holds the connection, the SDK would hand the
+    same one to the next client. The report makes it open a new one.
+    """
+    factory = ReportingFactory(error=error)
+    transport = SlimGroupTransport(factory, CARDS)
+    with pytest.raises(TransportError):
+        await transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+
+    assert factory.clients[0].transport.reported == 1
+    assert factory.clients[0].closed
+
+
+async def test_a_cancelled_broadcast_does_not_report_the_connection():
+    class HangingClient(FakeSlimClient):
+        async def broadcast_message(self, *args, **kwargs):
+            started.set()
+            await asyncio.Event().wait()
+
+    class HangingFactory(ReportingFactory):
+        async def create(self, card, interceptors=()):
+            client = HangingClient(self)
+            client.transport = FakeSlimTransport()
+            self.clients.append(client)
+            self.created.append((card, list(interceptors)))
+            return client
+
+    started = asyncio.Event()
+    factory = HangingFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    task = asyncio.create_task(
+        transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+    )
+    await started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert factory.clients[0].closed, "the client is still dropped"
+    assert factory.clients[0].transport.reported == 0
+
+
+async def test_a_missing_reply_does_not_report_the_connection():
+    factory = ReportingFactory(
+        error=A2ABroadcastError(
+            expected=1, received=0, missing_recipients=["supplier_a"], timed_out=True
+        )
+    )
+    transport = SlimGroupTransport(factory, CARDS)
+    with pytest.raises(TransportError, match="broadcast incomplete"):
+        await transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+
+    assert factory.clients[0].transport.reported == 0
+    assert not factory.clients[0].closed
+
+
+async def test_a_failing_report_does_not_hide_the_broadcast_error():
+    factory = ReportingFactory(error=RuntimeError("session closed"), report_fails=True)
+    transport = SlimGroupTransport(factory, CARDS)
+    with pytest.raises(TransportError, match="broadcast failed"):
+        await transport.broadcast(_request(1), ["supplier_a"], timeout=5)
+
+    assert factory.clients[0].transport.reported == 1
+    assert factory.clients[0].closed
+
+
+async def test_a_second_failure_on_a_replaced_client_reports_only_once():
+    """Two runs fail on the same client: the connection is reported once."""
+    first, second = _request(1), _request(2)
+    both_in_flight = asyncio.Event()
+    waiting = 0
+
+    class SharedFailClient(FakeSlimClient):
+        async def broadcast_message(self, *args, **kwargs):
+            nonlocal waiting
+            waiting += 1
+            if waiting == 2:
+                both_in_flight.set()
+            await both_in_flight.wait()
+            raise RuntimeError("session closed")
+
+    class SharedFailFactory(ReportingFactory):
+        async def create(self, card, interceptors=()):
+            client = SharedFailClient(self)
+            client.transport = FakeSlimTransport()
+            self.clients.append(client)
+            self.created.append((card, list(interceptors)))
+            return client
+
+    factory = SharedFailFactory()
+    transport = SlimGroupTransport(factory, CARDS)
+    results = await asyncio.gather(
+        transport.broadcast(first, ["supplier_a"], timeout=5),
+        transport.broadcast(second, ["supplier_a"], timeout=5),
+        return_exceptions=True,
+    )
+
+    assert all(isinstance(r, TransportError) for r in results)
+    assert len(factory.clients) == 1
+    assert factory.clients[0].transport.reported == 1
+    assert factory.clients[0].closed

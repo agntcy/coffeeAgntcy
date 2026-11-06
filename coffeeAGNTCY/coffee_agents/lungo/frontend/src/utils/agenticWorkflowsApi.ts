@@ -75,7 +75,10 @@ const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0
 
 const isChatApiTarget = (value: unknown): value is ChatApiTarget =>
-  value === "exchange" || value === "logistics" || value === "discovery"
+  value === "exchange" ||
+  value === "logistics" ||
+  value === "discovery" ||
+  value === "supply_chain"
 
 const parseChatApiTarget = (
   obj: Record<string, unknown>,

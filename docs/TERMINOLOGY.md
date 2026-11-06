@@ -64,7 +64,7 @@ The following example (agentic) use-cases are existing in CoffeeAGNTCY:
 
 - Point-to-point: Corto Sommelier / coffee grading.
 - Supervisor: Lungo auction / coffee purchase, Lungo recruiter / capability discovery.
-- Peer Group / coordination: Lungo logistics / order fulfillment.
+- Peer Group / coordination: Lungo logistics / order fulfillment, Lungo Supply Chain Commitment / group negotiation of one shipment.
 
 ---
 

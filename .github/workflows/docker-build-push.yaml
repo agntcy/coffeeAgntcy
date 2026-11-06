@@ -65,7 +65,7 @@ env:
   # dockerfile/target/build-args needed to actually build each image, so
   # they aren't collapsed into these lists too.
   CORTO_IMAGES_JSON: '["corto-ui","corto-exchange","corto-farm"]'
-  LUNGO_IMAGES_JSON: '["lungo-ui","auction-supervisor","agentic-workflows-api","brazil-farm","colombia-farm","vietnam-farm","weather-mcp-server","payment-mcp-server","logistics-shipper","logistics-accountant","logistics-farm","logistics-supervisor","logistics-helpdesk","recruiter-supervisor"]'
+  LUNGO_IMAGES_JSON: '["lungo-ui","auction-supervisor","agentic-workflows-api","brazil-farm","colombia-farm","vietnam-farm","weather-mcp-server","payment-mcp-server","logistics-shipper","logistics-accountant","logistics-farm","logistics-supervisor","logistics-helpdesk","recruiter-supervisor","supply-chain-buyer","supply-chain-supplier","supply-chain-logistics"]'
   RECRUITER_IMAGES_JSON: '["recruiter"]'
 
 permissions: read-all
@@ -475,6 +475,30 @@ jobs:
               UV_CACHE_ID=lungo
               APP_NAME=lungo-recruiter-supervisor
               AGENT_SCRIPT=agents/supervisors/recruiter/main.py
+          - name: supply-chain-buyer
+            dockerfile: docker/Dockerfile.python-agent
+            target: ""
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=supply-chain-buyer
+              AGENT_SCRIPT=agents/supervisors/supply_chain/main.py
+          - name: supply-chain-supplier
+            dockerfile: docker/Dockerfile.python-agent
+            target: ""
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=supply-chain-supplier
+              AGENT_SCRIPT=agents/supply_chain/supplier/server.py
+          - name: supply-chain-logistics
+            dockerfile: docker/Dockerfile.python-agent
+            target: ""
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=supply-chain-logistics
+              AGENT_SCRIPT=agents/supply_chain/logistics/server.py
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write

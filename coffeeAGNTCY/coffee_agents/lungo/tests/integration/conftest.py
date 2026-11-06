@@ -76,6 +76,29 @@ AGENTS = {
         "cmd": ["python", "-m", "agents.logistics.helpdesk.server", "--no-reload"],
         "ready_pattern": r"Agent ready",
     },
+    # supply chain commitment agents (the Buyer runs in-process, see
+    # ``supply_chain_buyer_client``). The suppliers share one module and are
+    # told apart by SUPPLIER_ID; AGENT_PORT is their default, set explicitly.
+    "supply-chain-supplier-a": {
+        "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
+        "ready_pattern": r"Agent ready",
+        "env": {"SUPPLIER_ID": "a", "AGENT_PORT": "9096"},
+    },
+    "supply-chain-supplier-b": {
+        "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
+        "ready_pattern": r"Agent ready",
+        "env": {"SUPPLIER_ID": "b", "AGENT_PORT": "9097"},
+    },
+    "supply-chain-supplier-c": {
+        "cmd": ["python", "-m", "agents.supply_chain.supplier.server"],
+        "ready_pattern": r"Agent ready",
+        "env": {"SUPPLIER_ID": "c", "AGENT_PORT": "9098"},
+    },
+    "supply-chain-logistics": {
+        "cmd": ["python", "-m", "agents.supply_chain.logistics.server"],
+        "ready_pattern": r"Agent ready",
+        "env": {"AGENT_PORT": "9099"},
+    },
 }
 
 _ACTIVE_RUNNERS = []
@@ -442,6 +465,7 @@ def agents_up(request, transport_config):
 
         env = _base_env()
         env.update(transport_config or {})
+        env.update(spec.get("env", {}))
 
         if name == "weather-mcp":
             env["OPEN_METEO_BASE"] = open_meteo_stub.forecast_base_url()
@@ -602,6 +626,53 @@ def logistics_supervisor_client(transport_config, monkeypatch):
         app = logistics_main.app
         with TestClient(app) as client:
             _wait_ready(client, "/v1/health")
+            yield client
+            _close_llm_clients_on_app_loop(client)
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
+
+
+@pytest.fixture
+def supply_chain_buyer_client(transport_config, monkeypatch, tmp_path):
+    """The Supply Chain Commitment Buyer's HTTP app, run in-process.
+
+    Run directories go to ``tmp_path``, so a test never writes
+    into ``runs/supply_chain``. The Buyer builds its runner in the background;
+    the fixture waits for it, which needs no other agent (``/v1/health`` is the
+    check that needs the Logistics agent).
+    """
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("SUPPLY_CHAIN_RUN_DIR", str(tmp_path / "runs"))
+    # Quiet the workflow event emitter: no Workflow API runs in these tests.
+    monkeypatch.setenv("EMIT_WORKFLOW_EVENTS", "false")
+
+    prefixes = [
+        "agents.supervisors.supply_chain",
+        "agents.supply_chain",
+        "config.config",
+    ]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
+
+        import importlib
+
+        import agents.supervisors.supply_chain.main as buyer_main
+
+        importlib.reload(buyer_main)
+
+        with TestClient(buyer_main.app) as client:
+            deadline = time.time() + 60.0
+            while time.time() < deadline:
+                if getattr(client.app.state, "supply_chain_runner", None):
+                    break
+                time.sleep(0.5)
+            else:
+                raise RuntimeError("Supply chain runner was not built within 60s")
             yield client
             _close_llm_clients_on_app_loop(client)
     finally:

@@ -22,6 +22,7 @@ _RUNNABLE_CATALOG_EXPECTATIONS: tuple[tuple[str, bool, bool, str | None], ...] =
     ("Publish Subscribe Streaming", False, True, "exchange"),
     ("Group Messaging", True, False, "logistics"),
     ("A2A HTTP", False, True, "discovery"),
+    ("Supply Chain Commitment", True, False, "supply_chain"),
 )
 
 

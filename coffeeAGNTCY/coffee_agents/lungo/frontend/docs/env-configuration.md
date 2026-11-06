@@ -178,6 +178,7 @@ Defined in `frontend/.env.example` and mirrored in Helm `values.yaml`:
 | `VITE_EXCHANGE_APP_API_URL` | Coffee / auction API |
 | `VITE_GRAFANA_URL` | Grafana dashboard links |
 | `VITE_LOGISTICS_APP_API_URL` | Group messaging / logistics API |
+| `VITE_SUPPLY_CHAIN_APP_API_URL` | Supply Chain Commitment API (buyer supervisor) |
 
 TypeScript declarations: `src/vite-env.d.ts`.
 

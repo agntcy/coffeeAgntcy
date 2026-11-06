@@ -6,6 +6,7 @@ The suite validates:
 
 - Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS: LLM cases in `tests/integration/llm/`, docker-only checks in `tests/integration/`.
 - Logistics Supervisor (farm, accountant, shipper, helpdesk): health in `tests/integration/`, prompt flows in `tests/integration/llm/`.
+- Supply Chain Commitment (Buyer, three suppliers, Logistics): health in `tests/integration/`, baseline runs against the real model in `tests/integration/llm/`. L9 cases are added with the L9 protocols.
 - Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`tests/integration/live/`).
 - Agent process orchestration, startup readiness gating, and HTTP supervisor APIs.
 
@@ -30,6 +31,8 @@ Key files:
 - Auction LLM flows (parametrized SLIM + NATS): [`tests/integration/llm/test_auction_flows.py`](integration/llm/test_auction_flows.py)
 - Logistics health (SLIM): [`tests/integration/test_logistics_supervisor.py`](integration/test_logistics_supervisor.py)
 - Logistics LLM flows: [`tests/integration/llm/test_logistics_supervisor_flows.py`](integration/llm/test_logistics_supervisor_flows.py)
+- Supply Chain Commitment health (SLIM): [`tests/integration/test_supply_chain_health.py`](integration/test_supply_chain_health.py)
+- Supply Chain Commitment LLM flows: [`tests/integration/llm/test_supply_chain_flows.py`](integration/llm/test_supply_chain_flows.py)
 - Uvicorn/SSE helpers: [`tests/helpers/agentic_uvicorn_helpers.py`](helpers/agentic_uvicorn_helpers.py)
 - Live workflow-instance pipeline: [`tests/integration/live/test_workflow_instance_live_pipeline.py`](integration/live/test_workflow_instance_live_pipeline.py)
 
@@ -104,6 +107,35 @@ Logistics agent roles:
 ```bash
 uv run pytest tests/integration/test_logistics_farm.py tests/integration/test_logistics_accountant.py tests/integration/test_logistics_shipper.py tests/integration/test_logistics_helpdesk.py -q
 ```
+
+Supply Chain Commitment health, and one baseline run per case:
+
+```bash
+uv run pytest tests/integration/test_supply_chain_health.py -q
+uv run pytest tests/integration/llm/test_supply_chain_flows.py -q
+```
+
+The flow test sends about 20 to 40 calls per run to the configured model and
+never asserts PASS: a baseline run may fail silently, which is the finding. It
+asserts a record, a verdict, and that every step's addressees replied exactly
+once. The Buyer runs in-process with L9 off and writes its run files to a
+temporary directory, so `runs/supply_chain/` is untouched.
+
+The grading is deterministic and covered by unit tests with hand-built records
+(`tests/unit/supply_chain/test_checker.py`). The model runs are not, which is why
+the flow test never asserts a verdict. How the checker decides is in
+[How a run is judged to have failed](../docs/supply_chain_commitment.md#how-a-run-is-judged-to-have-failed).
+
+The session fixture runs `docker compose down -v --remove-orphans` for the
+compose project when pytest starts and again when it exits, including on
+`--collect-only`, and force-removes the `lungo-slim`, `lungo-nats`,
+`lungo-otel-collector`, `lungo-clickhouse-server` and `grafana-lungo`
+containers by name. The suite is not safe to run where a development stack
+or its data must be kept: a different `COMPOSE_PROJECT_NAME` does not
+protect it, and under the default project name `down -v` deletes the stack's
+volumes, including `zot-storage` and the Directory's Postgres data. Use a
+clean, disposable Docker environment until the
+`isolate-lungo-integration-tests` OpenSpec change is implemented.
 
 Live uvicorn/SSE:
 

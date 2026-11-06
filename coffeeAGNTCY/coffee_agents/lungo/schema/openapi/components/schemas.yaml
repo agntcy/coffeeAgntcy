@@ -155,7 +155,7 @@ components:
         chat_api_target:
           type: string
           nullable: true
-          enum: [exchange, logistics, discovery]
+          enum: [exchange, logistics, discovery, supply_chain]
           description: >-
             Which Lungo chat API base to use; null when the workflow is not
             runnable in the UI.

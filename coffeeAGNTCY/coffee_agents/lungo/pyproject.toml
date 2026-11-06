@@ -34,7 +34,7 @@ dependencies = [
     "google-adk==2.13.0",
     "slima2a==0.8.0",
     "slim-bindings==2.2.0",
-    "agntcy-app-sdk==0.6.0",
+    "agntcy-app-sdk==0.6.1",
     "azure-core==1.38.0",
     # Vulnerability fix for requests
     "langchain-core==1.6.2",
@@ -95,8 +95,11 @@ override-dependencies = ["pyjwt[crypto]==2.15.1", "a2a-sdk[sqlite,telemetry]==1.
 pyjwt = "2026-10-01T00:00:00Z"
 # Deliberate early adoption: agntcy-app-sdk 0.6.0 (uploaded 2026-10-21) is the
 # first release with SLIM 2.2 support, and it requires slima2a 0.8.0 (uploaded
-# 2026-10-13). Both are inside the 14-day window.
-agntcy-app-sdk = "2026-10-22T00:00:00Z"
+# 2026-10-13). Both are inside the 14-day window. 0.6.1 (uploaded 2026-11-06)
+# is also inside it: closing one SLIMTransport no longer disconnects the
+# connection the other transports in the process still use, which the health
+# probes and the supply chain broadcast client relied on.
+agntcy-app-sdk = "2026-11-07T00:00:00Z"
 slima2a = "2026-10-14T00:00:00Z"
 google-genai = "2026-10-23T00:00:00Z"
 google-adk = "2026-10-26T00:00:00Z"

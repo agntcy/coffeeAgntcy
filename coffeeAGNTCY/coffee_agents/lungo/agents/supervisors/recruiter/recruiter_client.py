@@ -317,9 +317,7 @@ async def _forward_status_update(update: TaskStatusUpdateEvent, tool_name: str) 
     main.py's stream_generator to drain in parallel. (a2a-sdk 1.x dropped the
     ``final`` flag; a terminal task state marks the last update.)
     """
-    if update.status.state in _TERMINAL_STATES or not update.status.HasField(
-        "message"
-    ):
+    if update.status.state in _TERMINAL_STATES or not update.status.HasField("message"):
         return
     message = update.status.message
     metadata = message_metadata(message)
@@ -504,10 +502,7 @@ async def evaluate_agent(
     records_part.metadata.update({"type": "found_agent_records"})
     parts: list[Part] = [
         Part(
-            text=(
-                f"Evaluate the agent '{agent_name}' using these criteria:\n\n"
-                f"{query}"
-            )
+            text=(f"Evaluate the agent '{agent_name}' using these criteria:\n\n{query}")
         ),
         records_part,
     ]

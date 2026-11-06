@@ -115,6 +115,18 @@ def test_get_workflow_documentation_200(doc_client: TestClient) -> None:
     assert len(data["full_markdown"]) > 0
 
 
+def test_get_supply_chain_commitment_documentation(doc_client: TestClient) -> None:
+    r = doc_client.get(
+        f"/agentic-workflows/{quote('Supply Chain Commitment', safe='')}/documentation/",
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["slug"] == "supply_chain_commitment"
+    assert data["pattern_category"] == "Multi-Agent Communication & Collaboration"
+    headings = [s["heading"] for s in data["sections"]]
+    assert headings[-4:] == ["Pattern", "Use case", "Scenario", "Workflow"]
+
+
 @pytest.mark.parametrize("pattern_name", list(PATTERNS))
 def test_get_documentation_for_implemented_pattern(
     doc_client: TestClient, pattern_name: str

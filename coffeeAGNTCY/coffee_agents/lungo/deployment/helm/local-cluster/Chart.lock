@@ -52,12 +52,27 @@ dependencies:
   version: 0.2.0
 - name: lungo-ui
   repository: file://../ui
-  version: 0.1.7
+  version: 0.1.8
 - name: agentic-workflows-api
   repository: file://../agentic-workflows-api
   version: 0.1.4
 - name: payment-mcp-server
   repository: file://../payment-mcp-server
   version: 0.2.0
-digest: sha256:e73957e350100f41712b03995986c5db9c853c3866ffc42fc1e75da87d874cc1
-generated: "2026-10-26T13:15:08.341822+01:00"
+- name: supply-chain-buyer
+  repository: file://../supply-chain-buyer
+  version: 0.1.1
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.1
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.1
+- name: supply-chain-supplier
+  repository: file://../supply-chain-supplier
+  version: 0.1.1
+- name: supply-chain-logistics
+  repository: file://../supply-chain-logistics
+  version: 0.1.1
+digest: sha256:c62d6d1bf5be279c57b026bb86fd5668d9bc75a1c1803e2eb3d7f569b66552e6
+generated: "2026-11-05T09:49:41.193786+01:00"

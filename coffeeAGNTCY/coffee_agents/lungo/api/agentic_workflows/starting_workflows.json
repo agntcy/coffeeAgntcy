@@ -575,6 +575,183 @@
     "instances": {}
   },
   {
+    "name": "Supply Chain Commitment",
+    "pattern": "Secure Group Collaboration",
+    "pattern_category": "Multi-Agent Communication & Collaboration",
+    "use_case": "Coffee Agntcy",
+    "scenario": "Supply Chain Commitment",
+    "supports_sse": true,
+    "supports_streaming": false,
+    "chat_api_target": "supply_chain",
+    "starting_topology": {
+      "nodes": [
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000001",
+          "operation": "read",
+          "type": "group",
+          "label": "Negotiation Group",
+          "size": {
+            "width": 3.0,
+            "height": 2.0
+          },
+          "layer_index": 0,
+          "position": {
+            "x": 50,
+            "y": 50
+          }
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000002",
+          "operation": "read",
+          "type": "agent",
+          "label": "Buyer",
+          "label_subtitle": "Moderator Agent",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 1,
+          "position": {
+            "x": 350,
+            "y": 100
+          },
+          "agent_record_uri": "../../agents/supervisors/supply_chain/oasf/agents/supply-chain-buyer-agent.json"
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000003",
+          "operation": "read",
+          "type": "transport",
+          "label": "Transport",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 2,
+          "position": {
+            "x": 380,
+            "y": 270
+          }
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000004",
+          "operation": "read",
+          "type": "agent",
+          "label": "Supplier A",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 3,
+          "position": {
+            "x": 50,
+            "y": 500
+          },
+          "agent_record_uri": "../../agents/supervisors/supply_chain/oasf/agents/supply-chain-supplier-a.json",
+          "label_subtitle": "Supplier Agent"
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000005",
+          "operation": "read",
+          "type": "agent",
+          "label": "Supplier B",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 3,
+          "position": {
+            "x": 350,
+            "y": 500
+          },
+          "agent_record_uri": "../../agents/supervisors/supply_chain/oasf/agents/supply-chain-supplier-b.json",
+          "label_subtitle": "Supplier Agent"
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000006",
+          "operation": "read",
+          "type": "agent",
+          "label": "Supplier C",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 3,
+          "position": {
+            "x": 650,
+            "y": 500
+          },
+          "agent_record_uri": "../../agents/supervisors/supply_chain/oasf/agents/supply-chain-supplier-c.json",
+          "label_subtitle": "Supplier Agent"
+        },
+        {
+          "id": "node://5c000001-0001-4000-a001-000000000007",
+          "operation": "read",
+          "type": "agent",
+          "label": "Logistics",
+          "label_subtitle": "Carrier Agent",
+          "size": {
+            "width": 1.0,
+            "height": 1.0
+          },
+          "layer_index": 3,
+          "position": {
+            "x": 950,
+            "y": 500
+          },
+          "agent_record_uri": "../../agents/supervisors/supply_chain/oasf/agents/supply-chain-logistics-agent.json"
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge://5c000001-0001-4000-a001-e00000000001",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://5c000001-0001-4000-a001-000000000002",
+          "target": "node://5c000001-0001-4000-a001-000000000003",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://5c000001-0001-4000-a001-e00000000002",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://5c000001-0001-4000-a001-000000000003",
+          "target": "node://5c000001-0001-4000-a001-000000000004",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://5c000001-0001-4000-a001-e00000000003",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://5c000001-0001-4000-a001-000000000003",
+          "target": "node://5c000001-0001-4000-a001-000000000005",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://5c000001-0001-4000-a001-e00000000004",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://5c000001-0001-4000-a001-000000000003",
+          "target": "node://5c000001-0001-4000-a001-000000000006",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://5c000001-0001-4000-a001-e00000000005",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://5c000001-0001-4000-a001-000000000003",
+          "target": "node://5c000001-0001-4000-a001-000000000007",
+          "bidirectional": false,
+          "weight": 1.0
+        }
+      ]
+    },
+    "instances": {}
+  },
+  {
     "name": "Adversarial Review Agents",
     "pattern": "Adversarial Review Agents",
     "pattern_category": "Governance, Policy & Human Oversight",

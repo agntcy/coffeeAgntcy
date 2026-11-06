@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""The logistics servers apply the SLIM placeholder-secret policy before start."""
+"""The logistics and supply chain servers apply the SLIM placeholder-secret policy before start."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ LOGISTICS_SERVER_MODULES = [
     "agents.logistics.farm.server",
     "agents.logistics.helpdesk.server",
     "agents.logistics.shipper.server",
+    "agents.supply_chain.logistics.server",
+    "agents.supply_chain.supplier.server",
 ]
 
 

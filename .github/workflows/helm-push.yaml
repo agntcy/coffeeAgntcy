@@ -70,7 +70,10 @@ env:
       {"package_name": "logistics-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm"},
       {"package_name": "logistics-helpdesk", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk"},
       {"package_name": "recruiter", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter"},
-      {"package_name": "recruiter-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor"}
+      {"package_name": "recruiter-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor"},
+      {"package_name": "supply-chain-buyer", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/supply-chain-buyer"},
+      {"package_name": "supply-chain-supplier", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/supply-chain-supplier"},
+      {"package_name": "supply-chain-logistics", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/supply-chain-logistics"}
     ]
 
 permissions: read-all
