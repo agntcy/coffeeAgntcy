@@ -6,7 +6,7 @@
 The LiteLLM proxy answers an identical request from its cache. Every run of a
 case starts with the same request and each later request is built from the
 earlier answers, so with the cache on a second run replays the first one word
-for word and ten runs are one sample (decisions N33). The agents' replies and
+for word and ten runs are one sample. The agents' replies and
 the Buyer's plan are the behaviour under test, so they are asked with the cache
 bypassed. Other use cases keep their cache: the setting lives on this model
 instance, not in ``common.llm``.

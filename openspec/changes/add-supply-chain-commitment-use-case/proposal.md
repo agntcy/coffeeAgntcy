@@ -27,9 +27,7 @@ proves what ACCORD and CONCORD are worth, because a protocol cannot be shown
 to help against a failure that never happens. The frozen scenario then runs
 with them, to see whether they prevent the failure. Prevention is the
 hypothesis, not a promise: if the protocols do not prevent it, that is
-reported as the result. Runs are counted, not picked. Scoping decisions are
-recorded in
-`coffeeAGNTCY/coffee_agents/lungo/docs/supply_chain_commitment_decisions.md`.
+reported as the result. Runs are counted, not picked.
 
 ## What Changes
 

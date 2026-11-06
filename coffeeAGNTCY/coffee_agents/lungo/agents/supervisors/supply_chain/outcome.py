@@ -50,9 +50,9 @@ class PlanProposal(BaseModel):
         default=None, description="Total transport cost of the plan."
     )
     # The milestone is not part of what the Buyer's model is asked for, so the
-    # baseline does not clarify "delivery" through the plan schema (decisions
-    # N25, lever C). It stays settable by code: a strategy that really
-    # establishes it, such as the L9 bridge from the ACCORD glossary, sets it.
+    # baseline does not clarify "delivery" through the plan schema. It stays
+    # settable by code: a strategy that really establishes it, such as the L9
+    # bridge from the ACCORD glossary, sets it.
     # Left alone it is "unspecified" and the checker grades it as before.
     milestone: SkipJsonSchema[Milestone] = "unspecified"
     milestone_definition: SkipJsonSchema[str] = ""
@@ -71,10 +71,10 @@ class PlanProposal(BaseModel):
             ]
             # The ready time is kept on the lot but not shown. Printing it made
             # Supplier C reject a plan whose hour differed from its own 09:00,
-            # and the Buyer often writes the wrong year (decisions N46).
+            # and the Buyer often writes the wrong year.
             # The Buyer's claimed arrival time is kept in the record but is not
             # shown to the parties: each one judges the plan from its own
-            # facts and its own meaning of "delivery" (decisions N25, lever D).
+            # facts and its own meaning of "delivery".
             lines.append(f"- {lot.supplier}: " + "; ".join(parts))
         if self.total_cost_usd is not None:
             lines.append(f"Total transport cost: ${self.total_cost_usd:,.0f}")

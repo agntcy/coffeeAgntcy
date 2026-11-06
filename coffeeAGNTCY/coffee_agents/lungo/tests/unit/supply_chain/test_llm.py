@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""The agents bypass the proxy cache; other models are left alone (decisions N33)."""
+"""The agents bypass the proxy cache; other models are left alone."""
 
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI

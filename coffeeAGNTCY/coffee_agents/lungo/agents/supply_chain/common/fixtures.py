@@ -53,7 +53,7 @@ class SupplierData(_Frozen):
     ready_at: datetime
     # The origin facility's clock, in hours from UTC. When it is not zero the
     # supplier's prompt gives the ready time on that clock and does not say
-    # "UTC", the way a facility states its own time (decisions N42).
+    # "UTC", the way a facility states its own time.
     utc_offset_hours: int = 0
 
 
@@ -66,7 +66,7 @@ class TransportOption(_Frozen):
     available: bool
     requires_capacity_confirmation: bool
     # False when the carrier holds no capacity record for this option, so its
-    # prompt cannot say whether capacity exists (decisions N41). Then
+    # prompt cannot say whether capacity exists. Then
     # ``available`` is a fact no party holds.
     capacity_known: bool = True
 
@@ -80,8 +80,8 @@ class LogisticsData(_Frozen):
     organization: str
     destination: str
     options: tuple[TransportOption, ...]
-    # The carrier states when each lot would arrive when it quotes an option
-    # (decisions N41), so the Buyer can see a late lot.
+    # The carrier states when each lot would arrive when it quotes an option,
+    # so the Buyer can see a late lot.
     quotes_arrival: bool = False
 
     @model_validator(mode="after")
@@ -121,11 +121,11 @@ class Case(_Frozen):
     logistics_overrides: dict[str, dict[str, bool]]
     disruption: Disruption | None
     # The Buyer's deadline for this case when it differs from the shared one
-    # (decisions N40: ``disruption`` is on time before the delay).
+    # (``disruption`` is on time before the delay).
     deadline: datetime | None = None
-    # A supplier whose ready time or clock differs in this case (decisions N42).
+    # A supplier whose ready time or clock differs in this case.
     supplier_overrides: dict[SupplierId, SupplierOverride] = {}
-    # Logistics states each lot's arrival time when it quotes (decisions N41).
+    # Logistics states each lot's arrival time when it quotes.
     logistics_quotes_arrival: bool = False
 
 
@@ -145,7 +145,7 @@ class BuyerSlice(_Frozen):
     buyer: BuyerData
     opening_wording: str
     # Facilities whose clock is not UTC: (origin, hours from UTC). Only the
-    # Buyer holds this; a supplier states its own wall time (decisions N43).
+    # Buyer holds this; a supplier states its own wall time.
     facility_clocks: tuple[tuple[str, int], ...] = ()
 
 

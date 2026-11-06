@@ -82,7 +82,7 @@ def test_disruption_moves_supplier_c_only_when_injected():
 
 
 def test_only_ambiguous_and_disruption_have_their_own_deadline():
-    """Decisions N40 and N42: 22:00 there, the shared 17:00 everywhere else."""
+    """22:00 there, the shared 17:00 everywhere else."""
     for case in ("ambiguous", "disruption"):
         assert f.buyer_slice(case).buyer.deadline == _utc(18, 22)
         assert f.world(case).buyer.deadline == _utc(18, 22)
@@ -105,7 +105,7 @@ def test_disruption_all_standard_is_on_time_before_the_delay_and_late_after():
 
 
 def test_ambiguous_supplier_c_works_on_a_clock_five_hours_behind_utc():
-    """Decisions N42: 09:00 local is 14:00 UTC; the others are unchanged."""
+    """09:00 local is 14:00 UTC; the others are unchanged."""
     c = f.supplier_slice("supplier_c", "ambiguous").supplier
     assert c.utc_offset_hours == -5
     assert c.ready_at == _utc(16, 14)
@@ -131,12 +131,12 @@ def test_ambiguous_standard_looks_on_time_in_utc_but_is_late():
 
 
 def test_infeasible_expedited_capacity_is_a_fact_nobody_holds():
-    """Decisions N41: the truth is "no capacity", but Logistics has no record."""
+    """The truth is "no capacity", but Logistics has no record."""
     lg = f.logistics_slice("infeasible").logistics
     expedited = next(o for o in lg.options if o.id == "expedited")
     assert expedited.available is False and expedited.capacity_known is False
     assert lg.quotes_arrival is True
-    # Ambiguous quotes arrival times too (decisions N43), but only infeasible
+    # Ambiguous quotes arrival times too, but only infeasible
     # lacks a capacity record.
     assert f.logistics_slice("ambiguous").logistics.quotes_arrival is True
     for case in ("ambiguous", "explicit", "disruption"):

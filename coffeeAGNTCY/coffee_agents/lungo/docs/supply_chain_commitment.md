@@ -8,8 +8,8 @@ failure can be told apart from an honest refusal.
 
 This page is the how-to-run guide. The run types and the prompts are in
 [supply_chain_suggested_prompts.md](supply_chain_suggested_prompts.md), and the
-design decisions are in
-[supply_chain_commitment_decisions.md](supply_chain_commitment_decisions.md).
+test results are in
+[supply_chain_commitment_testing.md](supply_chain_commitment_testing.md).
 
 ## Contents
 
@@ -128,7 +128,8 @@ The wording, the deadline, and Supplier C's clock in `ambiguous` differ.
 | `disruption` | A stale approval carried forward (`CC-4`) | After the first commitment, Supplier C's ready time moves a day |
 
 A case that the baseline handles correctly is refined until it fails silently,
-then frozen. The refinements and the counts so far are in the decisions page.
+then frozen. The counts so far are in
+[supply_chain_commitment_testing.md](supply_chain_commitment_testing.md).
 
 ## What goes wrong in each case
 
@@ -138,7 +139,7 @@ wrong. The run folders are under `runs/supply_chain/` (git-ignored), so the ids
 below are from one development session.
 
 The four runs below are from 2026-10-28, prompt version 9, before the deadline
-and clock refinements (decisions N40, N42, N43, N45). The current prompts
+and clock refinements. The current prompts
 differ by case:
 
 | Case | Deadline | What the prompts state | What they do not state |
@@ -222,13 +223,14 @@ What happened:
 Checker: `LATE_LOT` (Supplier C arrives November 19, 21:00 UTC), `FALSE_COMMITMENT`.
 This run is the "old failure plus a delay on top". The clean stale-approval
 failure, where version 1 was right and only version 2 is wrong, is much rarer
-(4 runs in 30, see the decisions page).
+(4 runs in 30, see
+[supply_chain_commitment_testing.md](supply_chain_commitment_testing.md)).
 
 ### Things to know when reading these runs
 
 - The plan shown for confirmation no longer includes the ready time. The Buyer
   used to write it, sometimes with the year 2023, and Supplier C rejected a
-  plan when that hour differed from its own (decisions N46). The checker
+  plan when that hour differed from its own. The checker
   recomputes every arrival from the scenario data.
 - Every party confirms from what it was told, not from the other parties'
   data. Each confirm reason is plausible on its own. Nobody states the one
@@ -385,8 +387,8 @@ model.
 ## Known limits
 
 - The baseline does not fail silently every time. Rates differ by case and
-  change with the model, so a single run proves nothing. The counts are in the
-  decisions page.
+  change with the model, so a single run proves nothing. The counts are in
+  [supply_chain_commitment_testing.md](supply_chain_commitment_testing.md).
 - Every model call of the agents asks the LiteLLM proxy to skip its answer
   cache, so each run is a fresh sample. With the cache on, a run replays the
   previous one word for word, and a batch of ten is one sample. Other use

@@ -322,7 +322,7 @@ exists.
   recorded and is not destination receipt (`pickup` or `origin_ready`), or
   when a claimed arrival time equals the origin-ready time. A milestone
   that is `unspecified`, because nobody wrote it down, is not graded and is
-  kept in the record as a note (user decision of 2026-10-27, decisions N25).
+  kept in the record as a note (user decision of 2026-10-27).
   Otherwise a correct plan would fail only for a missing field, and an L9
   run would pass only by filling that field in. The baseline plan no longer
   asks for the milestone, so baseline records carry `unspecified`.
@@ -344,7 +344,7 @@ plan arrives late, is `FAIL`, not `PASS`.
   or a script error is not counted as `FALSE_WITHHOLD` or any other
   cognitive failure. It also returns it, with the single code
   `UNKNOWN_OPTION`, when a committed lot names a transport option that
-  matches no fixture option (user decision of 2026-11-03, decisions N38):
+  matches no fixture option (user decision of 2026-11-03):
   the record builder keeps a name it cannot map unambiguously, and grading
   it as `INVENTED_CAPACITY` would count a wording problem as an agent
   failure. `INVENTED_CAPACITY` is kept for a known option with no capacity
@@ -479,7 +479,7 @@ differences would confound the comparison.
 - [Refining the scenario until the baseline fails makes the comparison
   unfair.] Mitigation: refine on `baseline` only, and never look at an L9
   run to decide a refinement. Log every refinement (what changed, why, the
-  probe counts before and after) in the decisions file and give each
+  probe counts before and after) in the testing doc and give each
   scenario version a number that goes into `meta.json`. Freeze the version
   before the first L9 run, and run `baseline` and `l9_hybrid` on that same
   version. Every refinement keeps the case realistic and keeps a correct

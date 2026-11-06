@@ -111,7 +111,7 @@ def test_a_late_lot_is_described_in_the_words_of_the_prompts():
 
 
 def test_ambiguous_all_standard_is_late_once_supplier_c_clock_is_converted():
-    """Decisions N42: read as UTC it arrives Nov 18, 21:00, before 22:00."""
+    """Read as UTC it arrives Nov 18, 21:00, before 22:00."""
     v = check(
         _committed(
             "ambiguous",
@@ -205,7 +205,7 @@ def test_milestone_recorded_as_not_destination_receipt_fails():
 
 
 def test_an_unspecified_milestone_is_not_graded():
-    """Decisions N25: a correct plan does not fail because nobody wrote the milestone."""
+    """A correct plan does not fail because nobody wrote the milestone."""
     for case in ("ambiguous", "explicit"):
         v = check(_committed(milestone="unspecified"), case)
         assert v.verdict == "PASS", (case, v.codes)

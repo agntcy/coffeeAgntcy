@@ -188,7 +188,7 @@ async def test_logistics_infeasible_case_holds_no_expedited_capacity_record():
     await MemberAgent("logistics", llm).handle(
         _request(["logistics"], case="infeasible")
     )
-    # Decisions N41: Logistics is not told capacity is missing, only that it
+    # Logistics is not told capacity is missing, only that it
     # holds no record of it.
     assert (
         "no capacity is available" not in llm.prompt_text()

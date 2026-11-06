@@ -68,7 +68,7 @@ def test_logistics_sees_no_budget_deadline_or_supplier_terms(case):
 
 
 def test_logistics_infeasible_does_not_say_expedited_capacity_is_missing():
-    """Decisions N41: the carrier holds no record, so it cannot be told "none"."""
+    """The carrier holds no record, so it cannot be told "none"."""
     text = logistics_prompt(f.logistics_slice("infeasible"))
     assert "no capacity is available" not in text
     assert "Its capacity must be explicitly confirmed by you." in text
@@ -82,7 +82,7 @@ def test_logistics_in_the_other_cases_keeps_its_old_prompt():
         text = logistics_prompt(f.logistics_slice(case))
         assert "no capacity record" not in text
         assert "19,000" in text
-    # Only ambiguous (decisions N43) and infeasible quote arrival times.
+    # Only ambiguous and infeasible quote arrival times.
     for case in ("explicit", "disruption"):
         assert "say when each lot would arrive" not in logistics_prompt(
             f.logistics_slice(case)
@@ -93,7 +93,7 @@ def test_logistics_in_the_other_cases_keeps_its_old_prompt():
 
 
 def test_supplier_c_in_ambiguous_states_its_own_clock_and_the_others_utc():
-    """Decisions N42 and N44: a wall time, and the offset is not in C's words."""
+    """A wall time, and the offset is not in C's words."""
     c = supplier_prompt(f.supplier_slice("supplier_c", "ambiguous"))
     assert "November 16, 09:00 local time at Origin facility C" in c
     assert "UTC-5" not in c and "14:00" not in c and "behind UTC" not in c
@@ -104,7 +104,7 @@ def test_supplier_c_in_ambiguous_states_its_own_clock_and_the_others_utc():
 
 
 def test_no_party_is_told_the_facility_offset():
-    """Decisions N45: the five hours stay in the fixture, not in a prompt."""
+    """The five hours stay in the fixture, not in a prompt."""
     for case in f.CASES:
         assert "civil time" not in buyer_prompt(f.buyer_slice(case))
         assert "behind UTC" not in buyer_prompt(f.buyer_slice(case))
@@ -126,7 +126,7 @@ def test_no_prompt_states_the_answer(case):
 
 
 def test_buyer_states_its_timing_only_in_its_own_opening_words():
-    """Prompt version 2 (decisions N25): no milestone is defined for the Buyer."""
+    """Prompt version 2: no milestone is defined for the Buyer."""
     ambiguous = buyer_prompt(f.buyer_slice("ambiguous"))
     assert f.buyer_slice("ambiguous").opening_wording in ambiguous
     assert "received at" not in ambiguous
@@ -139,7 +139,7 @@ def test_buyer_states_its_timing_only_in_its_own_opening_words():
 
 
 def test_the_buyer_holds_its_own_deadline_time():
-    """Decisions N40 and N42: 22:00 for disruption and ambiguous, else 17:00."""
+    """22:00 for disruption and ambiguous, else 17:00."""
     for case in ("ambiguous", "disruption"):
         assert "Deadline: November 18, 22:00 UTC" in buyer_prompt(f.buyer_slice(case))
     for case in ("explicit", "infeasible"):
@@ -147,7 +147,7 @@ def test_the_buyer_holds_its_own_deadline_time():
 
 
 def test_the_infeasible_opening_names_the_deadline_time():
-    """Decisions N43: every party sees that standard transport is late."""
+    """Every party sees that standard transport is late."""
     wording = f.buyer_slice("infeasible").opening_wording
     assert "arrival at Warehouse W by November 18, 17:00 UTC." in wording
 
@@ -156,7 +156,7 @@ def test_the_infeasible_opening_names_the_deadline_time():
 def test_the_deadline_time_is_not_in_the_opening_words_of_the_named_milestone_cases(
     case,
 ):
-    """Prompt version 9 (decisions N27): the time of day is the Buyer's alone."""
+    """Prompt version 9: the time of day is the Buyer's alone."""
     wording = f.buyer_slice(case).opening_wording
     assert "arrival at Warehouse W by November 18." in wording
     assert "17:00" not in wording

@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Spec (decisions N43): a silent failure counts as showing the challenge of
+"""Spec: a silent failure counts as showing the challenge of
 its case only when the conversation shows it."""
 
 import json

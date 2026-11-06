@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Decisions N25, lever C: the baseline plan does not clarify the milestone."""
+"""The baseline plan does not clarify the milestone."""
 
 from agents.supervisors.supply_chain.outcome import PlanLot, PlanProposal
 
@@ -23,7 +23,7 @@ def test_the_milestone_is_not_in_the_schema_the_model_sees():
 
 
 def test_the_decision_instructions_do_not_ask_for_a_milestone():
-    """Decisions N39: the plan has no field for it, so the prompt must not ask."""
+    """The plan has no field for it, so the prompt must not ask."""
     from agents.supervisors.supply_chain.strategies.baseline import (
         DECISION_INSTRUCTIONS,
     )
@@ -33,7 +33,7 @@ def test_the_decision_instructions_do_not_ask_for_a_milestone():
 
 
 def test_the_decision_instructions_do_not_ask_for_a_milestone():
-    """Decisions N39: the plan has no field for it, so the prompt must not ask."""
+    """The plan has no field for it, so the prompt must not ask."""
     from agents.supervisors.supply_chain.strategies.baseline import (
         DECISION_INSTRUCTIONS,
     )
@@ -64,7 +64,7 @@ def test_code_can_still_set_the_milestone_and_it_is_rendered():
 
 
 def test_the_confirm_request_does_not_show_claimed_arrival_times():
-    """Decisions N25, lever D: the claim stays in the record, not in the request."""
+    """The claim stays in the record, not in the request."""
     from datetime import datetime, timezone
 
     lot = _lot().model_copy(
@@ -83,7 +83,7 @@ def test_the_confirm_request_does_not_show_claimed_arrival_times():
 
 
 def test_the_ready_time_is_kept_and_not_shown():
-    """Decisions N46: the confirm request no longer prints the ready time."""
+    """The confirm request no longer prints the ready time."""
     from datetime import datetime, timedelta, timezone
 
     for ready in (
