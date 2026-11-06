@@ -4,7 +4,7 @@ Paths are relative to `coffeeAGNTCY/coffee_agents/lungo/` unless they start
 with `/` (repo root).
 
 This branch delivers the baseline. The baseline rates are accepted (4.3c,
-decision N48, 2026-11-05). Still open: 9.1 and 9.2 (headline pair, CHANGELOG
+2026-11-05). Still open: 9.1 and 9.2 (headline pair, CHANGELOG
 and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
 4.8 (L9 work). Do not archive or sync this change until they land.
 
@@ -63,7 +63,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
 - [x] 3.1 Implement the supplier agent (`agents/supply_chain/supplier/`:
       card, agent, executor, server; `SUPPLIER_ID` selects the slice and the
       card name) with the negotiation and confirm handlers. ACCORD and
-      CONCORD requests raise `L9NotImplemented` (`L9Disabled` until N37). The ACCORD-receiver and
+      CONCORD requests raise `L9NotImplemented` (`L9Disabled` until the 2026-11-03 removal of the switch). The ACCORD-receiver and
       CONCORD-receiver handlers and the `concord_forge` tool are not on the
       baseline branch (tasks 4.4 and 4.5). Verify: unit tests with a fake
       LLM cover the noop gate and the single-Message reply.
@@ -84,8 +84,8 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       tests for prompt extraction and explicit-field precedence, the
       `l9_full` "not implemented" response, and the workflow-name drift
       test.
-- [x] 4.1c Rework the suggested prompts (added 2026-10-27, see decisions
-      N23 and `docs/supply_chain_suggested_prompts.md`). In
+- [x] 4.1c Rework the suggested prompts (added 2026-10-27, see
+      `docs/supply_chain_suggested_prompts.md`). In
       `selection.py` add the closing-tag rule (`(<case>/<run type>)`,
       case insensitive, `baseline`, `L9 hybrid`, `L9 full` and the
       identifiers) between the explicit fields and the model reading (D9).
@@ -100,7 +100,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       `configuration`, 12 prompts with L9 on, 4 and none mentioning L9 with
       L9 off, and that the existing `test_buyer_api.py` assertions are
       updated.
-      Update 2026-11-03 (your instruction, decisions N37): the 8 L9 prompts
+      Update 2026-11-03 (your instruction): the 8 L9 prompts
       and the `l9_enabled` filter are removed; `suggested_prompts.json` has
       the 4 baseline prompts. The L9 prompts stay in the doc and come back
       with the L9 protocols.
@@ -110,7 +110,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       the limits. Verify: unit tests with a fake group transport cover the
       transcript ordering, the files written on success, failure and
       timeout, and the round-limit outcome.
-- [x] 4.2b Live SLIM check (added 2026-10-27, see decisions N17 risk B).
+- [x] 4.2b Live SLIM check (added 2026-10-27, risk B).
       Start the SLIM server with Docker, run the supplier and logistics
       agents with a fake model, and send one `broadcast_message` step
       addressed to Supplier B only, then one addressed to three agents.
@@ -129,7 +129,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       not silent; `PASS` and `INVALID` are never silent; timeout and
       `protocol_error` on a feasible case are `INVALID`, `round_limit` is
       `FALSE_WITHHOLD`), and the existing checker tests still pass.
-      Update 2026-11-03 (decisions N38): `check` also returns `INVALID`, with
+      Update 2026-11-03: `check` also returns `INVALID`, with
       the single code `UNKNOWN_OPTION`, when a committed lot names a
       transport option that matches no fixture option (was
       `INVENTED_CAPACITY`). Covered in `test_checker.py` and the verdict
@@ -145,7 +145,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       CONCORD" (a baseline run with a fake LLM: no L9 text in any prompt,
       no tool bound to any model, no protocol kinds; switch off: the skills
       directory is never read).
-      Update 2026-11-03 (your instruction, decisions N37): the switch is
+      Update 2026-11-03 (your instruction): the switch is
       removed, with its tests, the `l9_disabled` status and `l9_available`.
       Members still refuse L9 messages, as not implemented. The switch is
       to be recreated with the L9 protocols (default on).
@@ -153,34 +153,34 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       record builder (D4, D6). Verify: a fake-LLM test drives a commit, a
       withhold and a party rejection, and checks that the record status and
       confirmations follow D6. The test also asserts, for the real
-      baseline strategy, what `test_l9_switch.py` (removed in N37) asserted
+      baseline strategy, what `test_l9_switch.py` (removed 2026-11-03) asserted
       for a scripted one: no skill text in any prompt, no tool bound to any model, no `accord_*`
       or `concord_*` message.
 - [x] 4.3b Live baseline probe (added 2026-10-27, user decision "probe
       first"). Run case `ambiguous` with `baseline` against the real model
       at least five times through the runner (no UI), keep every run
-      directory, and record in the decisions file how many runs were silent
+      directory, and record in the testing doc how many runs were silent
       failures, other failures, passes and invalid, and what the Buyer,
       Logistics and the confirm round said about "delivery". Verify: the
       counts and the run directories exist. Stop and report to the user
       before building 4.4 onward. If silent failures are rare, task 4.3c
       applies (the failure is the aim; accepting the rate is not the path).
-      Result of the first probe: 0 of 5 (see decisions N22), so 4.3c is
+      Result of the first probe: 0 of 5, so 4.3c is
       open.
 - [x] 4.3c Refine the failing scenario (added 2026-10-27, user decision "we
       refine the examples until they fail silently"). Starting with
       `ambiguous` and `baseline`, change one thing at a time, re-run the
       probe (at least five runs per version), and stop when the baseline
       fails silently reliably. The allowed levers are agreed with the user
-      before the first change (see decisions N24); each change is logged
+      before the first change; each change is logged
       with what changed, why and the counts before and after. Give the
       scenario a version number in `meta.json`. Do not use any L9 run to
       choose a refinement, and freeze the version before task 4.5 runs.
       Every run's `meta.json` records `prompt_version`. Verify: the
-      decisions file has the refinement log, the final version has the
+      testing doc has the refinement log, the final version has the
       silent-failure counts, and the existing unit tests (checker,
       fixtures, prompts) still pass or are updated with the change.
-      Progress (decisions N25): the original text was compared with ours
+      Progress: the original text was compared with ours
       and is applied faithfully; refinement 1 (option B, prompt version 2)
       gave 0 of 5 silent failures; refinement 2 (lever C, prompt version 3)
       gave 5 `FAIL`, all only `MILESTONE_UNRESOLVED` with correct plans, so
@@ -199,33 +199,36 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       silent failures** for `ambiguous`/`baseline` (`LATE_LOT`,
       `FALSE_COMMITMENT`, 0 rejected replies). Option B was not needed.
       Still open: probe `explicit`, `infeasible` and `disruption` on
-      baseline, then freeze the version (decisions N25).
-      Progress (decisions N26, prompt version 7): `infeasible` 5 of 5 silent
+      baseline, then freeze the version.
+      Progress (prompt version 7): `infeasible` 5 of 5 silent
       (after an option-naming artefact was fixed in the plan schema) and
       `ambiguous` 5 of 5 silent. `explicit` 0 of 5 (5 passes) and
       `disruption` 0 of 5 (5 correct withholds). A subtler delay for
       `disruption` (lever D1) was tried and reverted, also 0 of 5. The
       remaining levers change what the case is; awaiting the user's choice.
-      Progress (decisions N27, user: "try B, then A"): lever B (Logistics
+      Progress (user: "try B, then A"): lever B (Logistics
       answers only what it is asked, prompt version 8) made `ambiguous` and
       `infeasible` pass and was reverted. The hold-time lever (the deadline's
       time of day is in the Buyer's brief only, prompt version 9) gave
       `explicit` 10 of 10 silent, `infeasible` 5 of 5, `disruption` 2 of 5
       (about 1 in 10 a clean stale-approval failure), but `ambiguous` fell to
       2 of 15 with unchanged inputs (it was 10 of 10 at versions 6 and 7).
-      Progress (decisions N33 to N35): the N26 and N27 batches replayed
+      Progress: the earlier prompt version 7 and 8 batches replayed
       cached model answers, so their counts were not rates. With the cache
-      bypassed (N34), 30 independent runs per case at prompt version 9 gave
+      bypassed, 30 independent runs per case at prompt version 9 gave
       silent failures in `ambiguous` 22 of 30, `explicit` 24 of 30,
       `infeasible` 28 of 30 and `disruption` 19 of 30 (about 4 of 30 a
       clean stale approval). Not frozen: the freeze needs the same batch
-      on a later day, and the user decides what `disruption` should show
-      (N35).
-      Accepted (decision N48, 2026-11-05): the 20 of 30 bar is silent
+      on a later day, and the user decides what `disruption` should show.
+      Accepted (2026-11-05): the 20 of 30 bar is silent
       failures of the expected kind, not the challenge count. Prompt version
       19 stands: expected kind of 30 is `ambiguous` 21, `explicit` 19,
       `infeasible` 23, `disruption` 16. `explicit` and `disruption` are
       under 20 and are accepted. No further rounds.
+      Latest run (2026-11-06, same prompt version 19, after the
+      suggested prompts were changed to show the Buyer's exact opening):
+      expected kind of 30 is `ambiguous` 19, `explicit` 19, `infeasible` 26,
+      `disruption` 12. Recorded, not a new acceptance.
 - [ ] 4.4 Implement the L9 bridge (`common/l9_bridge.py`) over the vendored
       initiator scripts. Verify: unit tests run the real scripts against
       canned receiver replies through a full ACCORD lock and a CONCORD
@@ -239,7 +242,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
 - [ ] 4.6 Implement the disruption flow (D7) for both strategies. Verify:
       a fake-LLM       test shows the version 2 plan, version 1 confirmations not
       counted, and no injection when the first outcome is not committed.
-      Baseline part done (decisions N26): `Moderator.inject_disruption`,
+      Baseline part done: `Moderator.inject_disruption`,
       private notice to Supplier C, group notice from the moderator, a fresh
       round budget, tests in `test_baseline.py`. The `l9_hybrid` resume
       (new CONCORD run under the locked contract) stays open with 4.5.
@@ -306,8 +309,8 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       --profile       supply_chain config` is valid and `docker compose --profile
       supply_chain up --build` reaches "Agent ready" for all members. The
       `.env.example` also has `SUPPLY_CHAIN_L9_ENABLED=false` (the default
-      everywhere, N31), passed to all five services (D12); with `false` the
-      services start and refuse L9. Since N37 the variable is removed from
+      everywhere), passed to all five services (D12); with `false` the
+      services start and refuse L9. Since 2026-11-03 the variable is removed from
       `.env.example` and the compose file, until the L9 protocols are added.
       Status: files and `config` check done. You rebuilt the stack with
       `docker compose up -d --build` on 2026-10-28 and reported that everything
@@ -321,11 +324,10 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       every step's addressees each replied exactly once. Verify: the suites
       pass locally with SLIM up, and `tests/README.md` is updated.
       Status: health tests (8) and the two baseline flow runs pass with SLIM up
-      (the skipped L9 cases were removed in N37, to be added with 4.4 and 4.5); `tests/README.md` updated. They can
+      (the skipped L9 cases were removed on 2026-11-03, to be added with 4.4 and 4.5); `tests/README.md` updated. They can
       remove a running development stack and, under the default project
       name, its volumes; run them only in a clean, disposable Docker
-      environment until the `isolate-lungo-integration-tests` change lands
-      (N30).
+      environment until the `isolate-lungo-integration-tests` change lands.
 - [x] 7.3 Write `docs/supply_chain_commitment.md` (how to run, the cases,
       the configurations, the limits, reading the run files; link
       `docs/supply_chain_suggested_prompts.md` for the run types and
@@ -350,7 +352,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       Status: `helm template` and `helm lint` pass for all three charts;
       `l9Enabled=false` renders `"false"`; the Buyer renders NodePort 30085 with
       `environment=local`; the workflow API keys appear only on the Buyer.
-      Update 2026-11-03 (N37): `l9Enabled` is removed from the three charts
+      Update 2026-11-03: `l9Enabled` is removed from the three charts
       until the L9 protocols are added.
 - [x] 8.2 Wire `local-cluster`: dependencies (supplier aliased three
       times), values (CORS, `VITE_SUPPLY_CHAIN_APP_API_URL`), overrides
@@ -378,7 +380,7 @@ and TERMINOLOGY) and 1.2, 1.3, 4.4, 4.5, the `l9_hybrid` part of 4.6, and
       with `l9_hybrid`, on the same model and deployment, at least five
       times each (the baseline count may reuse task 4.3b). Then run the
       other three cases once per configuration. Save every run directory.
-      Summarize in `docs/supply_chain_commitment_decisions.md` under a new
+      Summarize in `docs/supply_chain_commitment_testing.md` under a new
       "First observations" section: per case and configuration, the counts
       of silent failures, other failures, passes and invalid runs, whether
       L9 prevented the silent failure, and where it did not, what ACCORD

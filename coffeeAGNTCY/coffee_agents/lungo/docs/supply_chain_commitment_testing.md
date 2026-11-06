@@ -2,9 +2,7 @@
 
 This page explains in plain words how Supply Chain Commitment is tested and
 what the test runs have shown so far. For how to start the agents, see
-[supply_chain_commitment.md](supply_chain_commitment.md). For why things were
-built this way, see
-[supply_chain_commitment_decisions.md](supply_chain_commitment_decisions.md).
+[supply_chain_commitment.md](supply_chain_commitment.md).
 
 For one real run followed from the first message to the verdict, see
 [baseline_ambiguous_example.md](baseline_ambiguous_example.md).
@@ -19,6 +17,7 @@ For one real run followed from the first message to the verdict, see
 - [What a silent failure is](#what-a-silent-failure-is)
 - [Testing in batches: the probe](#testing-in-batches-the-probe)
 - [What the runs have shown so far](#what-the-runs-have-shown-so-far)
+  (latest batch: [2026-11-06](#latest-batch-2026-11-06))
 - [Things to keep in mind](#things-to-keep-in-mind)
 
 ## The idea in one minute
@@ -96,14 +95,14 @@ The scenario in numbers (all four cases share it, except that `disruption` and
 clock, see below):
 
 - Deadline: **November 18, 17:00 UTC** at Warehouse W. In `disruption` it is
-  **22:00 UTC** (decisions N40), so all-standard transport is on time before
+  **22:00 UTC**, so all-standard transport is on time before
   the delay and late after it.
 - In `ambiguous` the deadline is also **22:00 UTC** and Supplier C states
-  its ready time as November 16, 09:00 local time (UTC-5), which is 14:00 UTC
-  (decisions N42). Standard transport arrives November 19, 02:00 UTC (late),
+  its ready time as November 16, 09:00 local time (UTC-5), which is 14:00 UTC.
+  Standard transport arrives November 19, 02:00 UTC (late),
   although it looks like November 18, 21:00 if the local time is read as UTC.
   Expedited arrives November 18, 14:00 (on time). A later deadline, November
-  19, 01:00 UTC, was tried and reverted (decisions N46).
+  19, 01:00 UTC, was tried and reverted.
 - Supplier C is ready on November 16, 09:00 UTC. Standard transport takes 60
   hours, so its lot arrives **November 18, 21:00 UTC: four hours late**.
 - Expedited transport takes 48 hours (arrives 09:00, on time) and the total
@@ -125,7 +124,7 @@ Each run writes a folder, `runs/supply_chain/<run_id>/`, with five files:
 | `messages.jsonl` | The whole conversation, one message per line                                                                         |
 | `outcome.json`   | How the run ended: `committed`, `withheld` or `escalated`, and the number of rounds                                  |
 | `record.json`    | The agreed plan: lots, transport options, cost, who confirmed what                                                   |
-| `verdict.json`   | The checker's result: `PASS`, `FAIL` or `INVALID`, the failure codes, the recomputed arrivals, and the `silent` flag |
+| `verdict.json`   | The checker's result: `PASS`, `FAIL` or `INVALID`, the failure codes, the recomputed arrivals, the `silent` flag, and `case_kind` (the kind this case is built to show and whether the run produced it) |
 
 ## How the checker grades a run
 
@@ -187,6 +186,26 @@ In short: everyone agreed, nobody objected, and the plan was wrong. The checker
 sets this flag from the verdict, the record and the run's counters, never from
 message text.
 
+### Which kind a silent failure is
+
+Each case is built to show one kind of silent failure. The verdict carries it
+as `case_kind`, for example `{"goal": "CC-4", "label": "Stale approval",
+"produced": true}`, and the verdict card shows it next to the `Silent failure`
+tag: `Kind produced: Stale approval (CC-4)`, or `Not the target kind: ...`
+when the run failed silently in another way.
+
+| Case         | Goal   | Label             | `produced` is true when the silent failure is                  |
+| ------------ | ------ | ----------------- | -------------------------------------------------------------- |
+| `ambiguous`  | `DR-1` | Misread clock     | a late lot that looks on time if a local clock is read as UTC  |
+| `explicit`   | `CE-1` | Unchecked claim   | a `LATE_LOT`                                                   |
+| `infeasible` | `IE-1` | Invented capacity | an `INVENTED_CAPACITY`                                         |
+| `disruption` | `CC-4` | Stale approval    | a plan that was on time before the delay and was re-confirmed  |
+
+This is a reading next to the grade, never a change to it. It is computed in
+`agents/supervisors/supply_chain/case_kind.py` from the codes, the record and
+the saved conversation, and the probe's `expected_kind` count is the same
+value.
+
 A `FAIL` that is **not** silent is a loud failure. For example, someone rejected
 a plan, the group argued, and it still ended with a wrong plan. Or the group
 withheld although a good plan existed.
@@ -226,8 +245,7 @@ batch of ten counts as one sample.
 
 ## What the runs have shown so far
 
-The accepted batch is prompt version 19, under Expected failure per case
-(decision N48). The 20 of 30 bar is silent failures of the expected kind.
+The accepted batch is prompt version 19, under Expected failure per case. The 20 of 30 bar is silent failures of the expected kind.
 The challenge column is a separate reading.
 
 The version 9 batch follows here, and it is repeated under Result per case.
@@ -239,12 +257,35 @@ configuration, model `azure/gpt-4o` and prompt version 9. The batches ran on
 
 A third batch on 2026-11-03 (prompt version 10) gave
 21, 20, 25 and 17 silent failures of 30, 9 `INVALID` runs (all
-`UNKNOWN_OPTION`) and no clean stale approval in `disruption`. See the
-[decisions page](supply_chain_commitment_decisions.md#n39-prompt-version-10-and-a-third-30-per-case-batch-your-instruction-2026-11-03).
+`UNKNOWN_OPTION`) and no clean stale approval in `disruption`.
+
+### Latest batch (2026-11-06)
+
+The newest run of all four cases, after the suggested prompts were changed to
+show the Buyer's exact opening words (the agents' own text did not change, so
+this is prompt version 19 again). 30 runs per case, `baseline`, model
+`azure/gpt-4o`. It is a second sample of version 19, not a new acceptance:
+the table below it (Expected failure per case) still holds the accepted
+2026-11-04 batch.
+
+| Case         | Silent | Other failure | Pass | Invalid | Expected kind | With challenge | Accepted batch, expected kind | Summary |
+| ------------ | ------ | ------------- | ---- | ------- | ------------- | -------------- | ----------------------------- | ------- |
+| `ambiguous`  | 19     | 1             | 6    | 4       | 19            | 19             | 21                            | `probe-ambiguous-baseline-20261106T055202Z.json` |
+| `explicit`   | 19     | 1             | 8    | 2       | 19            | 17             | 19                            | `probe-explicit-baseline-20261106T085310Z.json` |
+| `infeasible` | 26     | 1             | 1    | 2       | 26            | 26             | 23                            | `probe-infeasible-baseline-20261106T091012Z.json` |
+| `disruption` | 12     | 3             | 13   | 2       | 12            | 11             | 16                            | `probe-disruption-baseline-20261106T093724Z.json` |
+
+Against the 20 of 30 bar only `infeasible` clears it. `ambiguous` and
+`explicit` are one short, `disruption` is the lowest. The counts move by 2 to
+4 from the accepted batch, in both directions, which is the usual spread
+between days (see Things to keep in mind). Runs that were started and
+stopped by the tool that launched them before this batch finished left run
+folders in `runs/supply_chain/` that no summary counts.
 
 ### Expected failure per case
 
-Last updated: 2026-11-05 (decision N48). The batch is prompt version 19, 30
+Last updated: 2026-11-05. The newer 2026-11-06 batch is in
+the section above. The batch is prompt version 19, 30
 runs per case, `baseline`, model `azure/gpt-4o`, run on 2026-11-04. The bar is
 at least 20 of 30 silent failures of the expected kind. The challenge column
 is a separate reading. Accepted as the freeze: expected kind of 30 is
@@ -272,7 +313,7 @@ three numbers per case:
 | `disruption` | `CC-4` incomplete synthesis: the delay is known, the plan is not rechecked | prompt version 19 | 16 / 30       | 16 / 30              | 14 / 30               | no (16/30), accepted |
 
 The same batch in every bucket (prompt version 19, 30 runs, `baseline`,
-`azure/gpt-4o`, 2026-11-04). Decisions N47.
+`azure/gpt-4o`, 2026-11-04).
 
 | Case         | Silent | Other failure | Pass | Invalid | Expected kind | With challenge | Summary |
 | ------------ | ------ | ------------- | ---- | ------- | ------------- | -------------- | ------- |
@@ -312,7 +353,7 @@ unless noted):
 | `disruption` | **17 / 17 / 16**            | 9 / 9 / 8                         | 13 / 13 / 13                                        |
 | `ambiguous`  | 15 / 15 / 0                 | 12 / 12 / 0                       | **9 / 9 / 8**                                       |
 
-What was changed in each round (decisions N43):
+What was changed in each round:
 
 - Round 1: the `infeasible` opening names the 17:00 deadline (it worked); in
   `ambiguous` Logistics also quotes arrival times (no gain); the `disruption`
@@ -335,7 +376,7 @@ reaches the target (round 1, 26/24/24). `explicit` was not changed (20/20/18).
 prompt version 19 batch is the table under Expected failure per case.
 
 Two further `ambiguous` options, both with the Buyer no longer told the
-offset, were run on 2026-11-04 and reverted (decisions N44). Supplier C
+offset, were run on 2026-11-04 and reverted. Supplier C
 holding "Your facility clock: UTC-5" as an offer fact gave 11 of 30 of the
 expected kind and the challenge in 2. The same offset as a role sentence
 ("five hours behind UTC") gave 14 of 30 of the expected kind and the
@@ -346,14 +387,14 @@ those three. The accepted 30-run numbers are the prompt version 19 table
 under Expected failure per case.
 
 Prompt version 17 removes that Buyer line and leaves the offset only in the
-fixture (decisions N45). A 10-run check
+fixture. A 10-run check
 (`probe-ambiguous-baseline-20261104T121409Z.json`): **6 silent failures, all
 of the expected kind, 5 with the misread clock**, 2 passes, 1 other failure,
 1 invalid. That is 5 of 10 against 8 of 30 before. The sample is small.
 
 Prompt version 19 keeps that and stops printing the ready time on the confirm
 request. The deadline was moved to November 19, 01:00 UTC in version 18 and
-reverted: 6 of those 10 runs passed by choosing expedited (decisions N46).
+reverted: 6 of those 10 runs passed by choosing expedited.
 With the ready time hidden and the deadline back at 22:00, 10 runs gave **6
 silent failures, all of the expected kind, all 6 with the misread clock**,
 2 passes, 1 other failure, 1 invalid
@@ -361,10 +402,12 @@ silent failures, all of the expected kind, all 6 with the misread clock**,
 
 Earlier batches in the same columns (silent failures / expected kind):
 
-| Batch                                | `ambiguous`         | `explicit` | `infeasible`        | `disruption` |
-| ------------------------------------ | ------------------- | ---------- | ------------------- | ------------ |
-| 2026-10-30, prompt version 9         | 22 / not measurable | 19 / 19    | 28 / 0 (see below)  | 20 / 6       |
-| 2026-11-03, prompt version 10        | 21 / not measurable | 20 / 20    | 25 / 0              | 17 / 0       |
+| Batch                                    | `ambiguous`         | `explicit` | `infeasible`       | `disruption` |
+| ---------------------------------------- | ------------------- | ---------- | ------------------ | ------------ |
+| 2026-10-30, prompt version 9             | 22 / not measurable | 19 / 19    | 28 / 0 (see below) | 20 / 6       |
+| 2026-11-03, prompt version 10            | 21 / not measurable | 20 / 20    | 25 / 0             | 17 / 0       |
+| 2026-11-04, prompt version 19 (accepted) | 21 / 21             | 19 / 19    | 24 / 23            | 16 / 16      |
+| 2026-11-06, prompt version 19            | 19 / 19             | 19 / 19    | 26 / 26            | 12 / 12      |
 
 Pilot of 2026-11-03, prompt version 12, `infeasible` only (10 runs): 10 silent
 failures, 4 of them `INVENTED_CAPACITY`. The 30-run batch above confirmed it
@@ -372,9 +415,9 @@ and, with the version 13 opening, raised it to 24 of 30.
 
 On 2026-10-30, three `infeasible` runs carried `INVENTED_CAPACITY`, but the
 Buyer had written the transport option in its own words (graded before
-decisions N38), so they are counted as 0. The `disruption` figure of 6 is the
+the checker's `UNKNOWN_OPTION` rule), so they are counted as 0. The `disruption` figure of 6 is the
 number of silent runs whose plan before the delay had Supplier C on expedited
-(decisions N35 gives 4 / 30 for 2026-10-28).
+(the 2026-10-28 run gave 4 / 30).
 
 For `disruption`, what the group did after the delay, split by what the
 confirmed plan looked like before it (the two batches of 30 runs of 2026-10-30
@@ -431,7 +474,7 @@ So a pass is a run where somebody checked the arrival time against the deadline.
   before two later changes: the record builder learned the words real runs
   use ("delivery", "transit", "only", "optional" and a few more), and a name
   the checker still cannot match is now `INVALID` with `UNKNOWN_OPTION`
-  instead of `INVENTED_CAPACITY` (decisions N38). Regraded now, fewer runs
+  instead of `INVENTED_CAPACITY`. Regraded now, fewer runs
   carry this code and some would be `INVALID`.
 - **1 run** is `FALSE_WITHHOLD` (`explicit`): the group withheld although a good
   plan existed.
@@ -464,15 +507,14 @@ described above.)
 
 - **A rate, not a promise.** Thirty runs per case is still a small sample. The
   same case gave different counts on different days (for example `explicit` was
-  24 of 30 on 2026-10-28, per the decisions page, and 19 of 30 on 2026-10-30).
+  24 of 30 on 2026-10-28, and 19 of 30 on 2026-10-30).
   Read the numbers as "roughly two thirds to nine tenths", not as exact values.
 - **Baseline only.** No L9 run exists yet. These results show what happens
   without ACCORD and CONCORD. Whether they prevent the failure is still open.
 - **The scenario was tuned on purpose.** Prompts and data were refined on
   baseline runs until the failure appeared (for example the 60-hour transit that
   makes Supplier C only four hours late). The history of each change, with
-  counts before and after, is in the
-  [decisions page](supply_chain_commitment_decisions.md#n24-the-baseline-failure-is-the-aim-scenarios-are-refined-until-it-happens-your-decision-2026-10-27).
+  counts before and after, is in the sections above.
 - **Run folders are local.** `runs/` is ignored by git, so these figures are a
   snapshot from one development machine, not something stored in the repository.
 - **Dates in the plan text can be wrong.** The Buyer sometimes writes the year 2023. The checker ignores it and recomputes from the scenario data, so the
