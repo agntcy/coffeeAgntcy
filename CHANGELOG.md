@@ -2,11 +2,242 @@
 
 ## Unreleased
 
-- **Directory:** bumps the local Directory stack to **v1.8.0**, the latest server release: `dir-apiserver` and `dir-ctl` images (Lungo and Recruiter compose files, digest-pinned) and the `dirctl` bundled in `Dockerfile.python-agent` (was v1.5.0). `dir-api-server` now has a `grpc-health-probe` healthcheck and `dir-mcp-server` waits for it to be healthy. `apiserver.env` gains the `DIRECTORY_SERVER_POLICY_ENFORCEMENT_*` settings (all `off` by default); the Lungo and Recruiter stacks no longer ship a `server.config.yml`; if you keep a custom copy, sync it with the [v1.8.0 file](https://github.com/agntcy/dir/blob/v1.8.0/install/docker/apiserver.env). The `agntcy-dir` Python SDK (Lungo) moves to **1.8.1**. It needs `protobuf>=7`, so `a2a-sdk` is overridden to **1.2.3** (`agntcy-app-sdk` and `slima2a` pin 1.1.0, which caps `protobuf<7`), and `google-adk` moves to **2.13.0**, because the 2.8.0 release caps OpenTelemetry below the protobuf 7 range.
-- **OASF:** migrates every bundled agent record (Lungo auction, logistics and recruiter supervisors, plus the Recruiter sample agent) to OASF schema **1.1.0**, the version the Directory v1.8.0 schema server defaults to. Skill names are now rooted under their category, for example `retrieval_augmented_generation/retrieval_of_information` becomes `ai_ml_engineering/retrieval_augmented_generation/rag_pipeline_construction` (ids move from the 600s to the 70600s), so searches on the old skill names no longer match. The Recruiter's suggested prompt and search-agent instructions use `ai_ml_engineering/agent_orchestration/multi_agent_coordination`. Re-run `lungo/scripts/push_oasf_records.sh` against your Directory to publish the migrated records.
-- **Recruiter:** `dirctl mcp serve` no longer exists in Directory v1.8.0, so the OASF schema-discovery tools are now served by the standalone [`dir-mcp`](https://github.com/agntcy/dir-mcp) binary (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`, digest-pinned and copied into the `agent-with-dirctl` image as `dir-mcp`). The `dir-mcp-server` compose service uses the same image. If you run the Recruiter outside Docker, install `dir-mcp` on your `PATH` too. Added unit tests for the discovery toolset wiring. Publish the OASF records again after upgrading a local Directory (`lungo/scripts/push_oasf_records.sh`) if the Recruiter finds no agents.
-- **UI / Helm:** the Lungo UI shows Directory **v1.8.0** (`VITE_DIRECTORY_VERSION`); the `ui` chart moves to 0.1.7 and `lungo-local-cluster` to 0.7.3.
-- **Helm:** the `auction-supervisor`, `logistics-supervisor`, `recruiter-supervisor` and `colombia-farm` charts (0.2.0) gain `config.workflowApiUrl` and `config.workflowApiKey`, rendered into the ConfigMap as `WORKFLOW_API_URL` / `WORKFLOW_API_KEY` when set. Without them a Helm-deployed agent falls back to `http://localhost:9105` and logs `Workflow catalog GET failed (ConnectError: [Errno 111] Connection refused)`. `lungo-local-cluster` (0.6.0) sets both for these agents (key from the `WORKFLOW_API_KEY` env var, default `TheAnswerIs42`).
+## 0.5.0 (2026-11-06)
+
+Lungo and Corto move to **SLIM 2.2**, **A2A 1.x**, and **App SDK 0.6.1**. The local **Directory** stack moves to **v1.8.0** (OASF 1.1.0). Lungo gains the **Supply Chain Commitment** baseline: five agents, a commitment record, and a checker that can mark a clean-looking agreement as a silent failure.
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>SLIM 2.2 and A2A 1.x</strong> - Lungo and Corto only; Recruiter stays on A2A 0.3</summary>
+
+- Lungo and Corto now run `agntcy-app-sdk` **0.6.1**, `slim-bindings` **2.2.0**, `slima2a` **0.8.0**, and the SLIM **2.2.0** image. Corto uses `a2a-sdk` **1.1.0**. Lungo overrides `a2a-sdk` to **1.2.3** because Directory's SDK needs protobuf 7 ([#846](https://github.com/agntcy/coffeeAgntcy/pull/846), [#847](https://github.com/agntcy/coffeeAgntcy/pull/847), [#856](https://github.com/agntcy/coffeeAgntcy/pull/856)).
+- `SLIM_SHARED_SECRET` must be at least 32 characters. SLIM 2.x rejects anything shorter. If it is unset, empty, or the public app-sdk placeholder, a server that builds a card exits unless `SLIM_ALLOW_PLACEHOLDER_SECRET=true`. That flag defaults to false in code. Docker Compose, `.env.example`, and the integration tests set it true for local runs. Do not enable it in a shared deployment.
+- Agent cards list transports in `supported_interfaces`. The old `preferred_transport` field is gone. The Recruiter supervisor still speaks A2A 0.3, and the Lungo farms still answer v0.3 JSON-RPC for the Recruiter interviewer.
+- `ioa-observe-sdk` **1.0.49** exports OTLP logs. Collectors that only had traces and metrics answered `/v1/logs` with 404. Compose and the Lungo Helm collector config now have a logs pipeline.
+</details>
+
+<details>
+<summary><strong>Directory v1.8.0 and OASF 1.1.0</strong> - skill names and <code>dirctl mcp serve</code> moved</summary>
+
+- Lungo and Recruiter compose files run `dir-apiserver` and `dir-ctl` **v1.8.0**. The API server image now has a `grpc-health-probe` healthcheck, and dependents wait for it ([#852](https://github.com/agntcy/coffeeAgntcy/pull/852)).
+- `apiserver.env` drops the removed OASF schema URL and adds `DIRECTORY_SERVER_POLICY_ENFORCEMENT_*` (all `off` by default). There is no bundled `server.config.yml`. If you keep a custom env file, sync it with the [v1.8.0 apiserver.env](https://github.com/agntcy/dir/blob/v1.8.0/install/docker/apiserver.env).
+- The Lungo `agntcy-dir` SDK is **1.8.1**. It needs `protobuf>=7`, which pulls `a2a-sdk` **1.2.3** and `google-adk` **2.13.0** on Lungo. Recruiter's Python lockfile is unchanged (`agntcy-dir` 1.0.0, `a2a-sdk` 0.3.20, `agntcy-app-sdk` 0.5.5).
+- Bundled OASF records move to schema **1.1.0**. Skill names are rooted under their category (`retrieval_augmented_generation/retrieval_of_information` becomes `ai_ml_engineering/retrieval_augmented_generation/rag_pipeline_construction`). Searches on the old names no longer match.
+- `dirctl mcp serve` is gone. Schema discovery is the [`dir-mcp`](https://github.com/agntcy/dir-mcp) binary (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`), copied into the `agent-with-dirctl` image as `dir-mcp`. If you run the Recruiter outside Docker, install `dir-mcp` on `PATH`.
+</details>
+
+<details>
+<summary><strong>NATS, ClickHouse, and the collector images are pinned</strong></summary>
+
+- NATS moves from the floating `nats:latest` tag to **`nats:2.15.0-alpine`** (Helm chart v2) ([#839](https://github.com/agntcy/coffeeAgntcy/pull/839)).
+- ClickHouse in Compose matches the Helm chart: `bitnamilegacy/clickhouse:25.7.5-debian-12-r0`. The Bitnami image reads `CLICKHOUSE_ADMIN_USER` and `CLICKHOUSE_ADMIN_PASSWORD`, not `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD`. The healthcheck is a bash `/dev/tcp` request to `GET /ping` ([#832](https://github.com/agntcy/coffeeAgntcy/pull/832)).
+- The OpenTelemetry collector image is pinned to **0.161.0** instead of `latest`.
+</details>
+
+<details>
+<summary><strong>Helm</strong> - workflow API URL, chart bumps</summary>
+
+- `auction-supervisor`, `logistics-supervisor`, `recruiter-supervisor`, and `colombia-farm` pass `WORKFLOW_API_URL` and `WORKFLOW_API_KEY` when `config.workflowApiUrl` and `config.workflowApiKey` are set. Without them a Helm agent falls back to `http://localhost:9105` and logs a connection refused error ([#824](https://github.com/agntcy/coffeeAgntcy/pull/824)).
+- `lungo-local-cluster` is **0.8.2** and `lungo-ui` is **0.1.8**. `corto-local-cluster` is **0.4.0** (SLIM chart 2.2.0). Run `helm dependency update` in each `local-cluster` chart before upgrading.
+</details>
+
+**Migration steps**
+
+1. Refresh env files, then set a real SLIM secret or explicitly allow the placeholder for a local demo:
+
+   cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+
+   # SLIM_SHARED_SECRET must be at least 32 characters.
+
+   # Local only: SLIM_ALLOW_PLACEHOLDER_SECRET=true
+
+2. Re-sync Python and the Lungo UI after the lockfile bumps:
+
+   cd coffeeAGNTCY/coffee_agents/lungo && uv sync
+   cd frontend && npm ci
+
+3. Directory: point custom `apiserver.env` at the v1.8.0 settings, start the new images, and publish records again with `coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh`. Outside Docker, install `dir-mcp` before starting the Recruiter.
+
+4. Helm: upgrade to `lungo-local-cluster` **0.8.2** and `corto-local-cluster` **0.4.0**. Set `config.workflowApiUrl` (and the key) on agents that emit workflow events. The Supply Chain Buyer is NodePort **30085**.
+
+5. Compose: recreate NATS, ClickHouse, and the collector so the pinned images and the ClickHouse admin env vars take effect. Wipe a local ClickHouse volume if the old upstream image created it.
+
+**Highlights**
+
+<details>
+<summary><strong>Supply Chain Commitment</strong> - baseline scenario on Lungo</summary>
+
+- A new group of five agents (Buyer on port 9095, Suppliers A, B, and C, Logistics) negotiates one coffee shipment. The Buyer moderates over SLIM. Each party only sees its own slice of the scenario ([#856](https://github.com/agntcy/coffeeAgntcy/pull/856)).
+- Every run writes a commitment record and a verdict: `PASS`, `FAIL`, or `INVALID`. A run can be a **silent failure**: everyone confirms, nobody objects, and the checker still says the plan is late, over budget, or otherwise wrong. The UI shows which kind of silent failure the case was built to produce.
+- Compose profile `supply_chain`. Suggested prompts are the four baseline cases (ambiguous, explicit, infeasible, disruption). `l9_hybrid` and `l9_full` are declared and answer "not implemented". Accord and Concord are not in this release.
+- How to run it: [supply_chain_commitment.md](coffeeAGNTCY/coffee_agents/lungo/docs/supply_chain_commitment.md).
+</details>
+
+<details>
+<summary><strong>Corto sommelier tests</strong> - model download no longer fails the suite</summary>
+
+- Loading the embedding model behind a broken proxy no longer aborts collection. The hf-xet downloader is disabled only for the fallback retry, and the load moved into a session fixture that skips the sommelier tests when the model is unavailable ([#860](https://github.com/agntcy/coffeeAgntcy/pull/860)).
+</details>
+
+### Dependencies
+
+Versions that changed since **0.4.1**. Unchanged core pins are not listed (`mcp` 1.30.0, `langgraph` 1.2.11, `agntcy-identity-service-sdk` 0.0.7).
+
+**Lungo backend** (`lungo/uv.lock`): `agntcy-app-sdk` **0.5.5 -> 0.6.1**, `a2a-sdk` **0.3.20 -> 1.2.3**, `slim-bindings` **1.4.0 -> 2.2.0**, `slima2a` **0.3.0 -> 0.8.0**, `ioa-observe-sdk` **1.0.41 -> 1.0.49**, `agntcy-dir` **1.0.0 -> 1.8.1**, `google-adk` **2.8.0 -> 2.13.0**, `google-genai` **2.22.0 -> 2.32.0**, `protobuf` **6.33.6 -> 7.36.2**, `aiohttp` **3.14.3 -> 3.14.4**, `authlib` **1.7.2 -> 1.9.1**, `grpcio` **1.80.0 -> 1.84.0**, `opentelemetry-*` **1.42.1 -> 1.44.0** (instrumentation **0.63b1 -> 0.65b0**), `yarl` **1.24.2 -> 1.25.1**. Adds Directory and sigstore transitive packages (`agntcy-dir-grpc-python`, `sigstore`, `tuf`, `securesystemslib`). Drops `asgi-lifespan`, `langchain-classic`, `langchain-community`, `langchain-text-splitters`, and `tzlocal`.
+
+**Corto backend** (`corto/uv.lock`): `agntcy-app-sdk` **0.5.5 -> 0.6.1**, `a2a-sdk` **0.3.20 -> 1.1.0**, `slim-bindings` **1.4.0 -> 2.2.0**, `slima2a` **0.3.0 -> 0.8.0**, `ioa-observe-sdk` **1.0.41 -> 1.0.49**, `aiohttp` **3.14.3 -> 3.14.4**, `yarl` **1.24.5 -> 1.25.1**. Adds `json-rpc` **1.15.0**. Drops `asgi-lifespan`, `langchain-classic`, `langchain-community`, and `langchain-text-splitters`.
+
+**Recruiter** (`recruiter/uv.lock`): no version changes.
+
+**Lungo frontend** (`lungo/frontend/package-lock.json`): `vite` **6.4.3 -> 6.4.4**. Drops `@types/dompurify` and `@types/uuid` (the libraries ship their own types). Adds `fdir` **6.5.0**.
+
+**Corto exchange frontend** (`corto/exchange/frontend/package-lock.json`): `vite` **6.4.3 -> 6.4.4**. Drops `@types/uuid`.
+
+**Other:** `github.com/a2aproject/a2a-go/v2` **v2.6.0** ([#836](https://github.com/agntcy/coffeeAgntcy/pull/836)). `golang.org/x/net` **v0.60.0** ([#826](https://github.com/agntcy/coffeeAgntcy/pull/826)). NATS image **2.15.0-alpine**. OpenTelemetry collector image **0.161.0**.
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/821">#821</a> - @pregnor - chore: add OSSF best practices badge</summary>
+
+- Adds the OpenSSF Best Practices badge to the project docs.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/817">#817</a> - @pregnor - chore(build,ci): add helm version bump check</summary>
+
+- CI fails when a Helm chart's files change without a later `version` bump in that chart's `Chart.yaml`.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/822">#822</a> - @arpad-csepi - fix(renovate,uv): remove not-pending from pr creation and enforce lockfile sync</summary>
+
+- Renovate no longer treats "not pending" as a reason to skip opening a pull request.
+- Adds a task that checks each `uv.lock` is in sync with its `pyproject.toml`.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/823">#823</a> - @pregnor - chore: fix repo self-compliance issues</summary>
+
+- Archives completed OpenSpec changes, fixes stale script and CI paths, and documents bats and Renovate in the toolchain.
+- Adds the Renovate sync script, tests, and skill, and records the `read-all` workflow permissions baseline.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/826">#826</a> - @agntcy-automation[bot] - chore(deps): update module golang.org/x/net to v0.60.0 [security]</summary>
+
+- Security bump of `golang.org/x/net` to v0.60.0 in the Go module.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/824">#824</a> - @pregnor - fix(helm): workflow API url dep in agents</summary>
+
+- Agent charts can set `WORKFLOW_API_URL` and `WORKFLOW_API_KEY`. Without them, Helm agents were calling `localhost:9105` and failing the workflow catalog request.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/828">#828</a> - @pregnor - chore: pin local tool versions</summary>
+
+- Pins the repo-local CLI toolchain (the tools `task setup` installs) to immutable versions.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/836">#836</a> - @agntcy-automation[bot] - chore(deps): update module github.com/a2aproject/a2a-go/v2 to v2.6.0</summary>
+
+- Bumps the `a2a-send` Go dependency `github.com/a2aproject/a2a-go/v2` to v2.6.0.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/838">#838</a> - @agntcy-automation[bot] - chore(deps): update github actions</summary>
+
+- Renovate bump of the GitHub Actions used by this repository's workflows.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/825">#825</a> - @arpad-csepi - chore(frontend): drop deprecated type packages</summary>
+
+- Removes `@types/dompurify` and `@types/uuid`. `dompurify` 3.4.16 and `uuid` 11.1.1 ship their own TypeScript types.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/841">#841</a> - @pregnor - chore: tweak renovate, helm</summary>
+
+- Renovate opens draft pull requests by default, and its config lives in `renovate.json` rather than a workflow.
+- Adds Helm CLI to the local toolchain, plus chart-lock update and check tasks, and bumps the Corto local-cluster chart versions that had drifted.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/839">#839</a> - @agntcy-automation[bot] - chore(deps): update helm release nats to v2</summary>
+
+- NATS Helm chart moves to v2. Compose pins `nats:2.15.0-alpine` to the same line as the chart, and removes dead chart code. Lungo test teardown was updated for the new server.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/834">#834</a> - @agntcy-automation[bot] - chore(deps): update dependency bats-core/bats-core to v1.14.0</summary>
+
+- Bumps the pinned `bats-core` used for bash tests to v1.14.0.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/843">#843</a> - @agntcy-automation[bot] - chore(deps): update dependency aiohttp to v3.14.4 [security]</summary>
+
+- Security bump of `aiohttp` from 3.14.3 to 3.14.4 in the Lungo and Corto lockfiles.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/844">#844</a> - @agntcy-automation[bot] - chore(deps): update dependency vite to v6.4.4 [security]</summary>
+
+- Security bump of `vite` from 6.4.3 to 6.4.4 in the Lungo and Corto frontends.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/832">#832</a> - @agntcy-automation[bot] - chore(deps): update helm</summary>
+
+- Helm dependency refresh. Compose observability images are aligned with the charts: OpenTelemetry collector **0.161.0**, and Bitnami legacy ClickHouse **25.7.5** with `CLICKHOUSE_ADMIN_USER` / `CLICKHOUSE_ADMIN_PASSWORD`.
+- Grafana, ClickHouse, and the collector log at warning level. Corto's Grafana service is fixed to match.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/846">#846</a> - @misi-bp - feat(lungo): upgrade to SLIM 2.2 and A2A 1.1 (app-sdk 0.6.0)</summary>
+
+- Lungo moves to SLIM 2.2, A2A 1.x, and App SDK 0.6.0. Cards use `supported_interfaces`. The SLIM secret must be 32 characters or longer, with `SLIM_ALLOW_PLACEHOLDER_SECRET` for local placeholders.
+- The collector accepts OTLP logs from `ioa-observe-sdk` 1.0.49. Integration-test image overrides can be scoped to one of Corto, Lungo, or Recruiter. The Recruiter supervisor stays on A2A 0.3.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/847">#847</a> - @misi-bp - feat(corto): upgrade Corto to SLIM 2.2, A2A 1.1 and App SDK 0.6.0</summary>
+
+- Corto gets the same SLIM 2.2, A2A 1.1, and App SDK 0.6.0 upgrade, including the farm chart flag for the placeholder secret and an OTLP logs pipeline in its collector.
+- `corto-farm` goes to 0.3.0 and `corto-local-cluster` to 0.4.0.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/860">#860</a> - @pregnor - fix(corto): make sommelier model load robust</summary>
+
+- The sommelier embedding download no longer uses hf-xet on the certificate-fallback retry, and a failed download skips those tests instead of breaking collection.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/852">#852</a> - @arpad-csepi - chore: bump directory version to the latest</summary>
+
+- Directory API server and `dirctl` images move to v1.8.0, with a gRPC healthcheck. Lungo's `agntcy-dir` SDK moves to 1.8.1, which forces protobuf 7, `a2a-sdk` 1.2.3, and `google-adk` 2.13.0.
+- Bundled OASF records migrate to schema 1.1.0. The Lungo UI shows Directory v1.8.0. `dir-mcp` replaces `dirctl mcp serve`.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/856">#856</a> - @misi-bp - feat(lungo): Add supply chain commitment use-case - baseline scenario</summary>
+
+- Adds the Supply Chain Commitment baseline: Buyer, three suppliers, and logistics, a moderated SLIM session, a commitment record, and a deterministic checker. Silent failures are reported with a case kind on the verdict card.
+- App SDK moves from 0.6.0 to **0.6.1** so closing one SLIM transport no longer drops the connection other transports in the same process still hold. A failed broadcast reports that connection as broken.
+- Compose profile `supply_chain`, images and Helm charts for the three supply-chain services, Buyer NodePort 30085, and `lungo-ui` **0.1.8** / `lungo-local-cluster` **0.8.2**. `l9_hybrid` is not implemented. Suggested prompts quote the Buyer's real opening line.
+</details>
+
+### Contributors
+
+**Returning contributors:** thank you @arpad-csepi.
 
 ## 0.4.1 (2026-10-07)
 
@@ -564,17 +795,17 @@ Synapsis milestone (Internet of Cognition alignment): the Lungo UI graph is now 
 
 1. **Env templates:** refresh from examples (Corto transport vars and Lungo `IOC_*` block changed):
 
-  ```sh
-  cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
-  cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
-  ```
+```sh
+cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
+```
 
 2. **Frontend:** re-sync after the Open UI Kit v2 upgrade:
 
-  ```sh
-  cd coffeeAGNTCY/coffee_agents/lungo/frontend
-  npm ci
-  ```
+```sh
+cd coffeeAGNTCY/coffee_agents/lungo/frontend
+npm ci
+```
 
 3. **Observability + IoC:** if you enable the **`ioc`** profile, note ClickHouse moved to host **`9100`**; the IoC mgmt plane owns **`9000`**.
 
@@ -642,25 +873,25 @@ Synapsis milestone (Internet of Cognition alignment): the Lungo UI graph is now 
 
 **Helm charts**
 
-| Chart | 0.2.1 | 0.3.0 |
-| --- | --- | --- |
-| `lungo-ui` | 0.1.5 | **0.1.6** |
+| Chart                 | 0.2.1 | 0.3.0     |
+| --------------------- | ----- | --------- |
+| `lungo-ui`            | 0.1.5 | **0.1.6** |
 | `corto-local-cluster` | 0.3.0 | **0.3.1** |
-| `corto-exchange` | 0.2.0 | **0.2.1** |
-| `corto-farm` | 0.2.0 | **0.2.1** |
-| `corto-ui` | 0.1.0 | **0.1.1** |
+| `corto-exchange`      | 0.2.0 | **0.2.1** |
+| `corto-farm`          | 0.2.0 | **0.2.1** |
+| `corto-ui`            | 0.1.0 | **0.1.1** |
 
 **Lungo frontend** (`lungo/frontend/package-lock.json`):
 
-| Package | 0.2.1 | 0.3.0 |
-| --- | --- | --- |
-| `@open-ui-kit/core` | ^1.6.0 | **^2.2.3** |
-| `@mui/material`, `@mui/icons-material` | ^7.0.1 | **^7.3.4** |
-| `@mui/system` | - | **^7.3.4** |
-| `react-router-dom` | ^7.13.1 | **^7.18.2** |
-| `undici` | 7.25.0 | **7.29.0** (CVE-2026-13697) |
-| `dompurify` | ^3.3.2 | **3.4.12** (pinned) |
-| `vite` | ^6.4.1 | **^6.4.3** |
+| Package                                | 0.2.1   | 0.3.0                       |
+| -------------------------------------- | ------- | --------------------------- |
+| `@open-ui-kit/core`                    | ^1.6.0  | **^2.2.3**                  |
+| `@mui/material`, `@mui/icons-material` | ^7.0.1  | **^7.3.4**                  |
+| `@mui/system`                          | -       | **^7.3.4**                  |
+| `react-router-dom`                     | ^7.13.1 | **^7.18.2**                 |
+| `undici`                               | 7.25.0  | **7.29.0** (CVE-2026-13697) |
+| `dompurify`                            | ^3.3.2  | **3.4.12** (pinned)         |
+| `vite`                                 | ^6.4.1  | **^6.4.3**                  |
 
 - Adds **`react-error-boundary@^6.1.2`**, **`zustand@^4.5.7`**, dev **`openapi-typescript@^7.10.1`** and **`@testing-library/dom@^10.4.1`**; removes **`axios`** and **`@reactflow/node-resizer`**.
 - Adds **`overrides`** for **`form-data@^4.0.6`**, **`undici@^7.29.0`**, and **`brace-expansion`**.
@@ -974,10 +1205,10 @@ Patch release: **Helm hardening for agentic-workflows-api and lungo-ui**, **Graf
 
 ### Dependencies
 
-| Component | 0.2.0 | 0.2.1 |
-| --- | --- | --- |
+| Component                          | 0.2.0 | 0.2.1     |
+| ---------------------------------- | ----- | --------- |
 | `agentic-workflows-api` Helm chart | 0.1.1 | **0.1.4** |
-| `lungo-ui` Helm chart | 0.1.4 | **0.1.5** |
+| `lungo-ui` Helm chart              | 0.1.4 | **0.1.5** |
 
 No changes to **`lungo/uv.lock`**, **`corto/uv.lock`**, **`recruiter/uv.lock`**, or **`frontend/package-lock.json`** since 0.2.0.
 
@@ -1080,20 +1311,20 @@ Fiber milestone: **Open UI Kit frontend**, **SLIM 1.4 upgrade** (Lungo + Corto),
 
 1. Refresh env templates:
 
-       cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
-       cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
-       cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
+   cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
 
 2. **Frontend dev:** use **Node.js ≥ 24**, then:
 
-       cd coffeeAGNTCY/coffee_agents/lungo/frontend
-       npm ci
+   cd coffeeAGNTCY/coffee_agents/lungo/frontend
+   npm ci
 
 3. **Helm / KinD:** **`helm dependency update`** in **`deployment/helm/local-cluster`**, upgrade to **`lungo-local-cluster@0.5.0`**, then reinstall/upgrade the release.
 
 4. **Docker Compose:** rebuild UI and agents after SLIM/dependency bumps:
 
-       docker compose --profile frontend up --build
+   docker compose --profile frontend up --build
 
 5. **Recruiter (optional):** rebuild the recruiter service if you run the recruit workflow standalone or via Compose.
 
@@ -1133,21 +1364,21 @@ Fiber milestone: **Open UI Kit frontend**, **SLIM 1.4 upgrade** (Lungo + Corto),
 
 ### Dependencies
 
-| Component | 0.1.2 | 0.2.0 |
-| --- | --- | --- |
-| `lungo-local-cluster` Helm chart | 0.4.1 | **0.5.0** |
-| SLIM Helm chart | v0.6.0 | **v1.4.0** |
-| `lungo-ui` Helm chart | 0.1.2 | **0.1.4** |
-| Lungo agent/MCP subcharts | 0.1.1 | **0.1.2** |
-| `agentic-workflows-api` subchart | 0.1.0 | **0.1.1** |
+| Component                        | 0.1.2  | 0.2.0      |
+| -------------------------------- | ------ | ---------- |
+| `lungo-local-cluster` Helm chart | 0.4.1  | **0.5.0**  |
+| SLIM Helm chart                  | v0.6.0 | **v1.4.0** |
+| `lungo-ui` Helm chart            | 0.1.2  | **0.1.4**  |
+| Lungo agent/MCP subcharts        | 0.1.1  | **0.1.2**  |
+| `agentic-workflows-api` subchart | 0.1.0  | **0.1.1**  |
 
 **Lungo** (`lungo/uv.lock`):
 
-| Package | 0.1.2 | 0.2.0 |
-| --- | --- | --- |
-| `langgraph` | 1.0.7 | **1.2.2** |
-| `mcp` | 1.26.0 | **1.27.1** |
-| `slim-bindings` | 1.1.0 | **1.4.0** |
+| Package         | 0.1.2  | 0.2.0      |
+| --------------- | ------ | ---------- |
+| `langgraph`     | 1.0.7  | **1.2.2**  |
+| `mcp`           | 1.26.0 | **1.27.1** |
+| `slim-bindings` | 1.1.0  | **1.4.0**  |
 
 Unchanged from 0.1.2 in Lungo: `agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `ioa-observe-sdk` 1.0.41, `agntcy-identity-service-sdk` 0.0.7.
 
@@ -1310,14 +1541,14 @@ Patch release: **runtime UI env injection** for Helm/KinD, **workflow-utils refa
 
 1. Refresh Lungo env templates:
 
-       cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
-       cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
 
 2. **Helm / KinD:** upgrade to **`lungo-ui@0.1.2`**, set **`configs.env.data`** for all **`VITE_*`** keys, then upgrade the release.
 
 3. **Docker Compose:** rebuild the UI (and otel-collector if you changed OTEL env vars):
 
-       docker compose --profile frontend up --build
+   docker compose --profile frontend up --build
 
 4. **ClickHouse observability (optional):** with the **`observability`** profile, uncomment the **`OTELCOL_*`** ClickHouse lines in **`lungo/.env`** per **`.env.example`**.
 
@@ -1351,8 +1582,8 @@ Patch release: **runtime UI env injection** for Helm/KinD, **workflow-utils refa
 
 ### Dependencies
 
-| Component | 0.1.1 | 0.1.2 |
-| --- | --- | --- |
+| Component             | 0.1.1 | 0.1.2     |
+| --------------------- | ----- | --------- |
 | `lungo-ui` Helm chart | 0.1.1 | **0.1.2** |
 
 Resolved **Python** pins in `lungo/uv.lock` and **npm** pins in `lungo/frontend/package-lock.json` are unchanged from 0.1.1 (`agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `ioa-observe-sdk` 1.0.41, `mcp` 1.26.0, `langgraph` 1.0.7).
@@ -1476,25 +1707,27 @@ Patch release: **authenticated Agentic Workflows API**, **Helm/KinD fixes** for 
 
 1. Set matching workflow API credentials in backend and frontend:
 
-       # lungo/.env
-       WORKFLOW_API_KEY=TheAnswerIs42
-       WORKFLOW_API_URL=http://agentic-workflows-api:9105
+   # lungo/.env
 
-       # frontend/.env
-       VITE_AGENTIC_WORKFLOWS_API_KEY=TheAnswerIs42
+   WORKFLOW_API_KEY=TheAnswerIs42
+   WORKFLOW_API_URL=http://agentic-workflows-api:9105
+
+   # frontend/.env
+
+   VITE_AGENTIC_WORKFLOWS_API_KEY=TheAnswerIs42
 
 2. Refresh env templates on upgrade:
 
-       cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
-       cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
 
 3. **Helm / KinD:** upgrade to **`lungo-local-cluster@0.4.1`**, run `helm dependency update`, use NodePort **30084** for the API (or port-forward):
 
-       kubectl port-forward svc/lungo-local-cluster-agentic-workflows-api 9105:9105
+   kubectl port-forward svc/lungo-local-cluster-agentic-workflows-api 9105:9105
 
 4. **Docker:** rebuild after pull - root `.dockerignore`, `uv` base images, and BuildKit cache paths changed ([#600](https://github.com/agntcy/coffeeAgntcy/pull/600), [#581](https://github.com/agntcy/coffeeAgntcy/pull/581), [#596](https://github.com/agntcy/coffeeAgntcy/pull/596)):
 
-       docker compose --profile frontend up --build
+   docker compose --profile frontend up --build
 
 **Highlights**
 
@@ -1533,20 +1766,20 @@ Patch release: **authenticated Agentic Workflows API**, **Helm/KinD fixes** for 
 
 ### Dependencies
 
-| Component | 0.1.0 | 0.1.1 |
-| --- | --- | --- |
-| `uv` policy (`exclude-newer`, Lungo/Corto/Recruiter) | - | **28 days** |
-| npm policy (`min-release-age`, Lungo/Corto frontends) | - | **28 days** |
-| `@open-ui-kit/core` (Lungo `package-lock.json`) | 1.4.0 | **1.4.2** |
-| `styled-components` (Lungo) | 6.3.11 | **6.4.0** |
-| `lodash` (Lungo) | 4.17.23 | **4.18.1** |
-| `postcss` (Lungo) | 8.5.6 | **8.5.10** |
-| `dompurify` (Lungo) | 3.3.2 | **3.4.0** |
-| `follow-redirects` (Lungo) | 1.15.11 | **1.16.0** |
-| `lungo-local-cluster` Helm chart | 0.2.0 | **0.4.1** |
-| `lungo-ui` Helm chart | 0.1.0 | **0.1.1** |
-| Lungo service subcharts (farms, MCP, supervisors, etc.) | 0.1.0 | **0.1.1** |
-| `agentic-workflows-api` Helm subchart | 0.0.2 | **0.1.0** |
+| Component                                               | 0.1.0   | 0.1.1       |
+| ------------------------------------------------------- | ------- | ----------- |
+| `uv` policy (`exclude-newer`, Lungo/Corto/Recruiter)    | -       | **28 days** |
+| npm policy (`min-release-age`, Lungo/Corto frontends)   | -       | **28 days** |
+| `@open-ui-kit/core` (Lungo `package-lock.json`)         | 1.4.0   | **1.4.2**   |
+| `styled-components` (Lungo)                             | 6.3.11  | **6.4.0**   |
+| `lodash` (Lungo)                                        | 4.17.23 | **4.18.1**  |
+| `postcss` (Lungo)                                       | 8.5.6   | **8.5.10**  |
+| `dompurify` (Lungo)                                     | 3.3.2   | **3.4.0**   |
+| `follow-redirects` (Lungo)                              | 1.15.11 | **1.16.0**  |
+| `lungo-local-cluster` Helm chart                        | 0.2.0   | **0.4.1**   |
+| `lungo-ui` Helm chart                                   | 0.1.0   | **0.1.1**   |
+| Lungo service subcharts (farms, MCP, supervisors, etc.) | 0.1.0   | **0.1.1**   |
+| `agentic-workflows-api` Helm subchart                   | 0.0.2   | **0.1.0**   |
 
 Resolved **Python** pins in `lungo/uv.lock` are unchanged from 0.1.0 (`agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `ioa-observe-sdk` 1.0.41, `mcp` 1.26.0, `langgraph` 1.0.7). The lockfile records the new **28-day** `exclude-newer-span` metadata from [#559](https://github.com/agntcy/coffeeAgntcy/pull/559).
 
@@ -1633,8 +1866,6 @@ Resolved **Python** pins in `lungo/uv.lock` are unchanged from 0.1.0 (`agntcy-ap
 - **`lungo-ui@0.1.1`** and Lungo service subcharts **0.1.1** for workflow API key propagation from #571.
 </details>
 
-
-
 <details>
 <summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/604">#604</a> - @pregnor - release: 0.1.1</summary>
 
@@ -1670,27 +1901,27 @@ Milestone release: **live workflow-instance events** on the backend and **dynami
 
 1. From `coffeeAGNTCY/coffee_agents/lungo/`:
 
-    ```sh
-    cp .env.example .env
-    cp frontend/.env.example frontend/.env
-    ```
+   ```sh
+   cp .env.example .env
+   cp frontend/.env.example frontend/.env
+   ```
 
 2. In `lungo/.env`, set transport (minimal SLIM setup):
 
-    ```env
-    DEFAULT_MESSAGE_TRANSPORT=SLIM
-    SLIM_SERVER="slim:46357"
-    NATS_SERVER="nats:4222"
-    SLIM_SHARED_SECRET="<random-32plus-chars>"
-    ```
+   ```env
+   DEFAULT_MESSAGE_TRANSPORT=SLIM
+   SLIM_SERVER="slim:46357"
+   NATS_SERVER="nats:4222"
+   SLIM_SHARED_SECRET="<random-32plus-chars>"
+   ```
 
    For NATS instead: `DEFAULT_MESSAGE_TRANSPORT=NATS` and ensure NATS is running.
 
 3. In `lungo/frontend/.env`, point the UI at the new API (example):
 
-    ```env
-    VITE_AGENTIC_WORKFLOWS_API_URL=http://127.0.0.1:9105
-    ```
+   ```env
+   VITE_AGENTIC_WORKFLOWS_API_URL=http://127.0.0.1:9105
+   ```
 
 4. Reconcile `COMPOSE_PROFILES` with how you run the UI (Compose `frontend` profile vs `npm run dev`).
 5. Reinstall Python deps: `uv sync` in `lungo/`, `corto/`, and `recruiter/` as needed.
@@ -1709,63 +1940,63 @@ Milestone release: **live workflow-instance events** on the backend and **dynami
 
 ### Dependencies
 
-| Component | 0.0.77 | 0.1.0 |
-| --- | --- | --- |
-| [AGNTCY App SDK](https://github.com/agntcy/app-sdk) (Lungo) | 0.4.7 | **0.5.5** |
-| [A2A Python SDK](https://github.com/a2aproject/a2a-python) (Lungo) | 0.3.2 | **0.3.20** |
-| [AGNTCY Directory](https://github.com/agntcy/dir) (`agntcy-dir`, Lungo dev) | ≥ 0.6.0 | **1.0.0** |
-| [Observe SDK](https://github.com/agntcy/observe) (Lungo) | 1.0.34 | **1.0.41** |
-| `slim-bindings` / `slima2a` (Lungo) | - | **1.1.0** / **0.3.0** |
-| `langchain-litellm` (Lungo, Corto, Recruiter) | ≥ 0.3.0 | **== 0.3.5** |
-| `litellm` (Corto, Recruiter) | ≥ 1.82.0 | **== 1.82.1** |
-| `axios` (Corto/Lungo frontends) | ^1.13.0 | **1.13.5** |
+| Component                                                                   | 0.0.77   | 0.1.0                 |
+| --------------------------------------------------------------------------- | -------- | --------------------- |
+| [AGNTCY App SDK](https://github.com/agntcy/app-sdk) (Lungo)                 | 0.4.7    | **0.5.5**             |
+| [A2A Python SDK](https://github.com/a2aproject/a2a-python) (Lungo)          | 0.3.2    | **0.3.20**            |
+| [AGNTCY Directory](https://github.com/agntcy/dir) (`agntcy-dir`, Lungo dev) | ≥ 0.6.0  | **1.0.0**             |
+| [Observe SDK](https://github.com/agntcy/observe) (Lungo)                    | 1.0.34   | **1.0.41**            |
+| `slim-bindings` / `slima2a` (Lungo)                                         | -        | **1.1.0** / **0.3.0** |
+| `langchain-litellm` (Lungo, Corto, Recruiter)                               | ≥ 0.3.0  | **== 0.3.5**          |
+| `litellm` (Corto, Recruiter)                                                | ≥ 1.82.0 | **== 1.82.1**         |
+| `axios` (Corto/Lungo frontends)                                             | ^1.13.0  | **1.13.5**            |
 
 ### Changeset
 
-| ID | Author | Title |
-| --- | --- | --- |
-| [#492](https://github.com/agntcy/coffeeAgntcy/pull/492) | codyhartsook | hotfix(litellm): pin litellm version in corto and recruter to 1.82.1 |
-| [#494](https://github.com/agntcy/coffeeAgntcy/pull/494) | delthazor | (fix) Update incorrect OASF records |
-| [#493](https://github.com/agntcy/coffeeAgntcy/pull/493) | codyhartsook | chore: pin langchain-litellm to 0.5.3 |
-| [#491](https://github.com/agntcy/coffeeAgntcy/pull/491) | mihaialexandrescu | chore: use tests folder name also under Recruiter |
-| [#489](https://github.com/agntcy/coffeeAgntcy/pull/489) | mihaialexandrescu | feat: update pytest integration tests command |
-| [#490](https://github.com/agntcy/coffeeAgntcy/pull/490) | delthazor | Update OASF push script |
-| [#501](https://github.com/agntcy/coffeeAgntcy/pull/501) | misi-bp | [Docker]: Separate UI profile & add UI local running |
-| [#503](https://github.com/agntcy/coffeeAgntcy/pull/503) | pregnor | chore(dep,lungo,recruiter): upgrade dir to v1.0.0 |
-| [#504](https://github.com/agntcy/coffeeAgntcy/pull/504) | pregnor | chore(lungo,frontend): sync frontend deps |
-| [#502](https://github.com/agntcy/coffeeAgntcy/pull/502) | pregnor | test(recruiter,cache): fix flaky cache hit time |
-| [#468](https://github.com/agntcy/coffeeAgntcy/pull/468) | delthazor | Initial approach for state message schema |
-| [#498](https://github.com/agntcy/coffeeAgntcy/pull/498) | codyhartsook | Add Claude Code plugin for agent discovery and A2A messaging |
-| [#507](https://github.com/agntcy/coffeeAgntcy/pull/507) | pregnor | chore(corto,lungo): pin axios to 1.13.5 |
-| [#506](https://github.com/agntcy/coffeeAgntcy/pull/506) | pregnor | chore(recruiter,claude,plugin): fix abs tmp path |
-| [#508](https://github.com/agntcy/coffeeAgntcy/pull/508) | pregnor | feat(lungo,schema): gen event schema types |
-| [#511](https://github.com/agntcy/coffeeAgntcy/pull/511) | pregnor | feat(lungo,api,workflow): add skeleton |
-| [#515](https://github.com/agntcy/coffeeAgntcy/pull/515) | pregnor | fix(api,cors): add cors origins |
-| [#521](https://github.com/agntcy/coffeeAgntcy/pull/521) | pregnor | release(helm,APIs): bump CORS helm charts |
-| [#517](https://github.com/agntcy/coffeeAgntcy/pull/517) | mihaialexandrescu | feat: add catalog agentic workflows subAPI endpoints |
-| [#527](https://github.com/agntcy/coffeeAgntcy/pull/527) | pregnor | fix(lungo,agentic-wf): fix path instance ID |
-| [#514](https://github.com/agntcy/coffeeAgntcy/pull/514) | codyhartsook | feat: enable A2A card-driven transport negotiation |
-| [#513](https://github.com/agntcy/coffeeAgntcy/pull/513) | delthazor | Initial version for in-memory state storage |
-| [#505](https://github.com/agntcy/coffeeAgntcy/pull/505) | delthazor | (fix) Auction test flakiness fix for timeout errors |
-| [#526](https://github.com/agntcy/coffeeAgntcy/pull/526) | pregnor | release(lungo,SLIM): update compose,charts with new SLIM transport |
-| [#534](https://github.com/agntcy/coffeeAgntcy/pull/534) | pregnor | test(lungo): fix plugin teardown issue |
-| [#533](https://github.com/agntcy/coffeeAgntcy/pull/533) | delthazor | Remove workflow minimum requirement |
-| [#535](https://github.com/agntcy/coffeeAgntcy/pull/535) | delthazor | Implement SSE endpoints |
-| [#538](https://github.com/agntcy/coffeeAgntcy/pull/538) | misi-bp | feat(lungo icons): Replace icons and unify icon usage |
-| [#536](https://github.com/agntcy/coffeeAgntcy/pull/536) | mihaialexandrescu | feat(lungo): add Skill for jsonschema to pydanticv2 types |
-| [#547](https://github.com/agntcy/coffeeAgntcy/pull/547) | delthazor | Add test env to UI |
-| [#539](https://github.com/agntcy/coffeeAgntcy/pull/539) | delthazor | Implement sub-API middleware endpoints for workflow instance states |
-| [#548](https://github.com/agntcy/coffeeAgntcy/pull/548) | codyhartsook | feat(lungo): propagate workflow context across supervisors (#453) |
-| [#550](https://github.com/agntcy/coffeeAgntcy/pull/550) | pregnor | chore(lungo,env): updated SLIM and NATS serveraddr |
-| [#549](https://github.com/agntcy/coffeeAgntcy/pull/549) | mihaialexandrescu | feat(lungo): update left hand side menu to use agentic-workflows api |
-| [#528](https://github.com/agntcy/coffeeAgntcy/pull/528) | codyhartsook | feat(lungo): emit workflow-instance state progress via A2A middleware (#453) |
-| [#554](https://github.com/agntcy/coffeeAgntcy/pull/554) | mihaialexandrescu | fix(lungo): add scenario field to event stream metadata |
-| [#560](https://github.com/agntcy/coffeeAgntcy/pull/560) | pregnor | docs(README): add milestones as planned |
-| [#551](https://github.com/agntcy/coffeeAgntcy/pull/551) | delthazor | Implement UI workflow instance event endpoints |
-| [#566](https://github.com/agntcy/coffeeAgntcy/pull/566) | misi-bp | fix(heartbreak-release): Icons reset |
-| [#570](https://github.com/agntcy/coffeeAgntcy/pull/570) | pregnor | refactor(wf,lhs): patterns, docs, lhs menu (John) |
-| [#572](https://github.com/agntcy/coffeeAgntcy/pull/572) | codyhartsook | feat(fe,graph): dynamic animations from live workflow events |
-| [#573](https://github.com/agntcy/coffeeAgntcy/pull/573) | isaacc2 | docs(README): corrected grammar |
+| ID                                                      | Author            | Title                                                                        |
+| ------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------- |
+| [#492](https://github.com/agntcy/coffeeAgntcy/pull/492) | codyhartsook      | hotfix(litellm): pin litellm version in corto and recruter to 1.82.1         |
+| [#494](https://github.com/agntcy/coffeeAgntcy/pull/494) | delthazor         | (fix) Update incorrect OASF records                                          |
+| [#493](https://github.com/agntcy/coffeeAgntcy/pull/493) | codyhartsook      | chore: pin langchain-litellm to 0.5.3                                        |
+| [#491](https://github.com/agntcy/coffeeAgntcy/pull/491) | mihaialexandrescu | chore: use tests folder name also under Recruiter                            |
+| [#489](https://github.com/agntcy/coffeeAgntcy/pull/489) | mihaialexandrescu | feat: update pytest integration tests command                                |
+| [#490](https://github.com/agntcy/coffeeAgntcy/pull/490) | delthazor         | Update OASF push script                                                      |
+| [#501](https://github.com/agntcy/coffeeAgntcy/pull/501) | misi-bp           | [Docker]: Separate UI profile & add UI local running                         |
+| [#503](https://github.com/agntcy/coffeeAgntcy/pull/503) | pregnor           | chore(dep,lungo,recruiter): upgrade dir to v1.0.0                            |
+| [#504](https://github.com/agntcy/coffeeAgntcy/pull/504) | pregnor           | chore(lungo,frontend): sync frontend deps                                    |
+| [#502](https://github.com/agntcy/coffeeAgntcy/pull/502) | pregnor           | test(recruiter,cache): fix flaky cache hit time                              |
+| [#468](https://github.com/agntcy/coffeeAgntcy/pull/468) | delthazor         | Initial approach for state message schema                                    |
+| [#498](https://github.com/agntcy/coffeeAgntcy/pull/498) | codyhartsook      | Add Claude Code plugin for agent discovery and A2A messaging                 |
+| [#507](https://github.com/agntcy/coffeeAgntcy/pull/507) | pregnor           | chore(corto,lungo): pin axios to 1.13.5                                      |
+| [#506](https://github.com/agntcy/coffeeAgntcy/pull/506) | pregnor           | chore(recruiter,claude,plugin): fix abs tmp path                             |
+| [#508](https://github.com/agntcy/coffeeAgntcy/pull/508) | pregnor           | feat(lungo,schema): gen event schema types                                   |
+| [#511](https://github.com/agntcy/coffeeAgntcy/pull/511) | pregnor           | feat(lungo,api,workflow): add skeleton                                       |
+| [#515](https://github.com/agntcy/coffeeAgntcy/pull/515) | pregnor           | fix(api,cors): add cors origins                                              |
+| [#521](https://github.com/agntcy/coffeeAgntcy/pull/521) | pregnor           | release(helm,APIs): bump CORS helm charts                                    |
+| [#517](https://github.com/agntcy/coffeeAgntcy/pull/517) | mihaialexandrescu | feat: add catalog agentic workflows subAPI endpoints                         |
+| [#527](https://github.com/agntcy/coffeeAgntcy/pull/527) | pregnor           | fix(lungo,agentic-wf): fix path instance ID                                  |
+| [#514](https://github.com/agntcy/coffeeAgntcy/pull/514) | codyhartsook      | feat: enable A2A card-driven transport negotiation                           |
+| [#513](https://github.com/agntcy/coffeeAgntcy/pull/513) | delthazor         | Initial version for in-memory state storage                                  |
+| [#505](https://github.com/agntcy/coffeeAgntcy/pull/505) | delthazor         | (fix) Auction test flakiness fix for timeout errors                          |
+| [#526](https://github.com/agntcy/coffeeAgntcy/pull/526) | pregnor           | release(lungo,SLIM): update compose,charts with new SLIM transport           |
+| [#534](https://github.com/agntcy/coffeeAgntcy/pull/534) | pregnor           | test(lungo): fix plugin teardown issue                                       |
+| [#533](https://github.com/agntcy/coffeeAgntcy/pull/533) | delthazor         | Remove workflow minimum requirement                                          |
+| [#535](https://github.com/agntcy/coffeeAgntcy/pull/535) | delthazor         | Implement SSE endpoints                                                      |
+| [#538](https://github.com/agntcy/coffeeAgntcy/pull/538) | misi-bp           | feat(lungo icons): Replace icons and unify icon usage                        |
+| [#536](https://github.com/agntcy/coffeeAgntcy/pull/536) | mihaialexandrescu | feat(lungo): add Skill for jsonschema to pydanticv2 types                    |
+| [#547](https://github.com/agntcy/coffeeAgntcy/pull/547) | delthazor         | Add test env to UI                                                           |
+| [#539](https://github.com/agntcy/coffeeAgntcy/pull/539) | delthazor         | Implement sub-API middleware endpoints for workflow instance states          |
+| [#548](https://github.com/agntcy/coffeeAgntcy/pull/548) | codyhartsook      | feat(lungo): propagate workflow context across supervisors (#453)            |
+| [#550](https://github.com/agntcy/coffeeAgntcy/pull/550) | pregnor           | chore(lungo,env): updated SLIM and NATS serveraddr                           |
+| [#549](https://github.com/agntcy/coffeeAgntcy/pull/549) | mihaialexandrescu | feat(lungo): update left hand side menu to use agentic-workflows api         |
+| [#528](https://github.com/agntcy/coffeeAgntcy/pull/528) | codyhartsook      | feat(lungo): emit workflow-instance state progress via A2A middleware (#453) |
+| [#554](https://github.com/agntcy/coffeeAgntcy/pull/554) | mihaialexandrescu | fix(lungo): add scenario field to event stream metadata                      |
+| [#560](https://github.com/agntcy/coffeeAgntcy/pull/560) | pregnor           | docs(README): add milestones as planned                                      |
+| [#551](https://github.com/agntcy/coffeeAgntcy/pull/551) | delthazor         | Implement UI workflow instance event endpoints                               |
+| [#566](https://github.com/agntcy/coffeeAgntcy/pull/566) | misi-bp           | fix(heartbreak-release): Icons reset                                         |
+| [#570](https://github.com/agntcy/coffeeAgntcy/pull/570) | pregnor           | refactor(wf,lhs): patterns, docs, lhs menu (John)                            |
+| [#572](https://github.com/agntcy/coffeeAgntcy/pull/572) | codyhartsook      | feat(fe,graph): dynamic animations from live workflow events                 |
+| [#573](https://github.com/agntcy/coffeeAgntcy/pull/573) | isaacc2           | docs(README): corrected grammar                                              |
 
 ### Contributors
 
@@ -1776,11 +2007,15 @@ Milestone release: **live workflow-instance events** on the backend and **dynami
 ---
 
 ## 0.0.59 (2025-11-24)
+
 ## 🚨 Breaking Changes
+
 ### 🔧 Migration from `cnoe-agent-utils` to `litellm`
+
 We have replaced the internal LLM provider dependency `cnoe-agent-utils` with `litellm` to enable support for a wider range of LLM providers.
 
 **Impact**
+
 - This is a **breaking change**.
 - Environment variables for LLM credentials must be updated in your environment to match the litellm convention for your preferred LLM provider. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 - LLM provider and model must be specified by the LLM_MODEL env variable. Examples:
@@ -1811,7 +2046,9 @@ GROQ_API_KEY=<your_groq_api_key>
 ---
 
 ## 0.0.1 (2025-05-30)
+
 ### Feat
+
 - **Corto Demo**: Completed the implementation of the Corto demo, including:
   - **Frontend**:
     - Developed a React-based frontend for the Corto Exchange
