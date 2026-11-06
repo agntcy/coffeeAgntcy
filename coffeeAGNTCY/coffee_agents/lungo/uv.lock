@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.13.*"
 
 [options]
@@ -7,16 +7,16 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
+a2a-sdk = "2026-10-23T00:00:00Z"
+agntcy-app-sdk = "2026-11-07T00:00:00Z"
+agntcy-dir = "2026-10-23T00:00:00Z"
 agntcy-dir-grpc-python = "2026-10-23T00:00:00Z"
+agntcy-dir-protocolbuffers-python = "2026-10-23T00:00:00Z"
+authlib = "2026-10-23T00:00:00Z"
 google-adk = "2026-10-26T00:00:00Z"
+google-genai = "2026-10-23T00:00:00Z"
 pyjwt = "2026-10-01T00:00:00Z"
 slima2a = "2026-10-14T00:00:00Z"
-google-genai = "2026-10-23T00:00:00Z"
-agntcy-app-sdk = "2026-10-22T00:00:00Z"
-authlib = "2026-10-23T00:00:00Z"
-agntcy-dir-protocolbuffers-python = "2026-10-23T00:00:00Z"
-a2a-sdk = "2026-10-23T00:00:00Z"
-agntcy-dir = "2026-10-23T00:00:00Z"
 
 [manifest]
 constraints = [
@@ -58,7 +58,7 @@ telemetry = [
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.6.0"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk", extra = ["sqlite", "telemetry"] },
@@ -73,9 +73,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/d4/d3d089036f52ce743973c59c7151f086dc5f98e335668b55b23641fb4ebb/agntcy_app_sdk-0.6.0.tar.gz", hash = "sha256:96d5c46e9496646c802d60e0daa682a86f6f34014872c43b66aec954ee18e1cf", size = 3224301, upload-time = "2026-10-21T20:05:39.185Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/b4/432dc6da3fd809f09c6a64f5860ff9f8986c5976537ac227c1da3fee5d71/agntcy_app_sdk-0.6.1.tar.gz", hash = "sha256:5664961ecde0d8d74258f3a11e7b415366985acbb312c282e55ccaa0b93a7c0d", size = 3230482, upload-time = "2026-11-06T10:37:55.501Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/37/7c5af7c89ac644d045045475c9674a8bdacbd2fc809f3c0c45cd6b8527be/agntcy_app_sdk-0.6.0-py3-none-any.whl", hash = "sha256:75fee7e3ca386a31a68fb9a7fad789e6bc49917cd02aa1b23dbaecb51f2f9529", size = 147347, upload-time = "2026-10-21T20:05:37.989Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/72/550f195619708cbf768b5056e288f04156151b81652c8bf4418caee80f72/agntcy_app_sdk-0.6.1-py3-none-any.whl", hash = "sha256:d5ff05bce94f8ec95be2325fb8fe4fd36691af3fd8e7113ba14ca545fe395c3d", size = 149660, upload-time = "2026-11-06T10:37:53.698Z" },
 ]
 
 [[package]]
@@ -612,43 +612,43 @@ wheels = [
 
 [package.optional-dependencies]
 cublas = [
-    { name = "nvidia-cublas", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cuda-nvrtc", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cublas", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cuda-nvrtc", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cudart = [
-    { name = "nvidia-cuda-runtime", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-runtime", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cufft = [
-    { name = "nvidia-cufft", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cufft", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cufile = [
-    { name = "nvidia-cufile", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "nvidia-cufile", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cupti = [
-    { name = "nvidia-cuda-cupti", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-cupti", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 curand = [
-    { name = "nvidia-curand", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-curand", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cusolver = [
-    { name = "nvidia-cublas", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cusolver", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cusparse", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cublas", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cusolver", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cusparse", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cusparse = [
-    { name = "nvidia-cusparse", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cusparse", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvjitlink = [
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvrtc = [
-    { name = "nvidia-cuda-nvrtc", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-nvrtc", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvtx = [
-    { name = "nvidia-nvtx", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-nvtx", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 
 [[package]]
@@ -1985,7 +1985,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==1.2.3" },
-    { name = "agntcy-app-sdk", specifier = "==0.6.0" },
+    { name = "agntcy-app-sdk", specifier = "==0.6.1" },
     { name = "agntcy-dir", marker = "extra == 'dev'", specifier = "==1.8.1" },
     { name = "agntcy-identity-service-sdk", specifier = "==0.0.7" },
     { name = "aiohttp", specifier = "==3.14.4" },
