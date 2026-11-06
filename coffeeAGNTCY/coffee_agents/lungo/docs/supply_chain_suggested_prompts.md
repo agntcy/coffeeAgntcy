@@ -2,11 +2,11 @@
 
 This page explains two things: how the three run types differ, and which
 suggested prompts test which goal. It belongs to the OpenSpec change
-`add-supply-chain-commitment-use-case`. Design decisions are in
-[supply_chain_commitment_decisions.md](supply_chain_commitment_decisions.md).
+`add-supply-chain-commitment-use-case`.
 
 Status: the baseline prompts below are built and the cases behind them are
-being refined (decisions N25 to N27, latest results there). The L9 run types
+being refined (the latest results are in
+[supply_chain_commitment_testing.md](supply_chain_commitment_testing.md)). The L9 run types
 are planned. See [What is built today](#what-is-built-today) for the gap.
 
 ## 1. The three run types
@@ -56,24 +56,28 @@ refinement.
 
 | Goal | What to test | Case | A failure looks like | Example prompt (baseline) |
 |---|---|---|---|---|
-| `DR-1` Different meanings of "delivery" | Do the parties agree on one milestone when the buyer says "delivered by November 18" without naming it? | `ambiguous` | All five confirm a plan that is late at Warehouse W (a silent failure) | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/baseline) |
-| `CE-1` Commitment without a feasibility check | With the milestone stated clearly, does the group still check each lot's arrival before it commits? | `explicit` | The group commits the plan with Supplier C on standard transport, which arrives 4 hours after the 17:00 deadline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/baseline) |
-| `IE-1` Invented capacity | When expedited transport has no capacity, does the group say so, or invent capacity or relax the deadline? | `infeasible` | The group commits a plan although no transport option meets the deadline (Supplier C on standard arrives late) | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/baseline) |
-| `CC-4` Stale approval carried forward | After a commitment, when one supplier's ready time moves a day, is the plan reopened, or is the old approval reused? | `disruption` | The group confirms a plan that Supplier C's delay has made late: the old plan again, or a repaired one that ignores the new ready time | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/baseline) |
+| `DR-1` Different meanings of "delivery" | Do the parties agree on one milestone when the buyer says "delivered by November 18" without naming it? | `ambiguous` | All five confirm a plan that is late at Warehouse W (a silent failure) | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, delivered by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (ambiguous/baseline) |
+| `CE-1` Commitment without a feasibility check | With the milestone stated clearly, does the group still check each lot's arrival before it commits? | `explicit` | The group commits the plan with Supplier C on standard transport, which arrives 4 hours after the 17:00 deadline | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (explicit/baseline) |
+| `IE-1` Invented capacity | When expedited transport has no capacity, does the group say so, or invent capacity or relax the deadline? | `infeasible` | The group commits a plan although no transport option meets the deadline (Supplier C on standard arrives late) | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18, 17:00 UTC. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (infeasible/baseline) |
+| `CC-4` Stale approval carried forward | After a commitment, when one supplier's ready time moves a day, is the plan reopened, or is the old approval reused? | `disruption` | The group confirms a plan that Supplier C's delay has made late: the old plan again, or a repaired one that ignores the new ready time | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (disruption/baseline) |
 
 `explicit` is also the contrast for `DR-1`: it is the same request with the
 milestone named. The deadline's time of day (17:00 UTC) is in the Buyer's own
 brief only in `explicit`, `infeasible` and `disruption`, as in `ambiguous`;
 with the exact time in the opening words every party held it and the
-baseline passed (decisions N27). The mapping of `CE-1` to `explicit` is our reading of the
+baseline passed. The mapping of `CE-1` to `explicit` is our reading of the
 use case, which ties `CE-1` to the false commitment rate rather than to one
 case.
 
 **Summary.** Each goal has one case. Today each case is offered as a
 `baseline` prompt; the L9 prompts follow with the L9 protocols. The headline pair is `ambiguous` with `baseline`
-against `ambiguous` with `L9 hybrid`. The prompt describes the request for
-a person to read. The agents' opening request always comes from the case's
-fixed wording, so every run type of a case starts from the same text.
+against `ambiguous` with `L9 hybrid`. The text of each prompt is
+the exact opening request the Buyer sends to the group in that case (the
+case's `buyer_wording`), followed by the closing tag. Nothing in the prompt
+hints at the failure: the traps are in the data each party holds, not in the
+request. The agents' opening request always comes from the case's fixed
+wording, so every run type of a case starts from the same text. A unit test
+checks that each suggested prompt equals that wording plus its tag.
 
 ### The full prompt list
 
@@ -85,18 +89,18 @@ here, in their final wording, and will be added with the L9 protocols (see
 
 | Goal | Run type | Prompt | Offered |
 |---|---|---|---|
-| `DR-1` | baseline | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/baseline) | Now |
-| `DR-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 hybrid) | Later |
-| `DR-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment delivered by November 18, with total transport cost at or below $20,000 (ambiguous/L9 full) | Later |
-| `CE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/baseline) | Now |
-| `CE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 hybrid) | Later |
-| `CE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000 (explicit/L9 full) | Later |
-| `IE-1` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/baseline) | Now |
-| `IE-1` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 hybrid) | Later |
-| `IE-1` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with expedited transport unavailable (infeasible/L9 full) | Later |
-| `CC-4` | baseline | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/baseline) | Now |
-| `CC-4` | L9 hybrid | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 hybrid) | Later |
-| `CC-4` | L9 full | I'd like to have a 1,000-tonne coffee shipment arrive at Warehouse W by November 18, with total transport cost at or below $20,000, with one supplier reporting a one-day delay after we agree (disruption/L9 full) | Later |
+| `DR-1` | baseline | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, delivered by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (ambiguous/baseline) | Now |
+| `DR-1` | L9 hybrid | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, delivered by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (ambiguous/L9 hybrid) | Later |
+| `DR-1` | L9 full | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, delivered by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (ambiguous/L9 full) | Later |
+| `CE-1` | baseline | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (explicit/baseline) | Now |
+| `CE-1` | L9 hybrid | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (explicit/L9 hybrid) | Later |
+| `CE-1` | L9 full | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (explicit/L9 full) | Later |
+| `IE-1` | baseline | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18, 17:00 UTC. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (infeasible/baseline) | Now |
+| `IE-1` | L9 hybrid | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18, 17:00 UTC. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (infeasible/L9 hybrid) | Later |
+| `IE-1` | L9 full | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18, 17:00 UTC. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (infeasible/L9 full) | Later |
+| `CC-4` | baseline | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (disruption/baseline) | Now |
+| `CC-4` | L9 hybrid | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (disruption/L9 hybrid) | Later |
+| `CC-4` | L9 full | We need 1,000 metric tonnes of Grade 1 washed Arabica, screen 17/18, with arrival at Warehouse W by November 18. Total transport cost must stay at or below $20,000. Please propose how you can cover this. (disruption/L9 full) | Later |
 
 ## 3. How a prompt picks the run
 

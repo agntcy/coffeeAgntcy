@@ -81,8 +81,20 @@ def test_every_prompt_tag_equals_its_case_and_configuration(client):
     from agents.supervisors.supply_chain.selection import parse_tag
 
     for p in client.get("/suggested-prompts").json()["supply_chain"]:
-        assert p["prompt"].startswith("I'd like to have a 1,000-tonne coffee shipment")
         assert parse_tag(p["prompt"]) == (p["case"], p["configuration"])
+
+
+def test_every_prompt_is_the_exact_opening_the_agents_receive(client):
+    """The visible prompt is the Buyer's fixed opening plus the closing tag.
+
+    The agents never read the typed prompt; the case picks their opening. If the
+    two differed, the UI would show the user something the agents do not get.
+    """
+    from agents.supply_chain.common import fixtures as fx
+
+    for p in client.get("/suggested-prompts").json()["supply_chain"]:
+        opening = fx.buyer_slice(p["case"]).opening_wording
+        assert p["prompt"] == f"{opening} ({p['case']}/{p['configuration']})"
 
 
 def test_transport_config_is_slim(client):
