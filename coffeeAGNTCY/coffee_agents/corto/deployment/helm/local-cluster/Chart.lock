@@ -4,13 +4,13 @@ dependencies:
   version: v2.2.0
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
-  version: 2.15.0
+  version: 2.15.1
 - name: clickhouse
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 9.4.4
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  version: 0.174.0
+  version: 0.177.0
 - name: grafana
   repository: oci://ghcr.io/grafana/helm-charts
   version: 10.1.2
@@ -23,5 +23,5 @@ dependencies:
 - name: corto-ui
   repository: file://../corto-ui
   version: 0.1.1
-digest: sha256:188b9dfe13d4213efeba997684a6170575db32cf073914bbe5de996148bd32ab
-generated: "2026-10-22T22:41:27.003722+02:00"
+digest: sha256:856b29faf1da495094d6e25f69e69c10e45f5875e0c8dc12133fea0bc079fbeb
+generated: "2026-11-07T06:13:42.913273179Z"
