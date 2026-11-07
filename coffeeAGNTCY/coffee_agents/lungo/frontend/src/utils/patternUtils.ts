@@ -21,10 +21,7 @@ export const PATTERNS = {
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 export type ChatApiTarget =
-  | "exchange"
-  | "logistics"
-  | "discovery"
-  | "supply_chain"
+  "exchange" | "logistics" | "discovery" | "supply_chain"
 
 /** Resolves the backend app URL for a workflow's `chat_api_target`. */
 export const getApiUrlForChatTarget = (
