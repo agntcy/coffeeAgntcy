@@ -22,9 +22,7 @@ export interface OasfRecord {
 
 /** Node data that may already include a cached OASF record. */
 type NodeDataForOasf =
-  | (CustomNodeData & { oasfRecord?: OasfRecord })
-  | null
-  | undefined
+  (CustomNodeData & { oasfRecord?: OasfRecord }) | null | undefined
 
 const OASF_FETCH_CACHE_MAX = 24
 const oasfFetchCache = new Map<string, OasfRecord>()
