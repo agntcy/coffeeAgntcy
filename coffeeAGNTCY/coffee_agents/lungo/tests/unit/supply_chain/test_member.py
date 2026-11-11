@@ -103,6 +103,14 @@ async def test_confirm_reply_is_structured_json():
     }
 
 
+async def test_confirm_asks_for_strict_structured_output():
+    """Strict on every provider, so the proxy and Azure behave the same."""
+    llm = FakeLLM(ConfirmDecision(decision="confirm", reason="ok"))
+    request = _request(["logistics"], kind="confirm_request", plan_version=1, body="p")
+    await MemberAgent("logistics", llm).handle(request)
+    assert llm.structured_calls == [(ConfirmDecision, {"strict": True})]
+
+
 async def test_ready_time_event_changes_only_that_suppliers_prompt():
     event = _request(
         ["supplier_c"],

@@ -63,13 +63,27 @@ transport cost.
 
 class BuyerDecision(BaseModel):
     action: Literal["continue", "propose_plan", "withhold", "escalate"]
+    # No defaults: Azure strict structured output needs every property in
+    # ``required``. The model answers "" or null for what the action does not use.
     message: str = Field(
-        default="", description="What you say to the group next (for continue)."
+        description='What you say to the group next (for continue), otherwise "".'
     )
     plan: PlanProposal | None = Field(
-        default=None, description="The complete plan (for propose_plan)."
+        description="The complete plan (for propose_plan), otherwise null."
     )
-    reason: str = Field(default="", description="Why (for withhold or escalate).")
+    reason: str = Field(description='Why (for withhold or escalate), otherwise "".')
+
+
+def validate_decision(decision: BuyerDecision) -> None:
+    """Checks that the strict output schema cannot express."""
+    if decision.action == "propose_plan":
+        if decision.plan is None:
+            raise StepFailed("the Buyer proposed a plan without giving one")
+        for lot in decision.plan.lots:
+            if lot.tonnes <= 0:
+                raise StepFailed(
+                    f"the Buyer's plan takes {lot.tonnes:g} t from {lot.supplier}"
+                )
 
 
 class BaselineStrategy:
@@ -94,7 +108,7 @@ class BaselineStrategy:
             ]
         )
         transcript = render_transcript(tuple(moderator.transcript))
-        structured = self._llm().with_structured_output(BuyerDecision)
+        structured = self._llm().with_structured_output(BuyerDecision, strict=True)
         result = await structured.ainvoke(
             [
                 SystemMessage(system),
@@ -104,8 +118,7 @@ class BaselineStrategy:
         decision = (
             BuyerDecision.model_validate(result) if isinstance(result, dict) else result
         )
-        if decision.action == "propose_plan" and decision.plan is None:
-            raise StepFailed("the Buyer proposed a plan without giving one")
+        validate_decision(decision)
         return decision
 
     async def run(self, moderator: Moderator) -> Outcome:

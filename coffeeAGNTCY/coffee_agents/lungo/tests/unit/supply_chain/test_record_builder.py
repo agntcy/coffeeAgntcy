@@ -9,6 +9,7 @@ import pytest
 
 from agents.supervisors.supply_chain import record_builder
 from agents.supervisors.supply_chain.outcome import Outcome, PlanLot, PlanProposal
+from tests.helpers.supply_chain_models import plan_lot, plan_proposal
 from agents.supervisors.supply_chain.record_builder import (
     RunFacts,
     build_record,
@@ -19,21 +20,21 @@ from agents.supply_chain.common.record import Confirmation
 
 
 def _plan(option_c="Expedited transport") -> PlanProposal:
-    return PlanProposal(
+    return plan_proposal(
         lots=[
-            PlanLot(
+            plan_lot(
                 supplier="supplier_a",
                 tonnes=400,
                 grade="G",
                 transport_option="Standard road transport",
             ),
-            PlanLot(
+            plan_lot(
                 supplier="supplier_b",
                 tonnes=350,
                 grade="G",
                 transport_option="standard",
             ),
-            PlanLot(
+            plan_lot(
                 supplier="supplier_c", tonnes=250, grade="G", transport_option=option_c
             ),
         ],

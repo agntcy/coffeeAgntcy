@@ -15,6 +15,7 @@ from agents.supervisors.supply_chain.moderator import (
     StepFailed,
 )
 from agents.supervisors.supply_chain.outcome import Outcome, PlanLot, PlanProposal
+from tests.helpers.supply_chain_models import plan_lot, plan_proposal
 from agents.supply_chain.common.envelope import decode
 from agents.supply_chain.common.member import ConfirmDecision, MemberAgent
 from agents.supply_chain.common.record import Confirmation
@@ -379,10 +380,10 @@ async def test_apostrophes_and_quotes_survive_the_files_and_events(world):
 def _late_plan() -> PlanProposal:
     """An all-standard plan: Supplier C arrives after the deadline."""
     lots = [
-        PlanLot(supplier=s, tonnes=t, grade="G", transport_option="standard")
+        plan_lot(supplier=s, tonnes=t, grade="G", transport_option="standard")
         for s, t in (("supplier_a", 400), ("supplier_b", 350), ("supplier_c", 250))
     ]
-    return PlanProposal(
+    return plan_proposal(
         lots=lots,
         total_cost_usd=15000,
         milestone="destination_receipt",
