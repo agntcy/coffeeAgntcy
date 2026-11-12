@@ -10,41 +10,13 @@ proxy path but rejected with a 400 on the Azure path, which ends the run as
 ``protocol_error``.
 """
 
-from typing import Any
-
 import pytest
 
 from agents.supervisors.supply_chain.outcome import PlanLot, PlanProposal
 from agents.supervisors.supply_chain.selection import _Extracted
 from agents.supervisors.supply_chain.strategies.baseline import BuyerDecision
 from agents.supply_chain.common.member import ConfirmDecision
-
-# Keywords that Azure strict mode does not accept, as far as we have seen.
-UNSUPPORTED = {"exclusiveMinimum", "exclusiveMaximum", "minimum", "maximum"}
-
-
-def _walk(node: Any, path: str = "#"):
-    if isinstance(node, dict):
-        yield path, node
-        for key, value in node.items():
-            yield from _walk(value, f"{path}/{key}")
-    elif isinstance(node, list):
-        for index, value in enumerate(node):
-            yield from _walk(value, f"{path}/{index}")
-
-
-def _violations(model) -> list[str]:
-    found = []
-    for path, node in _walk(model.model_json_schema()):
-        properties = node.get("properties")
-        if isinstance(properties, dict) and "type" in node:
-            missing = set(properties) - set(node.get("required", []))
-            if missing:
-                found.append(f"{path}: not required: {sorted(missing)}")
-        for keyword in UNSUPPORTED & node.keys():
-            if path.rsplit("/", 1)[-1] != "properties":
-                found.append(f"{path}: unsupported keyword {keyword}")
-    return found
+from tests.helpers.supply_chain_schemas import strict_violations
 
 
 @pytest.mark.parametrize(
@@ -53,7 +25,7 @@ def _violations(model) -> list[str]:
     ids=lambda m: m.__name__,
 )
 def test_the_schema_is_valid_for_strict_structured_output(model):
-    assert _violations(model) == []
+    assert strict_violations(model.model_json_schema()) == []
 
 
 def test_a_plan_lot_with_no_tonnes_is_refused_by_the_decision_check():

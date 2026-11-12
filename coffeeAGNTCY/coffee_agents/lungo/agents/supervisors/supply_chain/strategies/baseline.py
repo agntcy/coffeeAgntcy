@@ -108,6 +108,7 @@ class BaselineStrategy:
             ]
         )
         transcript = render_transcript(tuple(moderator.transcript))
+        # Explicit: both clients send strict already; test_structured_output_request.py pins it.
         structured = self._llm().with_structured_output(BuyerDecision, strict=True)
         result = await structured.ainvoke(
             [

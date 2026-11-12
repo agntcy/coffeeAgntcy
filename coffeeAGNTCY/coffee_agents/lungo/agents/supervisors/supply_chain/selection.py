@@ -113,6 +113,7 @@ async def _extract(prompt: str, llm_factory: Callable[..., Any] | None) -> _Extr
         from common.llm import get_llm
 
         llm_factory = get_llm
+    # Explicit: both clients send strict already; test_structured_output_request.py pins it.
     structured = llm_factory(streaming=False).with_structured_output(
         _Extracted, strict=True
     )
