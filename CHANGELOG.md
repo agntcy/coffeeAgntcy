@@ -2,6 +2,65 @@
 
 ## Unreleased
 
+## 0.5.1 (2026-11-12)
+
+A patch release. The **Supply Chain Commitment** use-case now works with Azure OpenAI keys, and both frontends pick up a broad dependency refresh (React 19.3, Tailwind 3.4.19, TypeScript 5.9.3).
+
+### Summary
+
+**Breaking / migration (read first)**
+
+No breaking changes, no new or renamed environment variables, and no interface changes. The Python lockfiles are unchanged, so `uv sync` has nothing new to install. Re-sync the two frontends:
+
+```bash
+cd coffeeAGNTCY/coffee_agents/lungo/frontend && npm ci
+cd ../../corto/exchange/frontend && npm ci
+```
+
+**Highlights**
+
+<details>
+<summary><strong>Supply Chain Commitment on Azure</strong> - strict structured output</summary>
+
+- With the Azure env key setup, every run used to fail: the Buyer decision call was rejected with a 400 (`Invalid schema for response_format 'BuyerDecision'`), the moderator ended the run as `protocol_error`, and the checker graded it `INVALID`. The LiteLLM proxy path accepted the same schemas, so only Azure users saw it ([#867](https://github.com/agntcy/coffeeAgntcy/pull/867)).
+- The LLM-facing models `BuyerDecision`, `PlanProposal`, `PlanLot` and `_Extracted` now list every property as required (`X | None` without a default where a value can be absent) and no longer use the `gt=0` keyword that Azure strict mode rejects. The internal record models keep their defaults.
+- The `tonnes > 0` check moved from the schema into `validate_decision`. A decision with a non-positive quantity still ends the run as `protocol_error`.
+- Every `with_structured_output` call of the use-case passes `strict=True`, so the proxy and Azure paths behave the same.
+</details>
+
+<details>
+<summary><strong>Frontend dependency refresh</strong> - Lungo UI and Corto exchange UI</summary>
+
+- Both frontends move to React and React DOM **19.3.1**, `@xyflow/react` **12.12.0**, ESLint **9.39.5**, Prettier **3.9.10** and `@typescript-eslint` **8.72.0** ([#831](https://github.com/agntcy/coffeeAgntcy/pull/831)).
+- Prettier 3.9 reformats long union types in five Lungo UI source files. This is formatting only, with no behavior change.
+</details>
+
+### Dependencies
+
+Versions that changed since **0.5.0**. Python lockfiles (`corto/uv.lock`, `lungo/uv.lock`, `recruiter/uv.lock`) have no changes. Versions are the direct dependencies from each `package.json`; the lockfiles also moved transitive packages.
+
+**Lungo frontend** (`lungo/frontend/package-lock.json`): `@open-ui-kit/core` **3.1.0 -> 3.2.0**, `@xyflow/react` **12.10.0 -> 12.12.0**, `react` and `react-dom` **19.2.3 -> 19.3.1**, `mermaid` **11.16.1 -> 11.17.2**, `react-error-boundary` **6.1.2 -> 6.1.6**, `react-resizable-panels` **4.11.1 -> 4.15.0**, `react-router-dom` **7.18.2 -> 7.18.4**, `vitest` **4.1.11 -> 4.1.12**, `openapi-typescript` **7.10.1 -> 7.13.0**, `@testing-library/react` **16.3.2 -> 16.3.3**, `@testing-library/dom` **10.4.1 -> 10.4.2**, `@types/react` **19.2.9 -> 19.3.0**, `@types/react-dom` **19.2.3 -> 19.3.0**, `@types/node` **24.11.0 -> 24.19.2**, `eslint` and `@eslint/js` **9.39.2 -> 9.39.5**, `eslint-plugin-prettier` **5.5.5 -> 5.5.7**, `eslint-plugin-react-refresh` **0.4.26 -> 0.5.7**, `prettier` **3.8.0 -> 3.9.10**, `typescript-eslint`, `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` **8.56.1 -> 8.72.0**.
+
+**Corto exchange frontend** (`corto/exchange/frontend/package-lock.json`): `react` and `react-dom` **19.1.1 -> 19.3.1**, `@radix-ui/react-select` **2.2.5 -> 2.4.1**, `@xyflow/react` **12.8.2 -> 12.12.0**, `ldrs` **1.1.7 -> 1.1.9**, `lucide-react` **0.536.0 -> 0.577.0**, `react-icons` **5.5.0 -> 5.7.0**, `tailwind-merge` **3.3.1 -> 3.7.0**, `tailwindcss` **3.4.17 -> 3.4.19**, `typescript` **5.9.2 -> 5.9.3**, `autoprefixer` **10.4.21 -> 10.6.1**, `postcss` **8.5.28 -> 8.5.31**, `prettier` **3.6.2 -> 3.9.10**, `prettier-plugin-tailwindcss` **0.6.14 -> 0.8.1**, `eslint` and `@eslint/js` **9.32.0 -> 9.39.5**, `eslint-plugin-prettier` **5.5.4 -> 5.5.7**, `eslint-plugin-react-refresh` **0.4.20 -> 0.5.7**, `globals` **16.4.0 -> 16.5.0**, `@playwright/test` **1.58.2 -> 1.64.1**, `@types/react` **19.1.9 -> 19.3.0**, `@types/react-dom` **19.1.7 -> 19.3.0**, `@types/node` **24.1.0 -> 24.19.2**, `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` **8.40.0 -> 8.72.0**.
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/831">#831</a> - @agntcy-automation[bot] - chore(deps): update frontend</summary>
+
+- Updates the direct and transitive npm dependencies of the Lungo UI and the Corto exchange UI (see Dependencies).
+- Reformats five Lungo UI files (`DirectoryApi.ts`, `usePatternChatAPI.ts`, `patternDoc.ts`, `patternUtils.ts`, `workflowCapabilities.ts`) to the Prettier 3.9 style for union types. No behavior change.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/867">#867</a> - @pregnor - fix(lungo): make supply chain schemas strict</summary>
+
+- Fixes the Supply Chain Commitment runs that failed on every prompt with the Azure env key setup (Buyer decision rejected with a 400, run ended as `protocol_error`, verdict `INVALID`).
+- Makes the LLM-facing schemas (`BuyerDecision`, `PlanProposal`, `PlanLot`, `_Extracted`) strict-compatible: all properties required, nullable fields without defaults, no `gt=0` constraint. The positive-tonnes rule now lives in `validate_decision` and still ends the run as `protocol_error`.
+- Passes `strict=True` to every `with_structured_output` call of the use-case.
+- Adds tests: a strict-compatibility check for every LLM-facing schema, a check that the calls pass `strict=True`, and a test that sends `_Extracted`, `ConfirmDecision` and `BuyerDecision` through the real ChatOpenAI (proxy path) and ChatLiteLLM (Azure path) clients against a local stub endpoint. It asserts that `response_format` is `json_schema`, `strict` is true, and every property sent is in `required`. A shared schema walker and model builders back the new and existing tests.
+</details>
+
 ## 0.5.0 (2026-11-06)
 
 Lungo and Corto move to **SLIM 2.2**, **A2A 1.x**, and **App SDK 0.6.1**. The local **Directory** stack moves to **v1.8.0** (OASF 1.1.0). Lungo gains the **Supply Chain Commitment** baseline: five agents, a commitment record, and a checker that can mark a clean-looking agreement as a silent failure.
