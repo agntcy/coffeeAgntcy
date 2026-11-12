@@ -312,7 +312,7 @@ def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> b
     Returns:
         True if server is ready, False if timeout exceeded
     """
-    agent_card_url = f"{url}/.well-known/agent.json"
+    agent_card_url = f"{url}/.well-known/agent-card.json"
     start_time = time.time()
 
     while time.time() - start_time < timeout:

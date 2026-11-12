@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Integration tests for the RecruiterAgent A2A server."""
+"""Integration tests for the RecruiterAgent A2A server (a2a-sdk 1.x client)."""
 
 import asyncio
 import json
@@ -12,31 +12,68 @@ from uuid import uuid4
 from a2a.client import ClientFactory, ClientConfig
 from a2a.types import (
     Message,
-    Part,
-    TextPart,
-    DataPart,
     Role,
-    Task,
+    SendMessageRequest,
+    StreamResponse,
     TaskState,
     TaskStatusUpdateEvent,
     TaskArtifactUpdateEvent,
 )
 
+from agent_recruiter.common.a2a_helpers import (
+    message_metadata,
+    part_data,
+    part_kind,
+    part_metadata,
+    text_part,
+)
 from agent_recruiter.server.card import AGENT_CARD
 from agent_recruiter.common.logging import get_logger
 
 logger = get_logger(__name__)
 
 
+def _user_message(text: str) -> Message:
+    return Message(
+        role=Role.ROLE_USER,
+        message_id=str(uuid4()),
+        parts=[text_part(text)],
+    )
+
+
+def _scan_parts(parts, found: dict) -> None:
+    """Record the text and the typed data parts of ``parts`` into ``found``."""
+    for part in parts:
+        kind = part_kind(part)
+        if kind == "text":
+            found["text"] = part.text
+            logger.info(f"Text response: {part.text[:200]}...")
+        elif kind == "data":
+            data_type = part_metadata(part).get("type")
+            found.setdefault("data", {})[data_type] = part_data(part)
+
+
+def _final_content(response: StreamResponse, found: dict) -> None:
+    """Collect text and data from a message or a completed task or status update."""
+    which = response.WhichOneof("payload")
+    if which == "message":
+        _scan_parts(response.message.parts, found)
+        return
+    if which == "task":
+        status = response.task.status
+    elif which == "status_update":
+        status = response.status_update.status
+    else:
+        return
+    if status.state == TaskState.TASK_STATE_COMPLETED and status.HasField("message"):
+        _scan_parts(status.message.parts, found)
+
+
 @pytest.mark.asyncio
 async def test_recruiter_a2a_server(
     run_recruiter_a2a_server, publish_sample_agent_record
 ):
-    """Test the RecruiterAgent A2A server returns agent records in DataPart.
-
-    The server now uses streaming internally, so even non-streaming clients
-    receive a (Task, None) tuple with the final message in task.status.message.
-    """
+    """Test the RecruiterAgent A2A server returns agent records in a data part."""
 
     logger.info("Starting RecruiterAgent A2A server")
 
@@ -55,72 +92,24 @@ async def test_recruiter_a2a_server(
             httpx_client=httpx_client,
             streaming=False,  # Use non-streaming for simpler response handling
         )
-        factory = ClientFactory(config)
-        client = factory.create(AGENT_CARD)
+        client = ClientFactory(config).create(AGENT_CARD)
 
-        # Build the message - search for an agent
-        message = Message(
-            role=Role.user,
-            message_id=str(uuid4()),
-            parts=[
-                Part(
-                    root=TextPart(text="can you find an agent named Accountant agent?")
-                )
-            ],
-        )
-
-        # Send message and collect responses
-        text_response = None
-        data_part = None
-        found_agent_records = None
-        final_task = None
-
-        async for response in client.send_message(message):
+        found: dict = {}
+        async for response in client.send_message(
+            SendMessageRequest(
+                message=_user_message("can you find an agent named Accountant agent?")
+            )
+        ):
             logger.info(f"Response: {response}")
+            _final_content(response, found)
 
-            # Handle Message response (legacy format)
-            if isinstance(response, Message):
-                for part in response.parts:
-                    part_root = part.root
-                    if isinstance(part_root, TextPart):
-                        text_response = part_root.text
-                        logger.info(f"Text response: {text_response[:200]}...")
-                    elif isinstance(part_root, DataPart):
-                        data_part = part_root
-                        if (
-                            data_part.metadata
-                            and data_part.metadata.get("type") == "found_agent_records"
-                        ):
-                            found_agent_records = data_part.data
-
-            # Handle tuple response (Task, update) - streaming format
-            elif isinstance(response, tuple) and len(response) == 2:
-                task, update = response
-                if isinstance(task, Task):
-                    final_task = task
-                    logger.info(f"Task: id={task.id}, state={task.status.state}")
-
-                    # Extract final response from completed task
-                    if task.status.state == TaskState.completed and task.status.message:
-                        for part in task.status.message.parts:
-                            part_root = part.root
-                            if isinstance(part_root, TextPart):
-                                text_response = part_root.text
-                                logger.info(f"Text response: {text_response[:200]}...")
-                            elif isinstance(part_root, DataPart):
-                                data_part = part_root
-                                if (
-                                    data_part.metadata
-                                    and data_part.metadata.get("type")
-                                    == "found_agent_records"
-                                ):
-                                    found_agent_records = data_part.data
+        found_agent_records = found.get("data", {}).get("found_agent_records")
 
         # Assertions
-        assert text_response is not None, "Expected a text response from the agent"
-        assert data_part is not None, "Expected a DataPart with agent records"
+        assert found.get("text") is not None, "Expected a text response from the agent"
+        assert found.get("data"), "Expected a data part with agent records"
         assert found_agent_records is not None, (
-            "Expected found_agent_records in DataPart"
+            "Expected found_agent_records in the data part"
         )
         assert len(found_agent_records) > 0, "Expected at least one agent record"
 
@@ -146,8 +135,8 @@ async def test_recruiter_a2a_server_streaming(
 ):
     """Test the RecruiterAgent A2A server streaming returns intermediate events.
 
-    The A2A streaming client returns ClientEvent tuples of (Task, update) where
-    update is either None, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent.
+    The streaming client yields ``StreamResponse`` events: a task, then status
+    and artifact updates. The last status update has a terminal task state.
     """
 
     logger.info("Starting RecruiterAgent A2A server for streaming test")
@@ -167,68 +156,44 @@ async def test_recruiter_a2a_server_streaming(
             httpx_client=httpx_client,
             streaming=True,  # Enable streaming
         )
-        factory = ClientFactory(config)
-        client = factory.create(AGENT_CARD)
-
-        # Build the message - search for an agent
-        message = Message(
-            role=Role.user,
-            message_id=str(uuid4()),
-            parts=[
-                Part(
-                    root=TextPart(text="can you find an agent named Accountant agent?")
-                )
-            ],
-        )
+        client = ClientFactory(config).create(AGENT_CARD)
 
         # Collect all streaming events
         status_updates: list[TaskStatusUpdateEvent] = []
         artifact_updates: list[TaskArtifactUpdateEvent] = []
-        tasks: list[Task] = []
-        final_message = None
+        tasks = []
         all_events = []
 
-        async for response in client.send_message(message):
+        async for response in client.send_message(
+            SendMessageRequest(
+                message=_user_message("can you find an agent named Accountant agent?")
+            )
+        ):
             all_events.append(response)
+            which = response.WhichOneof("payload")
 
-            # Handle Message response (non-streaming or final)
-            if isinstance(response, Message):
-                final_message = response
-                logger.info("Received final message")
-                for part in response.parts:
-                    part_root = part.root
-                    if isinstance(part_root, TextPart):
-                        logger.info(f"Final text: {part_root.text[:200]}...")
-                continue
-
-            # Handle ClientEvent tuple: (Task, update)
-            # The streaming client returns tuples of (Task, TaskStatusUpdateEvent|TaskArtifactUpdateEvent|None)
-            if isinstance(response, tuple) and len(response) == 2:
-                task, update = response
-
-                if isinstance(task, Task):
-                    tasks.append(task)
-                    logger.info(f"Task update: id={task.id}, state={task.status.state}")
-
-                if isinstance(update, TaskStatusUpdateEvent):
-                    status_updates.append(update)
-                    logger.info(
-                        f"Status update: state={update.status.state}, "
-                        f"final={update.final}"
-                    )
-                    if update.status.message and update.status.message.metadata:
-                        event_type = update.status.message.metadata.get("event_type")
-                        logger.info(f"  Event type: {event_type}")
-                        if event_type == "tool_call":
-                            tool_name = update.status.message.metadata.get("tool_name")
-                            logger.info(f"  Tool call: {tool_name}")
-                        elif event_type == "agent_transfer":
-                            to_agent = update.status.message.metadata.get("to_agent")
-                            logger.info(f"  Agent transfer to: {to_agent}")
-
-                elif isinstance(update, TaskArtifactUpdateEvent):
-                    artifact_updates.append(update)
-                    logger.info(f"Artifact update: {update.artifact.name}")
+            if which == "task":
+                tasks.append(response.task)
+                logger.info(
+                    f"Task update: id={response.task.id}, "
+                    f"state={TaskState.Name(response.task.status.state)}"
+                )
+            elif which == "status_update":
+                update = response.status_update
+                status_updates.append(update)
+                logger.info(f"Status update: state={TaskState.Name(update.status.state)}")
+                metadata = message_metadata(
+                    update.status.message if update.status.HasField("message") else None
+                )
+                event_type = metadata.get("event_type")
+                logger.info(f"  Event type: {event_type}")
+                if event_type == "tool_call":
+                    logger.info(f"  Tool call: {metadata.get('tool_name')}")
+                elif event_type == "agent_transfer":
+                    logger.info(f"  Agent transfer to: {metadata.get('to_agent')}")
+            elif which == "artifact_update":
+                artifact_updates.append(response.artifact_update)
+                logger.info(f"Artifact update: {response.artifact_update.artifact.name}")
 
         # Assertions
         logger.info(f"Total events received: {len(all_events)}")
@@ -236,26 +201,20 @@ async def test_recruiter_a2a_server_streaming(
         logger.info(f"Status updates: {len(status_updates)}")
         logger.info(f"Artifact updates: {len(artifact_updates)}")
 
-        # We should receive task updates
-        assert len(tasks) > 0, "Expected at least one Task update"
+        # We should receive the task
+        assert len(tasks) > 0, "Expected at least one Task"
 
         # We should receive at least one status update (the initial "processing" event)
         assert len(status_updates) > 0, "Expected at least one TaskStatusUpdateEvent"
 
-        # Check that we received intermediate events (tool calls or agent transfers)
-        tool_calls = [
-            su
-            for su in status_updates
-            if su.status.message
-            and su.status.message.metadata
-            and su.status.message.metadata.get("event_type") == "tool_call"
-        ]
+        def _event_type(update: TaskStatusUpdateEvent) -> str | None:
+            if not update.status.HasField("message"):
+                return None
+            return message_metadata(update.status.message).get("event_type")
+
+        tool_calls = [su for su in status_updates if _event_type(su) == "tool_call"]
         agent_transfers = [
-            su
-            for su in status_updates
-            if su.status.message
-            and su.status.message.metadata
-            and su.status.message.metadata.get("event_type") == "agent_transfer"
+            su for su in status_updates if _event_type(su) == "agent_transfer"
         ]
 
         logger.info(f"Tool calls streamed: {len(tool_calls)}")
@@ -267,33 +226,26 @@ async def test_recruiter_a2a_server_streaming(
             "Expected at least one tool_call or agent_transfer event during streaming"
         )
 
-        # Find the final status update (with final=True)
-        final_status_updates = [su for su in status_updates if su.final]
-        logger.info(f"Final status updates: {len(final_status_updates)}")
-
-        assert len(final_status_updates) > 0, (
-            "Expected at least one final status update"
-        )
-
-        # Verify the final status has completed state and contains content
-        final_status = final_status_updates[-1]
-        logger.info(f"Final status state: {final_status.status.state}")
-        assert final_status.status.state == TaskState.completed, (
-            f"Expected final status to be completed, got {final_status.status.state}"
+        # The last status update carries the terminal state (a2a-sdk 1.x has no `final`)
+        final_status = status_updates[-1]
+        logger.info(f"Final status state: {TaskState.Name(final_status.status.state)}")
+        assert final_status.status.state == TaskState.TASK_STATE_COMPLETED, (
+            f"Expected final status to be completed, got "
+            f"{TaskState.Name(final_status.status.state)}"
         )
 
         # The final status should have a message with content
-        assert final_status.status.message is not None, (
+        assert final_status.status.HasField("message"), (
             "Expected final status to have a message"
         )
-        text_parts = [
-            p.root
+        texts = [
+            p.text
             for p in final_status.status.message.parts
-            if isinstance(p.root, TextPart)
+            if part_kind(p) == "text"
         ]
-        assert len(text_parts) > 0, "Expected text content in final status message"
-        assert text_parts[0].text, "Expected non-empty text in final status message"
-        logger.info(f"Final response text: {text_parts[0].text[:200]}...")
+        assert len(texts) > 0, "Expected text content in final status message"
+        assert texts[0], "Expected non-empty text in final status message"
+        logger.info(f"Final response text: {texts[0][:200]}...")
 
 
 @pytest.mark.asyncio
@@ -308,7 +260,7 @@ async def test_recruiter_a2a_evaluation_flow(
     1. Publishes the sample agent record to the directory
     2. Starts the sample A2A agent as the target to evaluate
     3. Sends a message to find and evaluate the agent with a scenario
-    4. Verifies evaluation results are returned in the response DataPart
+    4. Verifies evaluation results are returned in the response data part
 
     The evaluation scenario tests that the agent responds politely.
     """
@@ -334,8 +286,7 @@ async def test_recruiter_a2a_evaluation_flow(
             httpx_client=httpx_client,
             streaming=False,
         )
-        factory = ClientFactory(config)
-        client = factory.create(AGENT_CARD)
+        client = ClientFactory(config).create(AGENT_CARD)
 
         # Step 1: First find an agent (use the sample agent we started)
         # Note: In a real scenario, the agent would be registered in the directory.
@@ -354,66 +305,19 @@ async def test_recruiter_a2a_evaluation_flow(
         First search for any available agents, then evaluate them against these scenarios.
         """
 
-        message = Message(
-            role=Role.user,
-            message_id=str(uuid4()),
-            parts=[Part(root=TextPart(text=evaluation_prompt))],
-        )
+        found: dict = {}
+        async for response in client.send_message(
+            SendMessageRequest(message=_user_message(evaluation_prompt))
+        ):
+            logger.info(f"Response type: {response.WhichOneof('payload')}")
+            _final_content(response, found)
 
-        # Collect response data
-        text_response = None
-        found_agent_records = None
-        evaluation_results = None
-
-        async for response in client.send_message(message):
-            logger.info(f"Response type: {type(response)}")
-
-            # Handle tuple response (Task, update) - streaming format
-            if isinstance(response, tuple) and len(response) == 2:
-                task, update = response
-                if isinstance(task, Task):
-                    logger.info(f"Task: id={task.id}, state={task.status.state}")
-
-                    # Extract final response from completed task
-                    if task.status.state == TaskState.completed and task.status.message:
-                        for part in task.status.message.parts:
-                            part_root = part.root
-                            if isinstance(part_root, TextPart):
-                                text_response = part_root.text
-                                logger.info(f"Text response: {text_response[:300]}...")
-                            elif isinstance(part_root, DataPart):
-                                metadata_type = (
-                                    part_root.metadata.get("type")
-                                    if part_root.metadata
-                                    else None
-                                )
-                                logger.info(f"DataPart type: {metadata_type}")
-
-                                if metadata_type == "found_agent_records":
-                                    found_agent_records = part_root.data
-                                    logger.info(
-                                        f"Found {len(found_agent_records)} agent records"
-                                    )
-                                elif metadata_type == "evaluation_results":
-                                    evaluation_results = part_root.data
-                                    logger.info(f"Received evaluation results")
-
-            # Handle Message response (legacy format)
-            elif isinstance(response, Message):
-                for part in response.parts:
-                    part_root = part.root
-                    if isinstance(part_root, TextPart):
-                        text_response = part_root.text
-                    elif isinstance(part_root, DataPart):
-                        metadata_type = (
-                            part_root.metadata.get("type")
-                            if part_root.metadata
-                            else None
-                        )
-                        if metadata_type == "found_agent_records":
-                            found_agent_records = part_root.data
-                        elif metadata_type == "evaluation_results":
-                            evaluation_results = part_root.data
+        text_response = found.get("text")
+        data_by_type = found.get("data", {})
+        found_agent_records = data_by_type.get("found_agent_records")
+        evaluation_results = data_by_type.get("evaluation_results")
+        if found_agent_records is not None:
+            logger.info(f"Found {len(found_agent_records)} agent records")
 
         # Assertions
         assert text_response is not None, "Expected a text response from the agent"
@@ -421,7 +325,7 @@ async def test_recruiter_a2a_evaluation_flow(
 
         # Check for evaluation results
         if evaluation_results:
-            logger.info("✓ Received evaluation results in DataPart")
+            logger.info("✓ Received evaluation results in the data part")
             logger.info(f"Evaluation results keys: {evaluation_results.keys()}")
 
             # Check for summary
@@ -458,11 +362,3 @@ async def test_recruiter_a2a_evaluation_flow(
             logger.warning(
                 "No evaluation results received - this may be expected if no agents were found"
             )
-
-        # If we got agent records, log them
-        if found_agent_records:
-            logger.info(f"✓ Found {len(found_agent_records)} agent records")
-            for cid in found_agent_records.keys():
-                logger.info(f"  - Agent CID: {cid}")
-
-        logger.info("Test completed successfully")

@@ -9,19 +9,86 @@ messages and evaluating responses related to predefined scenarios.
 import json
 from types import TracebackType
 from typing import Callable, Optional, Self, Type
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from a2a.client import A2ACardResolver
-from a2a.types import Message, MessageSendParams, Part, Role, Task, TextPart
+from a2a.types import AgentCard, AgentInterface, Message, Role, Task
+from google.protobuf.json_format import MessageToDict
 from httpx import AsyncClient
 from loguru import logger
 from rogue_sdk.types import Protocol, Scenarios, Transport
 
+from agent_recruiter.common.a2a_helpers import (
+    parts_text,
+    task_text,
+    text_part,
+)
 from agent_recruiter.interviewers.a2a.remote_agent_connection import (
-    JSON_RPC_ERROR_TYPES,
     RemoteAgentConnections,
 )
 from agent_recruiter.interviewers.base_evaluator_agent import BaseEvaluatorAgent
+
+# Hosts that mean "listen on every interface" and cannot be dialed by a client.
+# Agents that bind to 0.0.0.0 often publish it in their card as the HTTP URL.
+_UNDIALABLE_HOSTS = {"", "0.0.0.0", "::"}
+
+
+def ensure_jsonrpc_interface(card: AgentCard, address: str) -> None:
+    """Make sure ``card`` has an HTTP JSON-RPC interface the client can use.
+
+    The a2a-sdk client factory matches ``protocol_binding`` exactly (``JSONRPC``)
+    and dials the interface url as given. Cards in the wild break that in two
+    ways: the binding is spelled in lowercase (``jsonrpc``, as the lungo farms
+    publish it), or the url is missing or a wildcard bind address such as
+    ``http://0.0.0.0:9999``. We just fetched the card from ``address``, so that
+    address is known to be reachable; use it when the card offers nothing
+    usable. The first usable interface is kept, with only its binding
+    normalized, and becomes the card's only interface. The client factory
+    prefers an interface that declares version ``1.0`` over the first match,
+    so a second JSON-RPC interface (for example an undialable one) must not
+    stay on the card.
+
+    Interfaces for other transports (SLIM, NATS) are dropped in both cases,
+    because the recruiter only speaks HTTP JSON-RPC.
+    """
+    jsonrpc = [
+        i for i in card.supported_interfaces if i.protocol_binding.upper() == "JSONRPC"
+    ]
+    for interface in jsonrpc:
+        host = urlparse(interface.url).hostname or ""
+        if interface.url and host not in _UNDIALABLE_HOSTS:
+            chosen = AgentInterface()
+            chosen.CopyFrom(interface)
+            chosen.protocol_binding = "JSONRPC"
+            del card.supported_interfaces[:]
+            card.supported_interfaces.append(chosen)
+            return
+
+    logger.warning(
+        "Fetched agent card has no usable JSON-RPC interface - "
+        "patching with evaluated_agent_address: {}",
+        address,
+    )
+    # Keep the version the agent declared (JSON-RPC interfaces first, then any
+    # interface). Without one, use 0.3: v0.3 servers and 1.x servers built with
+    # v0.3 compat accept it (outside agents; the lungo farms are v1.0 only).
+    version = next(
+        (
+            i.protocol_version
+            for i in [*jsonrpc, *card.supported_interfaces]
+            if i.protocol_version
+        ),
+        "0.3",
+    )
+    del card.supported_interfaces[:]
+    card.supported_interfaces.append(
+        AgentInterface(
+            url=address,
+            protocol_binding="JSONRPC",
+            protocol_version=version,
+        )
+    )
 
 
 class A2AEvaluatorAgent(BaseEvaluatorAgent):
@@ -65,17 +132,9 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
             )
             card = await card_resolver.get_agent_card()
 
-            # Some agents serve a card with an empty or missing url field.
-            # Since we already know the reachable address (we just fetched
-            # the card from it), patch the card so the A2A client can
-            # construct a valid transport.
-            if not card.url:
-                logger.warning(
-                    "Fetched agent card has empty 'url' - "
-                    "patching with evaluated_agent_address: %s",
-                    self._evaluated_agent_address,
-                )
-                card.url = self._evaluated_agent_address
+            # Some agents serve a card the client cannot use as is (empty or
+            # wildcard url, lowercase binding, only SLIM/NATS interfaces).
+            ensure_jsonrpc_interface(card, self._evaluated_agent_address)
 
             self.__evaluated_agent_client = await RemoteAgentConnections.create(
                 self._http_client,
@@ -86,45 +145,15 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
 
     @staticmethod
     def _get_text_from_response(
-        response: Task | Message | JSON_RPC_ERROR_TYPES,
+        response: Task | Message,
     ) -> str | None:
         # TODO: add support for multi-model responses (audio, images, etc.)
         logger.debug(f"_get_text_from_response {response}")
 
-        def get_parts_text(parts: list[Part]) -> str:
-            text = ""
-            for p in parts:
-                if p.root.kind == "text":
-                    text += p.root.text
-                elif p.root.kind == "data":
-                    text += json.dumps(p.root.data)
-                elif p.root.kind == "file":
-                    text += p.root.file.model_dump_json()
-
-            return text
-
         if isinstance(response, Message):
-            return get_parts_text(response.parts)
+            return parts_text(list(response.parts))
         elif isinstance(response, Task):
-            if response.artifacts is None:
-                if (
-                    response.status is not None
-                    and response.status.message is not None
-                    and response.status.message.parts is not None
-                ):
-                    logger.debug("Returning text from task status message")
-                    return get_parts_text(response.status.message.parts)
-                return None
-
-            artifacts_text = ""
-
-            for artifact in response.artifacts:
-                if artifact.name:
-                    artifacts_text += f"Artifact: {artifact.name}:\n"
-                artifacts_text += get_parts_text(artifact.parts)
-                artifacts_text += "\n"
-
-            return artifacts_text
+            return task_text(response)
 
         return None
 
@@ -160,28 +189,16 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
                 "Sending message via RemoteAgentConnections",
                 extra={
                     "card_name": agent_client.card.name,
-                    "card_url": agent_client.card.url,
-                    "card_streaming": (
-                        agent_client.card.capabilities.streaming
-                        if agent_client.card.capabilities
-                        else None
-                    ),
+                    "card_url": agent_client.url,
+                    "card_streaming": agent_client.card.capabilities.streaming,
                 },
             )
             response = await agent_client.send_message(
-                MessageSendParams(
-                    message=Message(
-                        context_id=context_id,
-                        message_id=uuid4().hex,
-                        role=Role.user,
-                        parts=[
-                            Part(
-                                root=TextPart(
-                                    text=message,
-                                ),
-                            ),
-                        ],
-                    ),
+                Message(
+                    context_id=context_id,
+                    message_id=uuid4().hex,
+                    role=Role.ROLE_USER,
+                    parts=[text_part(message)],
                 ),
             )
 
@@ -227,7 +244,7 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
                     "agent_url": self._evaluated_agent_address,
                 },
             )
-            return {"response": response.model_dump_json()}
+            return {"response": json.dumps(MessageToDict(response))}
         except Exception as e:
             logger.exception(
                 "❌ A2A call failed - error sending message to evaluated agent",

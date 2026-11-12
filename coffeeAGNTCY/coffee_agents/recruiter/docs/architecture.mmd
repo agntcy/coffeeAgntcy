@@ -6,7 +6,7 @@ graph TB
     %% ============================================================
     subgraph Clients["🌐 External Clients"]
         direction LR
-        A2AClient["A2A Client<br/><i>HTTP / NATS / SLIM</i>"]
+        A2AClient["A2A Client<br/><i>HTTP JSON-RPC</i>"]
         ADKWeb["ADK Web UI<br/><i>localhost:8000</i>"]
     end
 
@@ -15,7 +15,7 @@ graph TB
     %% ============================================================
     subgraph ServerLayer["⚡ A2A Server Layer - Port 8881"]
         direction TB
-        A2AApp["A2AStarletteApplication<br/><i>Uvicorn HTTP + Transport</i>"]
+        A2AApp["Starlette A2A routes<br/><i>Uvicorn HTTP</i>"]
         ReqHandler["DefaultRequestHandler<br/><i>+ InMemoryTaskStore</i>"]
         AgentExec["RecruiterAgentExecutor<br/><i>Request → ADK Events → Response</i>"]
         EventConv["EventConverter<br/><i>ADK ↔ A2A event translation</i>"]

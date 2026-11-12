@@ -2,35 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Store a remote A2A agent connection. The client is built with the agntcy
-app-sdk A2AClientFactory, which negotiates the transport from the agent card's
-interfaces.
+Store a remote A2A agent connection. The client is built with the a2a-sdk
+ClientFactory over HTTP JSON-RPC, the only transport the recruiter uses.
 """
 
 from typing import Callable, TypeAlias
+
 import httpx
-from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
-from agntcy_app_sdk.semantic.a2a.client.config import ClientConfig
+from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
     AgentCard,
-    TransportProtocol,
-    Task,
     Message,
-    MessageSendParams,
-    TaskStatusUpdateEvent,
-    TaskArtifactUpdateEvent,
-    JSONRPCError,
-    JSONParseError,
-    InvalidRequestError,
-    MethodNotFoundError,
-    InvalidParamsError,
-    InternalError,
-    TaskNotFoundError,
-    TaskNotCancelableError,
-    PushNotificationNotSupportedError,
-    UnsupportedOperationError,
-    ContentTypeNotSupportedError,
-    InvalidAgentResponseError,
+    SendMessageRequest,
+    StreamResponse,
+    Task,
 )
 from loguru import logger
 
@@ -38,23 +23,7 @@ from agent_recruiter.interviewers.a2a.generic_task_callback import (
     GenericTaskUpdateCallback,
 )
 
-JSON_RPC_ERROR_TYPES: TypeAlias = (
-    JSONRPCError
-    | JSONParseError
-    | InvalidRequestError
-    | MethodNotFoundError
-    | InvalidParamsError
-    | InternalError
-    | TaskNotFoundError
-    | TaskNotCancelableError
-    | PushNotificationNotSupportedError
-    | UnsupportedOperationError
-    | ContentTypeNotSupportedError
-    | InvalidAgentResponseError
-)
-
-TaskCallbackArg: TypeAlias = Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
-TaskUpdateCallback: TypeAlias = Callable[[TaskCallbackArg, AgentCard], Task]
+TaskUpdateCallback: TypeAlias = Callable[[StreamResponse, AgentCard], Task | None]
 
 
 class RemoteAgentConnections:
@@ -70,81 +39,64 @@ class RemoteAgentConnections:
         client: httpx.AsyncClient,
         agent_card: AgentCard,
     ) -> "RemoteAgentConnections":
-        # JSONRPC is the only transport needed; prefer it so the factory builds
-        # an HTTP JSONRPC client from the card's interfaces.
-        agent_card.preferred_transport = TransportProtocol.jsonrpc
+        # JSONRPC is the only transport needed: it is the factory default, so
+        # the client is built from the card's JSONRPC interface (an interface
+        # that declares protocol_version 0.3 gets the v0.3 compat transport).
         config = ClientConfig(httpx_client=client, streaming=True)
-        factory = A2AClientFactory(config)
-        agent_client = await factory.create(agent_card)
+        agent_client = ClientFactory(config).create(agent_card)
         return cls(agent_client, agent_card)
 
     def get_agent(self) -> AgentCard:
         return self.card
 
+    @property
+    def url(self) -> str:
+        """URL of the card's first interface, for logs."""
+        interfaces = self.card.supported_interfaces
+        return interfaces[0].url if interfaces else ""
+
     async def send_message(
         self,
-        request: MessageSendParams,
+        message: Message,
         task_callback: TaskUpdateCallback | None = None,
-        stream: bool | None = None,
-    ) -> Task | Message | JSON_RPC_ERROR_TYPES | None:
+    ) -> Task | Message | None:
         """Send a message to the remote agent.
 
-        The new Client API automatically handles streaming vs non-streaming
-        based on agent capabilities and client configuration.
+        The client handles streaming vs non-streaming based on the agent's
+        capabilities and the client configuration. A failure raises (the
+        a2a-sdk 1.x errors are exceptions, not returned values).
         """
-        # Set up task callback
         if task_callback is None:
             task_callback = GenericTaskUpdateCallback().task_callback
 
-        # The request already contains a properly formatted Message
-        # Just use it directly
-        message = request.message
-
-        task = None
+        task: Task | None = None
         first_message: Message | None = None
 
         try:
-            # The send_message method returns AsyncIterator automatically
-            # It handles both streaming and non-streaming based on config
-            async for response in self.agent_client.send_message(message):
+            async for response in self.agent_client.send_message(
+                SendMessageRequest(message=message)
+            ):
                 logger.debug(
                     "received response from remote agent",
                     extra={
-                        "response_type": type(response).__name__,
+                        "response_type": response.WhichOneof("payload"),
                         "response": response,
                     },
                 )
 
-                # Response is tuple[Task, Update] or Message
-                if isinstance(response, Message):
+                if response.WhichOneof("payload") == "message":
                     # Direct message response - don't return immediately.
                     # Some agents send a Message followed by more streamed
-                    # data; returning early causes the A2A SDK to raise
-                    # "received a streamed Message … after first response".
-                    # Instead, capture the first Message and keep draining
-                    # so the iterator is fully consumed.
+                    # data; returning early would leave the iterator
+                    # unconsumed. Capture the first Message and keep draining.
                     if first_message is None:
-                        first_message = response
+                        first_message = Message()
+                        first_message.CopyFrom(response.message)
                     continue
 
-                # Streaming response: (Task, Update event or None)
-                if isinstance(response, tuple):
-                    task_update, event = response
-
-                    # Update task via callback
-                    if task_callback is not None:
-                        if event is not None:
-                            # Update event (TaskStatusUpdateEvent or TaskArtifactUpdateEvent)
-                            task = task_callback(event, self.card)
-                        else:
-                            # Task object itself
-                            task = task_callback(task_update, self.card)
-                    else:
-                        task = task_update
-
-                    # Check if this is the final update
-                    if event and hasattr(event, "final") and event.final:
-                        break
+                updated = task_callback(response, self.card)
+                if updated is not None:
+                    task = updated
 
             # Prefer the streaming task result; fall back to direct Message
             return task if task is not None else first_message
@@ -154,11 +106,8 @@ class RemoteAgentConnections:
                 f"Error sending message to agent: {e}",
                 extra={
                     "agent_name": self.card.name,
-                    "agent_url": self.card.url,
+                    "agent_url": self.url,
                     "error_type": type(e).__name__,
                 },
             )
-            # Try to return an appropriate error
-            if hasattr(e, "error"):
-                return e.error
             raise

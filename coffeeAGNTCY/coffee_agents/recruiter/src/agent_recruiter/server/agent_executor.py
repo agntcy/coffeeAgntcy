@@ -6,24 +6,28 @@ from uuid import uuid4
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.types import (
-    UnsupportedOperationError,
-    ContentTypeNotSupportedError,
-    InternalError,
     Message,
     Role,
-    Part,
-    TextPart,
-    DataPart,
     Task,
     TaskStatus,
     TaskState,
     TaskStatusUpdateEvent,
 )
-from a2a.utils import (
-    new_task,
+from a2a.utils.errors import (
+    ContentTypeNotSupportedError,
+    InternalError,
+    UnsupportedOperationError,
 )
-from a2a.utils.errors import ServerError
 
+from agent_recruiter.common.a2a_helpers import (
+    data_part,
+    message_metadata,
+    part_data,
+    part_kind,
+    part_metadata,
+    text_part,
+    to_struct,
+)
 from agent_recruiter.common.logging import get_logger
 from agent_recruiter.recruiter import RecruiterTeam
 from agent_recruiter.server.card import AGENT_CARD
@@ -38,7 +42,7 @@ logger = get_logger(__name__)
 class RecruiterAgentExecutor(AgentExecutor):
     def __init__(self):
         self.agent = RecruiterTeam()
-        self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
+        self.agent_name = AGENT_CARD.name
 
     def _validate_request(self, context: RequestContext) -> bool:
         """Validates the incoming request.
@@ -47,7 +51,7 @@ class RecruiterAgentExecutor(AgentExecutor):
             True if valid, False otherwise.
         """
         if not context or not context.message or not context.message.parts:
-            logger.error("Invalid request parameters: %s", context)
+            logger.error("Invalid request parameters: {}", context)
             return False
         return True
 
@@ -62,7 +66,7 @@ class RecruiterAgentExecutor(AgentExecutor):
         status updates) as they occur, providing real-time feedback to clients.
         """
         if not self._validate_request(context):
-            raise ServerError(error=ContentTypeNotSupportedError())
+            raise ContentTypeNotSupportedError()
 
         prompt = context.get_user_input()
 
@@ -76,31 +80,33 @@ class RecruiterAgentExecutor(AgentExecutor):
         initial_state_overrides: dict = {}
         if context.message and context.message.parts:
             for part in context.message.parts:
-                root = part.root
-                if isinstance(root, DataPart) and root.metadata:
-                    meta_type = root.metadata.get("type")
-                    if meta_type == "found_agent_records" and isinstance(
-                        root.data, dict
-                    ):
-                        initial_state_overrides["found_agent_records"] = root.data
-                        logger.info(
-                            "[agent_executor] Extracted %d found_agent_records from incoming DataPart",
-                            len(root.data),
-                        )
-                    elif meta_type == "evaluation_criteria" and isinstance(
-                        root.data, list
-                    ):
-                        initial_state_overrides["evaluation_criteria"] = root.data
-                        logger.info(
-                            "[agent_executor] Extracted %d evaluation_criteria from incoming DataPart",
-                            len(root.data),
-                        )
+                if part_kind(part) != "data":
+                    continue
+                meta_type = part_metadata(part).get("type")
+                data = part_data(part)
+                if meta_type == "found_agent_records" and isinstance(data, dict):
+                    initial_state_overrides["found_agent_records"] = data
+                    logger.info(
+                        "[agent_executor] Extracted {} found_agent_records from incoming DataPart",
+                        len(data),
+                    )
+                elif meta_type == "evaluation_criteria" and isinstance(data, list):
+                    initial_state_overrides["evaluation_criteria"] = data
+                    logger.info(
+                        "[agent_executor] Extracted {} evaluation_criteria from incoming DataPart",
+                        len(data),
+                    )
 
         task = context.current_task
         if not task:
             if context.message is None:
-                raise ServerError(error=ContentTypeNotSupportedError())
-            task = new_task(context.message)
+                raise ContentTypeNotSupportedError()
+            task = Task(
+                id=context.task_id or str(uuid4()),
+                context_id=context.context_id or str(uuid4()),
+                status=TaskStatus(state=TaskState.TASK_STATE_SUBMITTED),
+                history=[context.message],
+            )
             await event_queue.enqueue_event(task)
 
         task_id = task.id
@@ -112,8 +118,7 @@ class RecruiterAgentExecutor(AgentExecutor):
 
         # Extract user_id from message metadata, with fallback
         user_id = "anonymous"
-        if context.message and context.message.metadata:
-            user_id = context.message.metadata.get("user_id", "anonymous")
+        user_id = message_metadata(context.message).get("user_id", user_id)
 
         logger.info(
             f"[agent_executor] Processing: user_id={user_id}, session_id={session_id}"
@@ -146,7 +151,7 @@ class RecruiterAgentExecutor(AgentExecutor):
 
                 # Convert and emit intermediate events
                 for a2a_event in convert_adk_to_a2a_events(
-                    adk_event, task_id, context_id, self.agent_card["name"]
+                    adk_event, task_id, context_id, self.agent_name
                 ):
                     await event_queue.enqueue_event(a2a_event)
 
@@ -182,9 +187,7 @@ class RecruiterAgentExecutor(AgentExecutor):
             )
 
             # Build final message parts
-            parts = [
-                Part(root=TextPart(text=final_response or "No response generated."))
-            ]
+            parts = [text_part(final_response or "No response generated.")]
 
             # Include found agent records as DataPart if any exist
             if found_records:
@@ -192,12 +195,7 @@ class RecruiterAgentExecutor(AgentExecutor):
                     f"[agent_executor] Including {len(found_records)} agent records in response DataPart"
                 )
                 parts.append(
-                    Part(
-                        root=DataPart(
-                            data=found_records,
-                            metadata={"type": "found_agent_records"},
-                        )
-                    )
+                    data_part(found_records, metadata={"type": "found_agent_records"})
                 )
             else:
                 logger.warning(
@@ -210,11 +208,8 @@ class RecruiterAgentExecutor(AgentExecutor):
                     f"[agent_executor] Including {len(evaluation_results)} evaluation results in response DataPart"
                 )
                 parts.append(
-                    Part(
-                        root=DataPart(
-                            data=evaluation_results,
-                            metadata={"type": "evaluation_results"},
-                        )
+                    data_part(
+                        evaluation_results, metadata={"type": "evaluation_results"}
                     )
                 )
             else:
@@ -225,21 +220,19 @@ class RecruiterAgentExecutor(AgentExecutor):
             # Create the final message
             final_message = Message(
                 message_id=str(uuid4()),
-                role=Role.agent,
-                metadata={"name": self.agent_card["name"]},
+                role=Role.ROLE_AGENT,
+                metadata=to_struct({"name": self.agent_name}),
                 parts=parts,
             )
 
-            # Send final status update with completed state
-            # The A2A protocol expects streaming to end with a TaskStatusUpdateEvent
-            # with final=True, not a separate Message
+            # Send final status update with completed state. a2a-sdk 1.x has no
+            # ``final`` flag: the terminal task state ends the stream.
             await event_queue.enqueue_event(
                 TaskStatusUpdateEvent(
                     task_id=task_id,
                     context_id=context_id,
-                    final=True,
                     status=TaskStatus(
-                        state=TaskState.completed,
+                        state=TaskState.TASK_STATE_COMPLETED,
                         message=final_message,
                     ),
                 )
@@ -247,10 +240,10 @@ class RecruiterAgentExecutor(AgentExecutor):
 
         except Exception as e:
             logger.error(f"Error during streaming execution: {e}")
-            raise ServerError(error=InternalError()) from e
+            raise InternalError() from e
 
     async def cancel(
         self, _request: RequestContext, _event_queue: EventQueue
     ) -> Task | None:
         """Cancel this agent's execution for the given request context."""
-        raise ServerError(error=UnsupportedOperationError())
+        raise UnsupportedOperationError()
