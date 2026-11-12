@@ -35,6 +35,11 @@ def configure_logger(
     file_path: Path | str | None = None,
 ) -> None:
     logger.remove(None)
+    # LOG_FORMAT reads extra[name]. Modules that import loguru's logger directly
+    # (instead of get_logger) bind no name, and without a default every record
+    # from them fails in the handler and is dropped. get_logger(name) still
+    # overrides this default.
+    logger.configure(extra={"name": "root"})
 
     level = "DEBUG" if debug else "INFO"
 
