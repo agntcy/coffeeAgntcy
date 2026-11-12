@@ -222,7 +222,7 @@ For the logistics flow:
 
 For the recruiter flow:
 
-- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against the first `supported_interfaces` URL of `RECRUITER_AGENT_CARD` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`). The card declares `protocol_version="0.3"` so the a2a-sdk 1.x client speaks A2A v0.3 JSON-RPC to the recruiter service, which has not moved to a2a-sdk 1.x.
+- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against the first `supported_interfaces` URL of `RECRUITER_AGENT_CARD` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`). The card declares `protocol_version="1.0"` so the a2a-sdk 1.x client speaks A2A v1.0 JSON-RPC to the recruiter service. The recruiter runs on a2a-sdk 1.x and answers A2A v1.0 only on its JSON-RPC endpoint. This needs the recruiter image built from the a2a-sdk 1.x port, not the earlier published a2a 0.3 image.
 - That supervisor-to-recruiter hop is plain HTTP-based A2A rather than App SDK transport/topic routing.
 - After agent selection, the dynamic workflow forwards the user task to the chosen remote A2A endpoint advertised by the recruited agent.
 

@@ -38,7 +38,7 @@ TRANSPORT_SERVER_ENDPOINT=http://127.0.0.1:46357   # or nats://127.0.0.1:4222 wh
 FARM_BROADCAST_TOPIC=farm_broadcast_topic_name     # deprecated: not read by the current supervisor code
 ```
 
-SLIM 2.x rejects shared secrets shorter than 32 characters. The app-sdk takes the secret from the value passed in code, else from `SLIM_SHARED_SECRET`, else from a public placeholder with a warning in the log (`resolve_shared_secret()`). The supervisors (`SlimTransportConfig`) accept the placeholder. The farm servers (`CardBuilder`) refuse to start their SLIM interface when the secret is unset, empty or the placeholder, unless `SLIM_ALLOW_PLACEHOLDER_SECRET` is `true` (`common/slim_placeholder_secret.py`); Docker Compose and the Helm `local-cluster` set it for local demos. The placeholder is public: set your own random value of at least 32 characters, the same for every SLIM peer.
+SLIM rejects shared secrets shorter than 32 characters. The app-sdk takes the secret from the value passed in code, else from `SLIM_SHARED_SECRET`, else from a public placeholder with a warning in the log (`resolve_shared_secret()`). The supervisors (`SlimTransportConfig`) accept the placeholder. The farm servers (`CardBuilder`) refuse to start their SLIM interface when the secret is unset, empty or the placeholder, unless `SLIM_ALLOW_PLACEHOLDER_SECRET` is `true` (`common/slim_placeholder_secret.py`); Docker Compose and the Helm `local-cluster` set it for local demos. The placeholder is public: set your own random value of at least 32 characters, the same for every SLIM peer.
 
 ### 2) An AgentCard for the Farm
 
@@ -52,10 +52,12 @@ Minimum fields you should provide:
 - **`default_input_modes`** / **`default_output_modes`**: `["text"]`.
 - **`capabilities`**: e.g., `AgentCapabilities(streaming=True)`.
 - **`skills`**: at least an “inventory/yield” skill (`AgentSkill(id=...)` keeps its own `id`).
-- **`supported_interfaces`**: an ordered list of `AgentInterface(protocol_binding=..., url=...)`. The order is the preference order: clients negotiate in this order, and the farm server treats the first entry as its required (preferred) transport. Use the `InterfaceTransport` constants from `agntcy_app_sdk.semantic.a2a.transport_types`:
+- **`supported_interfaces`**: an ordered list of `AgentInterface(protocol_binding=..., url=..., protocol_version="1.0")`. Set `protocol_version` on every interface: a2a-sdk 1.2 logs "AgentCard is not spec-compliant" when it is empty. The order is the preference order: clients negotiate in this order, and the farm server treats the first entry as its required (preferred) transport. Use the `InterfaceTransport` constants from `agntcy_app_sdk.semantic.a2a.transport_types`:
   - `InterfaceTransport.SLIM_PATTERNS` with `slim://{SLIM_SERVER}/lungo/agents/<agent_id>`
   - `InterfaceTransport.NATS_PATTERNS` with `nats://{NATS_SERVER}/lungo/agents/<agent_id>`
-  - `InterfaceTransport.JSONRPC` with `http://0.0.0.0:{PORT}` (the bind address of the HTTP endpoint)
+  - `InterfaceTransport.JSONRPC` with `http://0.0.0.0:{PORT}` (the bind address of the HTTP endpoint: the app SDK reads the host and port to bind from it, so it is not an address clients can dial)
+
+  The farm server serves a copy of the card in which that wildcard host is replaced by `FARM_AGENT_HOST` (`config/config.py`, default `localhost`; compose sets the service name, for example `brazil-farm-server`, and the farm Helm charts take `config.farmAgentHost`). Port and path are kept. The port is `FARM_AGENT_PORT` (card defaults 9999 Brazil, 9998 Colombia, 9997 Vietnam; compose sets one per farm; the Helm charts set it from `service.port`, so the container, the Service and the advertised URL agree). The server refuses to start when `FARM_AGENT_HOST` is itself a wildcard, and warns when it is a loopback name inside a container or pod.
 
 Example (shortened from `agents/farms/brazil/card.py`):
 
@@ -69,9 +71,9 @@ AGENT_CARD = AgentCard(
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
     supported_interfaces=[
-        AgentInterface(protocol_binding=InterfaceTransport.SLIM_PATTERNS, url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
-        AgentInterface(protocol_binding=InterfaceTransport.NATS_PATTERNS, url=f"nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}"),
-        AgentInterface(protocol_binding=InterfaceTransport.JSONRPC, url=f"http://0.0.0.0:{PORT}"),
+        AgentInterface(protocol_binding=InterfaceTransport.SLIM_PATTERNS, url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}", protocol_version="1.0"),
+        AgentInterface(protocol_binding=InterfaceTransport.NATS_PATTERNS, url=f"nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}", protocol_version="1.0"),
+        AgentInterface(protocol_binding=InterfaceTransport.JSONRPC, url=f"http://0.0.0.0:{PORT}", protocol_version="1.0"),
     ],
 )
 ```
@@ -102,7 +104,7 @@ Your farm runs an A2A server (see existing `agents/farms/<farm>/farm_server.py`)
 
 - Builds a `DefaultRequestHandler(agent_executor=..., task_store=InMemoryTaskStore(), agent_card=AGENT_CARD)`. The `agent_card` argument is required in a2a-sdk 1.x.
 - Serves every entry of the card's `supported_interfaces`, each in its own app-sdk session (`session.add_a2a_card(card, handler)`), so one unavailable transport (for example NATS) cannot stop the others. A startup failure on the first, preferred interface is fatal; failures on the others are logged and skipped.
-- Also answers A2A v0.3 JSON-RPC calls on its HTTP endpoint (`A2AServerConfig(..., enable_v0_3_compat=True)` through `builder.override("jsonrpc", ...)`, with a `clone_card(AGENT_CARD)` so the module card is not edited), because the recruiter interviewer still speaks v0.3. The logistics servers (`agents/logistics/*/server.py`) do not do this: their cards advertise SLIM only, their HTTP port serves `/v1/health` and the card, and nothing calls their JSON-RPC over HTTP, so their HTTP JSON-RPC is A2A v1.0 only (the pre-migration app also answered v0.3 there).
+- Serves the HTTP JSON-RPC interface through `builder.override("jsonrpc", A2AServerConfig(...))` with a copy of the card (`with_public_http_host(AGENT_CARD, FARM_AGENT_HOST)`), so the module card keeps the bind address. The endpoint speaks A2A v1.0 only: `enable_v0_3_compat` is off, so a v0.3 request such as `message/send` gets "Method not found". The recruiter interviewer is an a2a-sdk 1.x client and dials the JSON-RPC interface the card declares (version 1.0). The logistics servers (`agents/logistics/*/server.py`) behave the same way: their cards advertise SLIM only and their HTTP port serves `/v1/health` and the card.
 - Replies with exactly one final `Message` (see below). Do not return a `Task`: in a2a-sdk 1.x an executor that enqueues a `Message` must not enqueue anything else afterwards.
 
 In practice, the supervisor sends:

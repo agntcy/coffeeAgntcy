@@ -117,17 +117,31 @@ uv run python src/agent_recruiter/server/server.py
 # Server starts at http://localhost:8881
 ```
 
+The server is a Starlette app built on `a2a-sdk` 1.x and served with uvicorn on port 8881 (all interfaces by default). Its JSON-RPC endpoint (`/`) speaks A2A v1.0 only: v0.3 compatibility is off, so a v0.3 client (`message/send`) gets a "method not found" error. The agent card lists a single `1.0` JSON-RPC interface and is served at both `/.well-known/agent-card.json` and `/.well-known/agent.json`. The Lungo recruiter supervisor speaks v1.0.
+
+The URL in the card is the address clients dial, not the address the server binds to, so set it to a host name that clients can resolve:
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `RECRUITER_AGENT_URL` | `http://localhost:8881` | URL published in the agent card, for example `http://recruiter:8881` inside a compose network or cluster |
+| `RECRUITER_BIND_HOST` | `0.0.0.0` | Interface the server listens on |
+| `RECRUITER_PORT` | `8881` | Port the server listens on |
+
+The server refuses to start (exit code 1) when `RECRUITER_AGENT_URL` has a wildcard host such as `0.0.0.0`, and logs a warning when it points at `localhost` inside a container or pod, because no other service can reach that address. An empty value is treated as unset.
+
 #### Verify the Server
 
 ```bash
-# Check agent card
-curl http://localhost:8881/.well-known/agent.json
+# Check agent card (also served at /.well-known/agent.json)
+curl http://localhost:8881/.well-known/agent-card.json
 
 # Expected response:
 {
   "name": "RecruiterAgent",
-  "url": "http://localhost:8881",
   "description": "An agent that helps find and recruit other agents based on specified criteria.",
+  "supportedInterfaces": [
+    {"url": "http://localhost:8881", "protocolBinding": "JSONRPC", "protocolVersion": "1.0"}
+  ],
   "version": "1.0.0",
   ...
 }
