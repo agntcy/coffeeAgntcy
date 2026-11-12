@@ -32,22 +32,45 @@ from agent_recruiter.interviewers.base_evaluator_agent import BaseEvaluatorAgent
 # Hosts that mean "listen on every interface" and cannot be dialed by a client.
 # Agents that bind to 0.0.0.0 often publish it in their card as the HTTP URL.
 _UNDIALABLE_HOSTS = {"", "0.0.0.0", "::"}
+# A loopback url only reaches the agent when we reached the agent over loopback too.
+_LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _is_dialable(url: str, address: str) -> bool:
+    """Whether ``url`` from a card can be dialed as an HTTP JSON-RPC endpoint.
+
+    The url must be http or https and must not be a wildcard bind address. A
+    loopback url is accepted only when ``address`` (where the card was fetched
+    from) is a loopback address as well, because otherwise it points at this
+    process's own host.
+    """
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    if parsed.scheme.lower() not in {"http", "https"} or host in _UNDIALABLE_HOSTS:
+        return False
+    return (
+        host not in _LOOPBACK_HOSTS
+        or (urlparse(address).hostname or "") in _LOOPBACK_HOSTS
+    )
 
 
 def ensure_jsonrpc_interface(card: AgentCard, address: str) -> None:
     """Make sure ``card`` has an HTTP JSON-RPC interface the client can use.
 
     The a2a-sdk client factory matches ``protocol_binding`` exactly (``JSONRPC``)
-    and dials the interface url as given. Cards in the wild break that in two
-    ways: the binding is spelled in lowercase (``jsonrpc``, as the lungo farms
-    publish it), or the url is missing or a wildcard bind address such as
-    ``http://0.0.0.0:9999``. We just fetched the card from ``address``, so that
-    address is known to be reachable; use it when the card offers nothing
-    usable. The first usable interface is kept, with only its binding
-    normalized, and becomes the card's only interface. The client factory
-    prefers an interface that declares version ``1.0`` over the first match,
-    so a second JSON-RPC interface (for example an undialable one) must not
-    stay on the card.
+    and dials the interface url as given. Cards in the wild break that in
+    several ways: the binding is spelled in lowercase (``jsonrpc``, as the
+    lungo farms publish it), or the url is missing, a wildcard bind address such
+    as ``http://0.0.0.0:9999``, a loopback address such as
+    ``http://localhost:9999`` (the default ``FARM_AGENT_HOST``) that points at
+    this process when the card was fetched from elsewhere, or not an http(s) url
+    (``slim://...``). We just fetched the card from ``address``, so that address
+    is known to be reachable; use it when the card offers nothing dialable (see
+    ``_is_dialable``). The first dialable interface is kept, with only its
+    binding normalized, and becomes the card's only interface. The client
+    factory prefers an interface that declares version ``1.0`` over the first
+    match, so a second JSON-RPC interface (for example an undialable one) must
+    not stay on the card.
 
     Interfaces for other transports (SLIM, NATS) are dropped in both cases,
     because the recruiter only speaks HTTP JSON-RPC.
@@ -56,8 +79,7 @@ def ensure_jsonrpc_interface(card: AgentCard, address: str) -> None:
         i for i in card.supported_interfaces if i.protocol_binding.upper() == "JSONRPC"
     ]
     for interface in jsonrpc:
-        host = urlparse(interface.url).hostname or ""
-        if interface.url and host not in _UNDIALABLE_HOSTS:
+        if _is_dialable(interface.url, address):
             chosen = AgentInterface()
             chosen.CopyFrom(interface)
             chosen.protocol_binding = "JSONRPC"

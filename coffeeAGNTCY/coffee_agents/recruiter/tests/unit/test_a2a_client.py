@@ -429,6 +429,50 @@ class TestEnsureJsonrpcInterface:
 
         assert card.supported_interfaces[0].url == self.ADDRESS
 
+    def test_loopback_url_is_replaced_when_the_card_was_fetched_from_elsewhere(self):
+        # FARM_AGENT_HOST defaults to localhost: dialed from the recruiter it
+        # would reach the recruiter itself, not the farm.
+        card = self._card(
+            AgentInterface(
+                url="http://localhost:9998",
+                protocol_binding="JSONRPC",
+                protocol_version="1.0",
+            )
+        )
+
+        ensure_jsonrpc_interface(card, "http://host.docker.internal:9998")
+
+        assert [i.url for i in card.supported_interfaces] == [
+            "http://host.docker.internal:9998"
+        ]
+
+    @pytest.mark.parametrize("card_url", ["http://localhost:9998", "http://127.0.0.1:9998"])
+    def test_loopback_url_is_kept_when_the_card_was_fetched_over_loopback(self, card_url):
+        card = self._card(
+            AgentInterface(
+                url=card_url, protocol_binding="JSONRPC", protocol_version="1.0"
+            )
+        )
+
+        ensure_jsonrpc_interface(card, "http://localhost:9998")
+
+        assert [i.url for i in card.supported_interfaces] == [card_url]
+
+    def test_jsonrpc_interface_with_a_non_http_url_is_replaced(self):
+        card = self._card(
+            AgentInterface(
+                url="slim://slim:46357/lungo/agents/farm",
+                protocol_binding="JSONRPC",
+                protocol_version="1.0",
+            )
+        )
+
+        ensure_jsonrpc_interface(card, self.ADDRESS)
+
+        assert [i.url for i in card.supported_interfaces] == [self.ADDRESS]
+        client = ClientFactory(ClientConfig()).create(card)
+        assert client._transport.url == self.ADDRESS
+
 
 class TestEvaluatorEndToEnd:
     """The evaluator resolves a live card, patches it and talks to the agent."""
