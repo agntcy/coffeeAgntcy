@@ -65,7 +65,10 @@ def _sign(
         "iat": now,
     }
     return jwt.encode(
-        claims, key if key is not None else private_key, algorithm=alg, headers={"kid": kid}
+        claims,
+        key if key is not None else private_key,
+        algorithm=alg,
+        headers={"kid": kid},
     )
 
 
@@ -118,6 +121,8 @@ class TestJwtSvidValidation:
         PyJWT against, so it must keep failing closed after an upgrade.
         """
         private_key, _ = keypair
-        token = _sign(private_key, alg="HS256", key="shared-secret-not-a-real-key-32-bytes-plus")
+        token = _sign(
+            private_key, alg="HS256", key="shared-secret-not-a-real-key-32-bytes-plus"
+        )
         with pytest.raises(InvalidAlgorithmError):
             JwtSvid.parse_and_validate(token, bundle, AUDIENCE)

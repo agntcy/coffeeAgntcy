@@ -36,7 +36,7 @@ services:
       - "8222:8222"
 
   slim:
-    image: ghcr.io/agntcy/slim:2.2.0@sha256:0d329cc438d4bbc6695917a94a59b8cb8d8c137dc59124357483dd709c677ba7
+    image: ghcr.io/agntcy/slim:3.4.6@sha256:54fde7ce0ef8efa6a61fee47996e941e87acb4e62284e5d9c00eb761295619b7
     container_name: slim-corto
     ports:
       - "46357:46357"

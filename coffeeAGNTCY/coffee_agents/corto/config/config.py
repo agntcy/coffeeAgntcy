@@ -29,7 +29,11 @@ SLIM_ALLOW_PLACEHOLDER_SECRET = os.getenv(
     "yes",
 )
 
-FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST", "localhost")
+# Host name clients dial for the farm's HTTP JSON-RPC endpoint (published in the
+# agent card). It is not the address the farm binds to: the farm always listens
+# on all interfaces. The Helm chart passes an empty string when unset, so an
+# empty value falls back to localhost.
+FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST") or "localhost"
 FARM_AGENT_PORT = int(os.getenv("FARM_AGENT_PORT", "9999"))
 
 LLM_MODEL = os.getenv("LLM_MODEL", "")

@@ -10,6 +10,7 @@ from a2a.types import Message, Part, Role, SendMessageRequest
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
 from common.a2a_helpers import response_message
 from common.a2a_transport_config import build_a2a_client_config
+from common.card_public_url import with_public_http_host
 from common.llm import get_llm
 from exchange.errors import (
     RemoteAgentNoResponseError,
@@ -17,11 +18,16 @@ from exchange.errors import (
     _is_no_payload_error,
     _is_timeout_error,
 )
-from farm.card import AGENT_CARD as farm_agent_card
+from config.config import FARM_AGENT_HOST
+from farm.card import AGENT_CARD
 from ioa_observe.sdk.decorators import agent
 from langchain_core.messages import HumanMessage, SystemMessage
 
 logger = logging.getLogger("corto.exchange.agent")
+
+# The farm's module card carries its bind address (0.0.0.0); a client has to see
+# the host the exchange can actually reach.
+farm_agent_card = with_public_http_host(AGENT_CARD, FARM_AGENT_HOST)
 
 a2a_client_factory = A2AClientFactory(
     build_a2a_client_config(

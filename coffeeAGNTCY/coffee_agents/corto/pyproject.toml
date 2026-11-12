@@ -5,7 +5,7 @@ description = ""
 authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "a2a-sdk==1.1.0",
+    "a2a-sdk==1.2.3",
     "click==8.4.1",
     "coloredlogs==15.0.1",
     "dotenv==0.9.9",
@@ -23,10 +23,10 @@ dependencies = [
     "requests==2.34.2",
     "starlette==1.6.0",
     "uvicorn==0.33.0",
-    "ioa-observe-sdk==1.0.49",
-    "agntcy-app-sdk==0.6.1",
-    "slim-bindings==2.2.0",
-    "slima2a==0.8.0",
+    "ioa-observe-sdk==1.1.0",
+    "agntcy-app-sdk==0.7.0",
+    "slim-bindings==3.3.9",
+    "slima2a==0.9.3",
     "azure-core==1.38.0",
     # Vulnerability fix for requests
     "langchain-core==1.6.2",
@@ -39,9 +39,9 @@ dependencies = [
     "PyNaCl==1.6.2",
     "mcp==1.30.0",
     "cryptography==50.0.1",
-    "grpcio==1.78.0",
-    "grpcio-tools==1.78.0",
-    "protobuf==6.33.5",
+    "grpcio==1.85.1",
+    "grpcio-tools==1.85.1",
+    "protobuf==7.36.2",
 ]
 
 [project.optional-dependencies]
@@ -71,13 +71,18 @@ override-dependencies = ["pyjwt[crypto]==2.15.1"]
 
 [tool.uv.exclude-newer-package]
 pyjwt = "2026-10-01T00:00:00Z"
-# Deliberate early adoption: agntcy-app-sdk 0.6.0 (uploaded 2026-10-21) is the
-# first release with SLIM 2.2 support, and it requires slima2a 0.8.0 (uploaded
-# 2026-10-13). Both are inside the 14-day window. 0.6.1 (uploaded 2026-11-06)
-# is also inside it: closing one SLIMTransport no longer disconnects the
-# connection the other transports in the process still use.
-agntcy-app-sdk = "2026-11-07T00:00:00Z"
-slima2a = "2026-10-14T00:00:00Z"
+# Deliberate early adoption of SLIM 3: agntcy-app-sdk 0.7.0 (uploaded
+# 2026-11-10) requires slim-bindings 3.3.9 (2026-10-27), slima2a 0.9.3 and
+# ioa-observe-sdk 1.1.0 (both 2026-10-22), a2a-sdk 1.2.3 (2026-10-19) and
+# grpcio-tools>=1.85.1 (2026-10-30). Some are inside the 14-day window. Each
+# date is a ceiling for that one package; later releases stay excluded until
+# someone moves it.
+agntcy-app-sdk = "2026-11-11T00:00:00Z"
+slima2a = "2026-10-23T00:00:00Z"
+slim-bindings = "2026-10-28T00:00:00Z"
+ioa-observe-sdk = "2026-10-23T00:00:00Z"
+grpcio = "2026-10-31T00:00:00Z"
+grpcio-tools = "2026-10-31T00:00:00Z"
 
 [build-system]
 requires = ["hatchling"]

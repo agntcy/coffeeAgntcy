@@ -9,6 +9,7 @@ from a2a.server.tasks import InMemoryTaskStore
 from agntcy_app_sdk import A2AServerConfig
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a.transport_types import normalize_transport
+from common.card_public_url import with_public_http_host
 from common.slim_placeholder_secret import (
     apply_placeholder_secret_policy,
     start_builder,
@@ -55,6 +56,18 @@ async def serve_multi_transport(agent_card, request_handler):
         )
         for other in advertised - {transport}:
             builder = builder.skip(other)
+        if transport == "jsonrpc":
+            # The SDK binds the HTTP server to the card's JSONRPC url (a listen
+            # address, 0.0.0.0), but the card it serves must advertise a host
+            # clients can dial. The override gets its own copy: the module card
+            # keeps the bind address, the copy advertises FARM_AGENT_HOST.
+            builder = builder.override(
+                "jsonrpc",
+                A2AServerConfig(
+                    agent_card=with_public_http_host(agent_card, FARM_AGENT_HOST),
+                    request_handler=request_handler,
+                ),
+            )
 
         try:
             await start_builder(builder, keep_alive=False)
@@ -89,10 +102,14 @@ async def main():
     )
 
     if DEFAULT_MESSAGE_TRANSPORT == "A2A":
-        server = A2AServerConfig(agent_card=AGENT_CARD, request_handler=request_handler)
+        server = A2AServerConfig(
+            agent_card=with_public_http_host(AGENT_CARD, FARM_AGENT_HOST),
+            request_handler=request_handler,
+        )
         config = Config(
             app=server.build_app(),
-            host=FARM_AGENT_HOST,
+            # Listen on all interfaces; FARM_AGENT_HOST is only the advertised host.
+            host="0.0.0.0",
             port=FARM_AGENT_PORT,
             loop="asyncio",
         )

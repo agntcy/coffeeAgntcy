@@ -15,6 +15,7 @@ service:
   port: 9999
 
 config:
+  # FARM_AGENT_HOST: the host name clients should dial for the HTTP JSON-RPC endpoint, published in the agent card (for example the Service name). Empty means localhost, which only the pod itself can reach. The farm still binds all interfaces.
   farmAgentHost: ""
   farmAgentPort: ""
   azureApiBase: ""

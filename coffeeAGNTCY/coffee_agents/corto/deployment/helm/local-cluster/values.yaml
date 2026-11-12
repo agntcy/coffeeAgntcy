@@ -21,8 +21,9 @@ clickhouse:
 slim:
   slim:
     image:
-      # Chart v2.2.0 defaults to appVersion 2.3.0.
-      tag: "2.2.0"
+      # Chart v2.9.2 defaults to appVersion 3.4.6. Pinned here so a chart bump
+      # cannot move the node; 3.4.6 is the version agntcy-app-sdk 0.7.0 is tested with.
+      tag: "3.4.6"
 
 corto-exchange:
   config:

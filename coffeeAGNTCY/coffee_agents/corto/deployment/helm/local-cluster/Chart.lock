@@ -1,7 +1,7 @@
 dependencies:
 - name: slim
   repository: oci://ghcr.io/agntcy/slim/helm
-  version: v2.2.0
+  version: v2.9.2
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
   version: 2.15.0
@@ -19,9 +19,9 @@ dependencies:
   version: 0.2.1
 - name: corto-farm
   repository: file://../farm
-  version: 0.3.0
+  version: 0.3.1
 - name: corto-ui
   repository: file://../corto-ui
   version: 0.1.1
-digest: sha256:188b9dfe13d4213efeba997684a6170575db32cf073914bbe5de996148bd32ab
-generated: "2026-10-22T22:41:27.003722+02:00"
+digest: sha256:947da0007254df64e59f5a32c068f3b95855a9ff8270dd0505aab073723cc4c6
+generated: "2026-11-11T15:03:49.18542+01:00"
