@@ -27,6 +27,12 @@ NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
 
 DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")
 
+# Host a farm advertises in its card for its HTTP JSON-RPC endpoint (the farm
+# itself binds all interfaces). Set it to a name other services can resolve,
+# such as the compose service name. Empty or unset means localhost, which only
+# works for runs on the host.
+FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST") or "localhost"
+
 # Host used to reach discovered agents that advertise an unroutable bind
 # address (e.g. http://0.0.0.0:9999). Defaults to localhost for host runs
 # (the farm ports are published there); set to host.docker.internal inside

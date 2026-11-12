@@ -12,6 +12,8 @@ data:
   SLIM_SERVER: "{{ .Values.config.slimServer }}"
   NATS_SERVER: "{{ .Values.config.natsServer }}"
   SLIM_ALLOW_PLACEHOLDER_SECRET: "{{ .Values.config.slimAllowPlaceholderSecret | default false }}"
+  FARM_AGENT_HOST: "{{ .Values.config.farmAgentHost }}"
+  FARM_AGENT_PORT: "{{ .Values.service.port }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
   IDENTITY_AUTH_ENABLED: "{{ .Values.config.identityAuthEnabled }}"

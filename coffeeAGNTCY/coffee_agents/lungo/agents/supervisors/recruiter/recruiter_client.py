@@ -488,10 +488,10 @@ async def evaluate_agent(
     single_agent_records = {cid: record}
 
     # Known limitation, deliberately not worked around here: a data part is a
-    # protobuf Struct, which only stores doubles, and a2a-sdk's v1 -> v0.3 bridge
-    # (a2a/compat/v0_3/conversions.py, to_compat_part) serialises it with
-    # MessageToDict. So an OASF ``"id": 10201`` reaches the recruiter as
-    # ``10201.0``. We cannot repair it on the wire: the recruiter service only reads
+    # protobuf Struct, which only stores doubles, and the JSON-RPC body is
+    # written with MessageToDict (A2A v1.0 and the v0.3 compat layer alike). So
+    # an OASF ``"id": 10201`` reaches the recruiter as ``10201.0``. We cannot
+    # repair it on the wire: the recruiter service only reads
     # typed DataParts (a JSON text part would be ignored), and turning every whole
     # float into an int here would corrupt genuine floats such as a score of 1.0
     # (see _restore_known_ints for the inbound side, which only restores ``id``).

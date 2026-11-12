@@ -15,13 +15,13 @@ from agents.farms.brazil.agent_executor import FarmAgentExecutor
 from agents.farms.brazil.card import AGENT_CARD
 from agntcy_app_sdk import A2AServerConfig
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.semantic.a2a.card_utils import clone_card
 from agntcy_app_sdk.semantic.a2a.transport_types import normalize_transport
+from common.card_public_url import with_public_http_host
 from common.slim_placeholder_secret import (
     apply_placeholder_secret_policy,
     start_builder,
 )
-from config.config import OTEL_SDK_DISABLED
+from config.config import FARM_AGENT_HOST, OTEL_SDK_DISABLED
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,9 +46,8 @@ async def serve_all_a2a_interfaces(
     - **natspatterns** - NATS-based pub/sub transport for broadcasting to multiple subscribers
     - **jsonrpc** - JSON-RPC endpoint for direct client-agent communication over HTTP
 
-    The HTTP JSON-RPC endpoint also accepts A2A v0.3 requests (``message/send``,
-    ``message/stream``) so v0.3 callers such as the recruiter interviewer keep
-    working. The session is kept alive until the process is interrupted.
+    The HTTP JSON-RPC endpoint speaks A2A v1.0 only. The session is kept alive
+    until the process is interrupted.
 
     Args:
         request_handler: The A2A request handler wired to the
@@ -78,13 +77,14 @@ async def serve_all_a2a_interfaces(
             builder = builder.skip(other)
         if transport == "jsonrpc":
             # The override gets its own copy: with identity auth on, the SDK
-            # edits the card it serves, which must not be the module card.
+            # edits the card it serves, which must not be the module card. The
+            # module card keeps the bind address (the SDK binds to it); the copy
+            # advertises FARM_AGENT_HOST instead.
             builder = builder.override(
                 "jsonrpc",
                 A2AServerConfig(
-                    agent_card=clone_card(agent_card),
+                    agent_card=with_public_http_host(agent_card, FARM_AGENT_HOST),
                     request_handler=request_handler,
-                    enable_v0_3_compat=True,
                 ),
             )
 

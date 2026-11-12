@@ -98,10 +98,20 @@ def test_card_has_no_v03_only_fields(module_name, attr, name, expected):
     assert card_json["capabilities"]["streaming"] is True
 
 
-def test_recruiter_service_card_targets_the_v03_service():
-    """The recruiter service still speaks A2A v0.3, so the client picks the compat transport."""
+@pytest.mark.parametrize(
+    "module_name,attr,name,expected", CARDS, ids=[c[0] for c in CARDS]
+)
+def test_card_interfaces_declare_protocol_version(module_name, attr, name, expected):
+    """a2a-sdk 1.2 logs "AgentCard is not spec-compliant" for an empty protocol_version."""
+    card = _card(module_name, attr)
+
+    assert all(i.protocol_version for i in card.supported_interfaces)
+
+
+def test_recruiter_service_card_targets_the_v1_service():
+    """The supervisor speaks A2A v1.0 to the recruiter service (a2a-sdk 1.x server)."""
     card = _card(
         "agents.supervisors.recruiter.recruiter_service_card", "RECRUITER_AGENT_CARD"
     )
     [interface] = card.supported_interfaces
-    assert interface.protocol_version == "0.3"
+    assert interface.protocol_version == "1.0"

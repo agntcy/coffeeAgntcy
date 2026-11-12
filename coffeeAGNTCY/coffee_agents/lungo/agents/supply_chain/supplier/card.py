@@ -59,6 +59,7 @@ def build_agent_card(supplier_id: SupplierId) -> AgentCard:
             AgentInterface(
                 protocol_binding=InterfaceTransport.SLIM_PATTERNS,
                 url=f"slim://{SLIM_SERVER}/lungo/agents/{agent_id(supplier_id)}",
+                protocol_version="1.0",
             ),
         ],
     )

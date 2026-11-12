@@ -182,8 +182,8 @@ async def test_all_transports_failing_raises(patch_factory, module_name):
 async def test_jsonrpc_interface_accepts_a2a_v03_on_a_card_copy(
     patch_factory, module_name
 ):
-    # The HTTP JSON-RPC interface is served through an override that enables
-    # A2A v0.3 compatibility (message/send, message/stream) for v0.3 callers.
+    # The HTTP JSON-RPC interface is served through an override that carries
+    # the card copy with the public host. It is A2A v1.0 only: no v0.3 routes.
     module, fake = patch_factory(module_name, set())
     card = _make_card()
     handler = object()
@@ -195,11 +195,38 @@ async def test_jsonrpc_interface_accepts_a2a_v03_on_a_card_copy(
     assert nats_session.overrides == {}
     override = jsonrpc_session.overrides["jsonrpc"]
     assert isinstance(override, A2AServerConfig)
-    assert override.enable_v0_3_compat is True
     assert override.request_handler is handler
     # A copy: with identity auth on, the SDK edits the card it serves.
-    assert override.agent_card == card
     assert override.agent_card is not card
+    # The module card keeps the bind address; the served copy advertises the
+    # farm host (localhost unless FARM_AGENT_HOST is set) on the same port.
+    assert (
+        next(
+            i.url
+            for i in card.supported_interfaces
+            if i.protocol_binding == InterfaceTransport.JSONRPC
+        )
+        == "http://0.0.0.0:9999/"
+    )
+    served = {
+        i.protocol_binding: i.url for i in override.agent_card.supported_interfaces
+    }
+    assert served[InterfaceTransport.JSONRPC] == "http://localhost:9999/"
+    assert served[InterfaceTransport.SLIM_PATTERNS] == "slim://localhost:46357/topic"
+
+
+@pytest.mark.parametrize("module_name", FARM_SERVER_MODULES)
+async def test_jsonrpc_interface_advertises_the_configured_farm_host(
+    patch_factory, monkeypatch, module_name
+):
+    module, fake = patch_factory(module_name, set())
+    monkeypatch.setattr(module, "FARM_AGENT_HOST", "farm-server")
+
+    await module.serve_all_a2a_interfaces(object(), _make_card())
+
+    override = fake.sessions[2].overrides["jsonrpc"]
+    urls = {i.protocol_binding: i.url for i in override.agent_card.supported_interfaces}
+    assert urls[InterfaceTransport.JSONRPC] == "http://farm-server:9999/"
 
 
 @pytest.mark.parametrize("module_name", FARM_SERVER_MODULES)
