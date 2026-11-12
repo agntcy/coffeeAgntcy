@@ -92,6 +92,8 @@ Card fields from A2A v0.3 that no longer exist (**deprecated, do not set them**)
 
 The OASF records under `agents/**/oasf/` are still written in the A2A v0.3 card shape (`url`, `preferredTransport`, `additionalInterfaces`) on purpose: the recruiter and the frontend read that shape.
 
+The farms' HTTP JSON-RPC endpoint is A2A v1.0 only (the v0.3 compatibility layer is off), but all 15 records carry the card-level `protocolVersion "0.3.0"`, and `oasf_to_agent_card` labels every interface of a record with it. SLIM and NATS ignore the label and the supervisor's dynamic workflow picks the first transport a record lists (SLIM), so the shipped records never reach the farms' HTTP endpoint. A record whose only interface is HTTP would be called as v0.3 and fail against a farm. Moving the records to `1.0` is a separate change that has to cover all records, their consumers and the published Directory entries.
+
 The supervisor currently expects new farms to be wired into:
 
 - A new card module: `agents/farms/<new_farm>/card.py` exporting `AGENT_CARD`.
