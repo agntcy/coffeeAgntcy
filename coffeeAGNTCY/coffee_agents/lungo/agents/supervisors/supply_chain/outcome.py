@@ -21,15 +21,22 @@ from agents.supply_chain.common.fixtures import SupplierId
 from agents.supply_chain.common.record import Milestone, Reason, Status
 
 
+# The models the LLM fills in (``PlanLot``, ``PlanProposal``) have no defaulted
+# fields: Azure strict structured output needs every property in ``required``.
+# A value that can be absent is ``X | None`` and the model answers ``null``.
 class PlanLot(BaseModel):
     supplier: SupplierId
-    tonnes: float = Field(gt=0, description="Metric tonnes taken from this supplier.")
+    # No ``gt=0`` here: Azure strict structured output rejects the keyword.
+    # The Buyer decision check (``validate_decision``) enforces it instead.
+    tonnes: float = Field(description="Metric tonnes taken from this supplier.")
     grade: str = Field(
         description="Coffee grade of this lot, as the supplier stated it."
     )
     origin_ready_at: datetime | None = Field(
-        default=None,
-        description="When the lot is ready for pickup at origin, if a party stated it.",
+        description=(
+            "When the lot is ready for pickup at origin, if a party stated "
+            "it, otherwise null."
+        ),
     )
     transport_option: str = Field(
         description=(
@@ -39,15 +46,17 @@ class PlanLot(BaseModel):
         )
     )
     claimed_arrival_at: datetime | None = Field(
-        default=None,
-        description="When this lot arrives at the destination, if you worked it out.",
+        description=(
+            "When this lot arrives at the destination, if you worked it out, "
+            "otherwise null."
+        ),
     )
 
 
 class PlanProposal(BaseModel):
     lots: list[PlanLot]
     total_cost_usd: float | None = Field(
-        default=None, description="Total transport cost of the plan."
+        description="Total transport cost of the plan, or null if not known."
     )
     # The milestone is not part of what the Buyer's model is asked for, so the
     # baseline does not clarify "delivery" through the plan schema. It stays

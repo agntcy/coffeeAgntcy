@@ -52,8 +52,10 @@ Configurations:
 
 
 class _Extracted(BaseModel):
-    case: Literal["ambiguous", "explicit", "infeasible", "disruption"] | None = None
-    configuration: Literal["baseline", "l9_hybrid", "l9_full"] | None = None
+    # No defaults: Azure strict structured output needs every property in
+    # ``required``. The model answers null for what the prompt does not state.
+    case: Literal["ambiguous", "explicit", "infeasible", "disruption"] | None
+    configuration: Literal["baseline", "l9_hybrid", "l9_full"] | None
 
 
 @dataclass(frozen=True)
@@ -111,7 +113,10 @@ async def _extract(prompt: str, llm_factory: Callable[..., Any] | None) -> _Extr
         from common.llm import get_llm
 
         llm_factory = get_llm
-    structured = llm_factory(streaming=False).with_structured_output(_Extracted)
+    # Explicit: both clients send strict already; test_structured_output_request.py pins it.
+    structured = llm_factory(streaming=False).with_structured_output(
+        _Extracted, strict=True
+    )
     result = await structured.ainvoke(
         [SystemMessage(_INSTRUCTIONS), HumanMessage(prompt)]
     )
@@ -130,7 +135,7 @@ async def resolve_selection(
     tagged = parse_tag(prompt) if (case is None or configuration is None) else None
     tag_case, tag_configuration = tagged if tagged else (None, None)
 
-    extracted = _Extracted()
+    extracted = _Extracted(case=None, configuration=None)
     still_open = (case or tag_case) is None or (
         configuration or tag_configuration
     ) is None

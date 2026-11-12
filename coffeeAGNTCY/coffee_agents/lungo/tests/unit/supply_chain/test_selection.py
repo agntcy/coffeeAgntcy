@@ -41,6 +41,14 @@ async def test_prompt_names_case_and_configuration():
     assert "infeasible" in llm.prompt_text() and "l9_hybrid" in llm.prompt_text()
 
 
+async def test_extraction_asks_for_strict_structured_output():
+    from agents.supervisors.supply_chain.selection import _Extracted
+
+    llm = FakeLLM({"case": None, "configuration": None})
+    await resolve_selection("run something", llm_factory=llm)
+    assert llm.structured_calls == [(_Extracted, {"strict": True})]
+
+
 async def test_unsure_prompt_defaults_and_says_so():
     llm = FakeLLM({"case": None, "configuration": None})
     sel = await resolve_selection("run something", llm_factory=llm)

@@ -171,7 +171,8 @@ class MemberAgent:
         return reply(request, self.party, kind, body)
 
     async def _confirm(self, messages: list[BaseMessage]) -> str:
-        structured = self._llm().with_structured_output(ConfirmDecision)
+        # Explicit: both clients send strict already; test_structured_output_request.py pins it.
+        structured = self._llm().with_structured_output(ConfirmDecision, strict=True)
         decision = await structured.ainvoke(messages)
         if isinstance(decision, dict):
             decision = ConfirmDecision.model_validate(decision)

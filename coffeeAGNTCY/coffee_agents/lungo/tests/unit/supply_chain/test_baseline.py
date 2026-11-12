@@ -20,6 +20,11 @@ from agents.supervisors.supply_chain.strategies.baseline import (
 from agents.supply_chain.common import fixtures as fx
 from agents.supply_chain.common.member import ConfirmDecision, MemberAgent
 from tests.helpers.supply_chain_fakes import FakeGroupTransport, FakeLLM
+from tests.helpers.supply_chain_models import (
+    buyer_decision,
+    plan_lot,
+    plan_proposal,
+)
 
 PARTIES = list(fx.PARTIES)
 GRADE = "Grade 1 washed Arabica, screen 17/18"
@@ -47,9 +52,9 @@ def plan(c_option: str = "expedited", *, total: float = 19000) -> PlanProposal:
         "supplier_b": "standard",
         "supplier_c": c_option,
     }
-    return PlanProposal(
+    return plan_proposal(
         lots=[
-            PlanLot(supplier=s, tonnes=t, grade=GRADE, transport_option=options[s])
+            plan_lot(supplier=s, tonnes=t, grade=GRADE, transport_option=options[s])
             for s, t in (("supplier_a", 400), ("supplier_b", 350), ("supplier_c", 250))
         ],
         total_cost_usd=total,
@@ -59,7 +64,7 @@ def plan(c_option: str = "expedited", *, total: float = 19000) -> PlanProposal:
 
 
 def propose(p: PlanProposal | None = None) -> BuyerDecision:
-    return BuyerDecision(action="propose_plan", plan=p or plan())
+    return buyer_decision(action="propose_plan", plan=p or plan())
 
 
 class Run:
@@ -104,14 +109,20 @@ class Run:
 
 
 def continue_with(text: str = "Please refine.") -> BuyerDecision:
-    return BuyerDecision(action="continue", message=text)
+    return buyer_decision(action="continue", message=text)
 
 
 # -- rounds ----------------------------------------------------------------------
 
 
+async def test_the_buyer_decision_asks_for_strict_structured_output(tmp_path):
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="stop"))
+    await run.go()
+    assert run.buyer_llm.structured_calls[0] == (BuyerDecision, {"strict": True})
+
+
 async def test_a_round_asks_a_b_c_then_logistics_one_at_a_time(tmp_path):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="stop"))
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="stop"))
     await run.go()
 
     requests = [
@@ -128,7 +139,7 @@ async def test_a_round_asks_a_b_c_then_logistics_one_at_a_time(tmp_path):
 
 async def test_the_opening_is_the_fixture_wording_word_for_word(tmp_path):
     run = Run(
-        tmp_path, BuyerDecision(action="withhold", reason="stop"), case="ambiguous"
+        tmp_path, buyer_decision(action="withhold", reason="stop"), case="ambiguous"
     )
     await run.go()
 
@@ -139,7 +150,7 @@ async def test_the_opening_is_the_fixture_wording_word_for_word(tmp_path):
 
 
 async def test_each_agent_sees_what_the_earlier_agents_said(tmp_path):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="stop"))
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="stop"))
     await run.go()
 
     assert "supplier_a speaks" not in run.llms["supplier_a"].prompt_text(0)
@@ -152,7 +163,7 @@ async def test_the_next_round_repeats_the_buyers_continue_message(tmp_path):
     run = Run(
         tmp_path,
         continue_with("Supplier C, can you ship sooner?"),
-        BuyerDecision(action="withhold", reason="stop"),
+        buyer_decision(action="withhold", reason="stop"),
     )
     await run.go()
 
@@ -165,7 +176,7 @@ async def test_the_next_round_repeats_the_buyers_continue_message(tmp_path):
 
 async def test_an_empty_continue_message_falls_back_to_a_neutral_prompt(tmp_path):
     run = Run(
-        tmp_path, continue_with("  "), BuyerDecision(action="withhold", reason="x")
+        tmp_path, continue_with("  "), buyer_decision(action="withhold", reason="x")
     )
     await run.go()
     round_two = [
@@ -231,7 +242,7 @@ async def test_the_confirm_request_carries_the_plan_to_all_five(tmp_path):
 
 
 async def test_withhold_on_a_feasible_case_is_a_false_withhold(tmp_path):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="no clarity"))
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="no clarity"))
     result = await run.go()
 
     assert (result.record["status"], result.record["reason"]) == (
@@ -246,7 +257,7 @@ async def test_withhold_on_a_feasible_case_is_a_false_withhold(tmp_path):
 async def test_withhold_on_the_infeasible_case_passes(tmp_path):
     run = Run(
         tmp_path,
-        BuyerDecision(action="withhold", reason="no capacity"),
+        buyer_decision(action="withhold", reason="no capacity"),
         case="infeasible",
     )
     result = await run.go()
@@ -256,7 +267,7 @@ async def test_withhold_on_the_infeasible_case_passes(tmp_path):
 async def test_escalate_is_recorded_and_flagged(tmp_path):
     run = Run(
         tmp_path,
-        BuyerDecision(action="escalate", reason="needs a human"),
+        buyer_decision(action="escalate", reason="needs a human"),
         case="infeasible",
     )
     result = await run.go()
@@ -415,7 +426,7 @@ async def test_withholding_after_the_disruption_is_the_right_answer(tmp_path):
     run = Run(
         tmp_path,
         propose(),
-        BuyerDecision(action="withhold", reason="C is late now"),
+        buyer_decision(action="withhold", reason="C is late now"),
         case="disruption",
     )
     result = await run.go()
@@ -430,7 +441,7 @@ async def test_no_disruption_is_injected_when_the_first_outcome_is_not_a_commitm
 ):
     run = Run(
         tmp_path,
-        BuyerDecision(action="withhold", reason="no"),
+        buyer_decision(action="withhold", reason="no"),
         case="disruption",
     )
     result = await run.go()
@@ -456,7 +467,7 @@ async def test_the_resumed_negotiation_has_a_fresh_round_budget(tmp_path):
         propose(),
         continue_with(),
         continue_with(),
-        BuyerDecision(action="withhold", reason="done"),
+        buyer_decision(action="withhold", reason="done"),
         case="disruption",
         limits=Limits(max_rounds=3),
     )
@@ -471,7 +482,7 @@ async def test_the_resumed_negotiation_has_a_fresh_round_budget(tmp_path):
 
 
 async def test_a_plan_action_without_a_plan_is_a_protocol_error_and_invalid(tmp_path):
-    run = Run(tmp_path, BuyerDecision(action="propose_plan"))
+    run = Run(tmp_path, buyer_decision(action="propose_plan"))
     result = await run.go()
 
     assert result.record["reason"] == "protocol_error"
@@ -481,7 +492,9 @@ async def test_a_plan_action_without_a_plan_is_a_protocol_error_and_invalid(tmp_
 
 async def test_a_buyer_decision_returned_as_a_dict_is_accepted(tmp_path):
     run = Run(tmp_path)
-    run.buyer_llm.replies.append({"action": "withhold", "reason": "dict"})
+    run.buyer_llm.replies.append(
+        {"action": "withhold", "message": "", "plan": None, "reason": "dict"}
+    )
     result = await run.go()
     assert result.outcome.detail == "dict"
 
@@ -509,7 +522,7 @@ async def test_an_unreadable_confirmation_is_a_protocol_error(tmp_path):
 async def test_the_decision_prompt_holds_the_buyers_role_and_the_transcript_only(
     tmp_path,
 ):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="x"))
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="x"))
     await run.go()
 
     prompt = run.buyer_llm.prompt_text()
@@ -521,7 +534,7 @@ async def test_the_decision_prompt_holds_the_buyers_role_and_the_transcript_only
 
 
 async def test_the_decision_prompt_does_not_hint_at_what_to_verify(tmp_path):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="x"))
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="x"))
     await run.go()
     decision_text = run.buyer_llm.calls[0][0].content.lower()
     for hint in ("verify", "feasib", "milestone is", "check that", "arrive after"):
@@ -574,7 +587,7 @@ async def test_the_runner_runs_the_real_baseline_strategy_end_to_end(tmp_path):
 
 @pytest.mark.parametrize("case", fx.CASES)
 async def test_every_case_runs_through_the_strategy(tmp_path, case):
-    run = Run(tmp_path, BuyerDecision(action="withhold", reason="x"), case=case)
+    run = Run(tmp_path, buyer_decision(action="withhold", reason="x"), case=case)
     result = await run.go()
     assert result.record["case"] == case and result.verdict["verdict"] in (
         "PASS",

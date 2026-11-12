@@ -25,6 +25,7 @@ class FakeLLM:
         self.replies = list(replies)
         self.calls: list[list[BaseMessage]] = []
         self.bound_tools: list[Any] = []
+        self.structured_calls: list[tuple[Any, dict[str, Any]]] = []
 
     def __call__(self, **_kwargs: Any) -> FakeLLM:
         return self
@@ -33,7 +34,8 @@ class FakeLLM:
         self.bound_tools.extend(tools)
         return self
 
-    def with_structured_output(self, _schema: Any) -> FakeLLM:
+    def with_structured_output(self, schema: Any, **kwargs: Any) -> FakeLLM:
+        self.structured_calls.append((schema, kwargs))
         return self
 
     async def ainvoke(self, messages: list[BaseMessage]) -> Any:
