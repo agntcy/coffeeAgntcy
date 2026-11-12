@@ -64,9 +64,11 @@ See proposal.md for why. What the code looks like today, as observed:
 
 **Non-Goals:**
 
-- No change to agent behavior, topics, transports or the A2A protocol
-  version, except that the supervisor's recruiter card and the recruiter
-  server move to A2A `"1.0"` (the server drops its v0.3 compatibility).
+- No change to agent behavior, topics or transports, and no change to the A2A
+  protocol version except: the supervisor's recruiter card and the recruiter
+  server move to A2A `"1.0"` (the server drops its v0.3 compatibility), and
+  the lungo farms' HTTP JSON-RPC endpoint drops its v0.3 compatibility layer
+  too (see decision 7).
 - No SLIM or NATS transport for the recruiter. It is served and called over
   HTTP JSON-RPC only, as today.
 - No adoption of new SLIM 3 features.
@@ -125,8 +127,10 @@ the same logic, so a speculative change doubles the review.
 
 **5. For the `protocol_version` warning, set it explicitly on the
 interfaces the repo builds** (the value the SDK uses for interfaces it
-creates, `"1.0"`), unless a test shows the interface is deliberately a v0.3
-one (only the recruiter server's second interface is). Alternative: filter the warning in the
+creates, `"1.0"`). No interface the repo builds is deliberately a v0.3 one;
+the only `"0.3"` left is the flat-record fallback in
+`lungo/agents/supervisors/recruiter/models.py`, which describes outside
+agents. Alternative: filter the warning in the
 logging config. Rejected: it hides the same message for real mismatches.
 
 **6. One change for lungo and corto, done in two steps.** They share the

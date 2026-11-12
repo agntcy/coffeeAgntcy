@@ -89,6 +89,29 @@ needs are listed here:
   `"1.0"` on every interface. Their served card has no v0.3-only fields
   (`url`, `protocolVersion`, `preferredTransport`); an outside v0.3 client that
   resolves such a card fails to parse it.
+- **BREAKING:** the lungo farm servers (Brazil, Colombia, Vietnam) no longer
+  enable the A2A v0.3 compatibility layer on their HTTP JSON-RPC endpoint
+  (`enable_v0_3_compat` removed). It speaks A2A v1.0 only, and a v0.3
+  `message/send` gets "Method not found". A recruiter image built before this
+  change is an a2a 0.3 client and cannot evaluate them: roll out the
+  `recruiter` image from this release together with the farms.
+- The lungo farm charts set `FARM_AGENT_PORT` from `service.port` (default
+  9999), so the Colombia and Vietnam pods listen on 9999 in Kubernetes instead
+  of the card defaults 9998 and 9997.
+- Corto: chart `corto-farm` is `0.3.1`. `FARM_AGENT_HOST` is now only the host
+  published in the card; the farm always listens on `0.0.0.0` in both SLIM and
+  A2A modes (before, it bound `FARM_AGENT_HOST`, default `localhost`, so host
+  runs were loopback only). A wildcard `FARM_AGENT_HOST` (`0.0.0.0`, `::`) now
+  stops the farm and the exchange at start-up; use a resolvable name. An empty
+  value means `localhost`.
+- The farms' HTTP JSON-RPC interface is A2A v1.0. The OASF records under
+  `lungo/agents/supervisors/*/oasf/agents/` (15 files) are unchanged and still
+  carry `protocolVersion "0.3.0"`, and `oasf_to_agent_card` labels every
+  interface of a record with it. SLIM and NATS ignore the label and are chosen
+  before HTTP, so the shipped records do not reach the farms' HTTP endpoint. A
+  record whose only interface is HTTP is called as v0.3 and fails against a
+  farm. Moving the records to 1.0 is a separate change for all records, their
+  consumers and the published Directory entries.
 - The recruiter's spiffe/pyjwt compat test and the unused `buf.build` uv
   index were removed; `pyjwt` is now a floor constraint there.
 
