@@ -7,7 +7,12 @@ import importlib
 
 import pytest
 
-import config.config as config_module
+
+def _reload_registered_config():
+    # Resolve the module at call time, not import time: the integration
+    # supervisor_client fixture drops config.config from sys.modules, and
+    # importlib.reload() rejects a module that is no longer registered there.
+    return importlib.reload(importlib.import_module("config.config"))
 
 
 @pytest.fixture
@@ -17,11 +22,11 @@ def reload_config(monkeypatch):
             monkeypatch.delenv("FARM_AGENT_HOST", raising=False)
         else:
             monkeypatch.setenv("FARM_AGENT_HOST", value)
-        return importlib.reload(config_module)
+        return _reload_registered_config()
 
     yield _reload
     monkeypatch.delenv("FARM_AGENT_HOST", raising=False)
-    importlib.reload(config_module)
+    _reload_registered_config()
 
 
 @pytest.mark.parametrize(
