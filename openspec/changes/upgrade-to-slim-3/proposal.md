@@ -71,8 +71,17 @@ needs are listed here:
   `grpcio` 1.78.0 to 1.85.1; its lock resolves `griffe` 1.15.0 (was 2.3.0).
 - Helm: `slim` chart `v2.9.2` with image tag `3.4.6`; corto `local-cluster`
   0.5.0, lungo `local-cluster` 0.9.0; new `payment-mcp-server` values.
-- The recruiter chart is `0.2.0`: the SLIM and NATS values and the transport
-  secret are removed and `recruiterAgentUrl` is new. The recruiter card now
+- The recruiter chart is `0.2.0`: the SLIM and NATS values (`slimSharedSecret`
+  and the four transport keys) and the transport secret are removed and
+  `recruiterAgentUrl` is new. The recruiter never read those values (its card
+  declared only HTTP JSON-RPC, so app-sdk did not set up SLIM or NATS), and no
+  other workload reads the recruiter's ConfigMap or Secret. A values file
+  outside this repo that still sets the removed keys has them ignored, and the
+  chart no longer creates the `<appName>-transport-secret` Secret. Only the
+  recruiter lost these settings: every other lungo service, chart and
+  `config/config.py` keeps `DEFAULT_MESSAGE_TRANSPORT`,
+  `TRANSPORT_SERVER_ENDPOINT`, `SLIM_SERVER`, `NATS_SERVER` and
+  `SLIM_SHARED_SECRET`. The recruiter card now
   advertises `RECRUITER_AGENT_URL` instead of `http://0.0.0.0:8881`, and the
   listen address comes from `RECRUITER_BIND_HOST` and `RECRUITER_PORT`.
 - The lungo farm servers (Brazil, Colombia, Vietnam) serve a card copy that
