@@ -15,7 +15,7 @@ dependencies = [
     "langchain-google-genai==4.2.0",
     "langchain-openai==1.6.2",
     "langchain-litellm==0.3.5",
-    "langgraph==1.2.11",
+    "langgraph==1.2.14",
     "langgraph-supervisor==0.0.31",
     "litellm==1.88.6",
     "pydantic==2.12.5",
