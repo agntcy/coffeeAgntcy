@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-RECRUITER_AGENT_URL = os.getenv("RECRUITER_AGENT_URL", "http://localhost:8881")
+# `or` also covers an empty value: the recruiter-supervisor chart renders
+# RECRUITER_AGENT_URL="" when recruiterAgentUrl is unset.
+RECRUITER_AGENT_URL = os.getenv("RECRUITER_AGENT_URL") or "http://localhost:8881"
 
 # Define A2A agent card. The recruiter service is an a2a-sdk 1.x server that
 # speaks A2A v1.0 only. protocol_version "1.0" makes the a2a-sdk 1.x
