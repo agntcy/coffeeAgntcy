@@ -810,11 +810,18 @@ services:
       - TZ=UTC
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - RECRUITER_AGENT_URL=http://recruiter:8881
+      # Farm records published in the directory carry http://0.0.0.0:<port>
+      # (the card's bind address); the evaluator reaches those through the host
+      # gateway and the farms' host-published ports.
+      - RECRUITER_DISCOVERED_AGENT_HOST=${DISCOVERED_AGENT_HOST:-host.docker.internal}
       - ENABLE_HTTP=true
       - MCP_CONNECTION_MODE=binary
       - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
       - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
       - OASF_API_VALIDATION_SCHEMA_URL=https://schema.oasf.outshift.com
+    extra_hosts:
+      # Make host.docker.internal resolvable on Linux (no-op on Docker Desktop).
+      - "host.docker.internal:host-gateway"
     ports:
       - "8881:8881"
     profiles:

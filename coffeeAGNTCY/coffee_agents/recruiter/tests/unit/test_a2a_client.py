@@ -166,6 +166,82 @@ class TestParseRecord:
         assert record == V03_CARD
 
 
+# Shape of the lungo farm records: SLIM first, the HTTP interface listed with
+# the bind address of the farm.
+FARM_RECORD = {
+    "name": "Colombia Coffee Farm",
+    "description": "A farm",
+    "url": "slim://slim:46357/lungo/agents/colombia_coffee_farm",
+    "version": "1.0.0",
+    "protocolVersion": "0.3.0",
+    "preferredTransport": "slim",
+    "capabilities": {"streaming": True},
+    "defaultInputModes": ["text"],
+    "defaultOutputModes": ["text"],
+    "skills": [],
+    "additionalInterfaces": [
+        {
+            "transport": "slim",
+            "url": "slim://slim:46357/lungo/agents/colombia_coffee_farm",
+        },
+        {"transport": "jsonrpc", "url": "http://0.0.0.0:9998"},
+    ],
+}
+
+
+class TestDiscoveredAgentHost:
+    """Bind and loopback hosts in a record are rewritten to a dialable host."""
+
+    def test_wildcard_host_of_a_farm_record_is_rewritten(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "host.docker.internal")
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://host.docker.internal:9998"
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            ("http://0.0.0.0:9997", "http://gateway:9997"),
+            ("http://localhost:9999/a?x=1", "http://gateway:9999/a?x=1"),
+            ("https://127.0.0.1:8443", "https://gateway:8443"),
+            ("http://[::]:9999", "http://gateway:9999"),
+            ("http://0.0.0.0", "http://gateway"),
+            ("http://colombia-farm-server:9998", "http://colombia-farm-server:9998"),
+            ("http://203.0.113.7:9998", "http://203.0.113.7:9998"),
+        ],
+    )
+    def test_host_rewrite_keeps_port_path_and_other_hosts(
+        self, monkeypatch, url, expected
+    ):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "gateway")
+
+        config = parse_a2a_agent_record({"name": "Loose", "url": url})
+
+        assert config.evaluated_agent_url == expected
+
+    def test_default_host_is_localhost(self, monkeypatch):
+        monkeypatch.delenv("RECRUITER_DISCOVERED_AGENT_HOST", raising=False)
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://localhost:9998"
+
+    def test_empty_setting_is_treated_as_unset(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "")
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://localhost:9998"
+
+    def test_non_http_url_is_not_rewritten(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "gateway")
+
+        config = parse_a2a_agent_record({"name": "Bus", "url": "slim://localhost:1/x"})
+
+        assert config.evaluated_agent_url == "slim://localhost:1/x"
+
+
 class TestTaskCallback:
     @staticmethod
     def _status(task_id, state, text=None, metadata=None):

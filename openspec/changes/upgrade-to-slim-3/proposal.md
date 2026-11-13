@@ -121,6 +121,17 @@ needs are listed here:
   record whose only interface is HTTP is called as v0.3 and fails against a
   farm. Moving the records to 1.0 is a separate change for all records, their
   consumers and the published Directory entries.
+- The recruiter replaces a wildcard or loopback host (`0.0.0.0`, `::`,
+  `127.0.0.1`, `::1`, `localhost`) in the HTTP address of a discovered agent
+  record with the new `RECRUITER_DISCOVERED_AGENT_HOST` (default `localhost`),
+  keeping the port. The shipped farm records publish `http://0.0.0.0:<port>`,
+  which from the recruiter is the recruiter itself. Compose sets it from
+  `DISCOVERED_AGENT_HOST` (default `host.docker.internal`). Known gap: on
+  Kubernetes the Colombia and Vietnam records still say 9998 and 9997 while
+  the charts listen on 9999, and the recruiter chart has no value for the new
+  variable; the records have to carry the right addresses, which is part of the
+  follow-up that moves them to `1.0`. Evaluating a farm found through the
+  Directory was not run end to end.
 - The recruiter's spiffe/pyjwt compat test and the unused `buf.build` uv
   index were removed; `pyjwt` is now a floor constraint there.
 

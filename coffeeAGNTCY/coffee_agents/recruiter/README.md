@@ -129,6 +129,14 @@ The URL in the card is the address clients dial, not the address the server bind
 
 The server refuses to start (exit code 1) when `RECRUITER_AGENT_URL` has a wildcard host such as `0.0.0.0`, and logs a warning when it points at `localhost` inside a container or pod, because no other service can reach that address. An empty value is treated as unset.
 
+Directory records of agents that listen on every interface publish their HTTP address as a bind address, for example `http://0.0.0.0:9998`. From the recruiter that address is the recruiter itself, and the evaluator fetches the agent card from it before anything else. When a record carries a wildcard or loopback host, the recruiter replaces it with `RECRUITER_DISCOVERED_AGENT_HOST` and keeps the port and path:
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `RECRUITER_DISCOVERED_AGENT_HOST` | `localhost` | Host used instead of `0.0.0.0`, `::`, `127.0.0.1`, `::1` or `localhost` in the HTTP address of a discovered agent. In Docker Compose use `host.docker.internal` for agents whose ports are published on the host. An empty value is treated as unset |
+
+The port is not changed, so the record must carry the port the agent is reachable on.
+
 #### Verify the Server
 
 ```bash

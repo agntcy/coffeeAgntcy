@@ -11,7 +11,9 @@ records that may be missing required AgentCard fields.
 
 import copy
 import json
+import os
 from typing import Union
+from urllib.parse import urlsplit, urlunsplit
 
 from a2a.client.card_resolver import parse_agent_card
 from a2a.types import AgentCard
@@ -21,6 +23,41 @@ from agent_recruiter.common.logging import get_logger
 from agent_recruiter.interviewers.models import AgentEvalConfig
 
 logger = get_logger(__name__)
+
+# Hosts an agent publishes for its own bind address. From the recruiter they
+# point at the recruiter itself, so the card fetch would fail.
+_UNROUTABLE_ADVERTISED_HOSTS = frozenset(
+    {"0.0.0.0", "::", "127.0.0.1", "::1", "localhost"}
+)
+
+
+def _reachable_url(url: str) -> str:
+    """Replace a bind or loopback host in ``url`` with ``RECRUITER_DISCOVERED_AGENT_HOST``.
+
+    Directory records of agents that listen on every interface carry URLs such
+    as ``http://0.0.0.0:9998``. The evaluator fetches the agent card from the
+    URL it is given, so it needs an address that reaches the agent from where
+    the recruiter runs (for example ``host.docker.internal`` for agents whose
+    ports are published on the Docker host). The scheme, port, path and query
+    are kept. Non-HTTP urls (``slim://``, ``nats://``) and other hosts are
+    returned unchanged. The variable is read on every call and defaults to
+    ``localhost``, which leaves a loopback host as it is.
+    """
+    if not url:
+        return url
+    parts = urlsplit(url)
+    if parts.scheme.lower() not in ("http", "https"):
+        return url
+    if parts.hostname not in _UNROUTABLE_ADVERTISED_HOSTS:
+        return url
+    host = os.getenv("RECRUITER_DISCOVERED_AGENT_HOST") or "localhost"
+    netloc = f"{host}:{parts.port}" if parts.port else host
+    rewritten = urlunsplit(
+        (parts.scheme, netloc, parts.path, parts.query, parts.fragment)
+    )
+    if rewritten != url:
+        logger.debug("Rewrote advertised agent url {} to {}", url, rewritten)
+    return rewritten
 
 
 def _parse_card(record: dict) -> AgentCard:
@@ -78,7 +115,7 @@ def _extract_from_dict(record: dict) -> AgentEvalConfig:
     return AgentEvalConfig(
         protocol=Protocol.A2A,
         transport=Transport.HTTP,
-        evaluated_agent_url=url,
+        evaluated_agent_url=_reachable_url(url),
         auth_type=AuthType.NO_AUTH,
         auth_credentials=None,
         agent_name=name,
@@ -123,7 +160,7 @@ def parse_a2a_agent_record(raw_json: Union[str, dict]) -> AgentEvalConfig:
 
         logger.info(f"Successfully parsed AgentCard for agent: {agent_card.name}")
 
-        card_url = _card_url(agent_card)
+        card_url = _reachable_url(_card_url(agent_card))
         if not card_url:
             raise ValueError("AgentCard has no interface with a 'url'")
 
