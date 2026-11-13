@@ -5,7 +5,7 @@
 
 import os
 from dotenv import load_dotenv
-from a2a.types import AgentCard
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from tests.sample_agent.agent import create_test_agent
@@ -21,14 +21,27 @@ root_agent = create_test_agent()
 # Define custom agent card
 AGENT_CARD = AgentCard(
     name="TestAgent",
-    url=f"http://localhost:{PORT}",
     description="A simple test agent for integration testing with basic tools.",
     version="1.0.0",
-    capabilities={"streaming": True},
-    skills=[],
-    defaultInputModes=["text/plain"],
-    defaultOutputModes=["text/plain"],
-    supportsAuthenticatedExtendedCard=False,
+    capabilities=AgentCapabilities(streaming=True),
+    # a2a-sdk 1.2 warns when a card has no skills.
+    skills=[
+        AgentSkill(
+            id="test_agent",
+            name="Test agent",
+            description="Basic tools for integration tests.",
+            tags=["test"],
+        )
+    ],
+    default_input_modes=["text/plain"],
+    default_output_modes=["text/plain"],
+    supported_interfaces=[
+        AgentInterface(
+            protocol_binding="JSONRPC",
+            url=f"http://localhost:{PORT}",
+            protocol_version="1.0",
+        ),
+    ],
 )
 
 # Create the A2A app using to_a2a utility

@@ -37,16 +37,21 @@ AGENT_CARD = AgentCard(
         AgentInterface(
             protocol_binding=InterfaceTransport.SLIM_PATTERNS,
             url=f"slim://{config.config.SLIM_SERVER}/lungo/agents/{AGENT_ID}",
+            protocol_version="1.0",
         ),
         # nats-based pub/sub transport for broadcasting to multiple subscriber
         AgentInterface(
             protocol_binding=InterfaceTransport.NATS_PATTERNS,
             url=f"nats://{config.config.NATS_SERVER}/lungo/agents/{AGENT_ID}",
+            protocol_version="1.0",
         ),
-        # jsonrpc endpoint for direct client-agent communication over http
+        # jsonrpc endpoint for direct client-agent communication over http.
+        # The url is the bind address (the app SDK binds to it); the served card
+        # advertises FARM_AGENT_HOST instead (see common/card_public_url.py).
         AgentInterface(
             protocol_binding=InterfaceTransport.JSONRPC,
             url=f"http://0.0.0.0:{PORT}",
+            protocol_version="1.0",
         ),
     ],
 )

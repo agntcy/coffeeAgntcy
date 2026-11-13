@@ -1,7 +1,7 @@
 dependencies:
 - name: slim
   repository: oci://ghcr.io/agntcy/slim/helm
-  version: v2.2.0
+  version: v2.9.2
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
   version: 2.15.0
@@ -19,13 +19,13 @@ dependencies:
   version: 0.2.0
 - name: brazil-farm
   repository: file://../brazil-farm
-  version: 0.2.0
+  version: 0.3.0
 - name: vietnam-farm
   repository: file://../vietnam-farm
-  version: 0.2.0
+  version: 0.3.0
 - name: colombia-farm
   repository: file://../colombia-farm
-  version: 0.3.0
+  version: 0.4.0
 - name: weather-mcp-server
   repository: file://../weather-mcp-server
   version: 0.2.0
@@ -46,7 +46,7 @@ dependencies:
   version: 0.2.0
 - name: recruiter
   repository: file://../recruiter
-  version: 0.1.2
+  version: 0.3.0
 - name: recruiter-supervisor
   repository: file://../recruiter-supervisor
   version: 0.2.0
@@ -74,5 +74,5 @@ dependencies:
 - name: supply-chain-logistics
   repository: file://../supply-chain-logistics
   version: 0.1.1
-digest: sha256:c62d6d1bf5be279c57b026bb86fd5668d9bc75a1c1803e2eb3d7f569b66552e6
-generated: "2026-11-05T09:49:41.193786+01:00"
+digest: sha256:f07114d5960fbd22ca56013b1e901c5647193cffcfc45ecc0e33cb57c6b4965b
+generated: "2026-11-13T14:43:37.144029+01:00"

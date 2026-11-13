@@ -7,6 +7,17 @@
 {{- $logisticsTargets := list "logistics-farm" "logistics-accountant" "logistics-shipper" "logistics-helpdesk" -}}
 {{- $supplyChainTargets := list "supply-chain-supplier-a" "supply-chain-supplier-b" "supply-chain-supplier-c" "supply-chain-logistics" -}}
 
+{{- /*
+  The recruiter reaches the farms through their Services. The directory records carry the bind
+  port of each farm (http://0.0.0.0:<record port>), the farm charts listen on service.port (9999).
+*/ -}}
+{{- $farmRecordPorts := dict "brazil-farm" "9999" "colombia-farm" "9998" "vietnam-farm" "9997" -}}
+{{- $farmServicePort := "9999" -}}
+{{- $farmAddresses := list -}}
+{{- range $name := $auctionTargets }}
+{{- $farmAddresses = append $farmAddresses (printf "%s=%s:%s" (index $farmRecordPorts $name) $name $farmServicePort) }}
+{{- end }}
+
 {{- $shared := dict "config" (dict
   "azureApiBase" (env "AZURE_API_BASE")
   "azureApiVersion" (env "AZURE_API_VERSION")
@@ -46,6 +57,8 @@
 {{- end }}
 {{- /* Local cluster only: SLIM_SHARED_SECRET may be the app-sdk placeholder (see localExternalSecret). */ -}}
 {{- $_ := set $cfg "slimAllowPlaceholderSecret" $allowPlaceholder }}
+{{- /* The Service of each farm chart is named after the chart. */ -}}
+{{- $_ := set $cfg "farmAgentHost" $name }}
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
@@ -159,8 +172,9 @@ logistics-supervisor:
 
 recruiter:
   config:
-{{- $recruiterCfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
-{{- toYaml $recruiterCfg | nindent 4 }}
+{{- toYaml (deepCopy $shared.config) | nindent 4 }}
+    recruiterAgentUrl: "http://recruiter:8881"
+    discoveredAgentAddresses: {{ join "," $farmAddresses | quote }}
     enableHttp: "true"
     mcpConnectionMode: "binary"
     directoryClientServerAddress: ""
@@ -174,10 +188,6 @@ recruiter:
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
-      - secretKey: SLIM_SHARED_SECRET
-        remoteRef:
-          key: my-local-secret
-          property: SLIM_SHARED_SECRET
 
 weather-mcp-server:
   externalSecrets:
@@ -222,7 +232,7 @@ recruiter-supervisor:
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
-  # Local development only. SLIM 2.x clients reject secrets shorter than 32 characters. The default is the
+  # Local development only. SLIM clients reject secrets shorter than 32 characters. The default is the
   # public placeholder of the app-sdk (agntcy_app_sdk PLACEHOLDER_SHARED_SECRET), which the SDK logs a warning for and
   # accepts only because the farm and logistics agents above get slimAllowPlaceholderSecret: true (the default).
   slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-mls-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}

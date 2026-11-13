@@ -87,6 +87,6 @@ jobs:
       pip_constraints: |
         grpcio<1.65
       docker_overrides: |
-        corto:slim=ghcr.io/agntcy/slim:2.2.0
-        lungo:slim=ghcr.io/agntcy/slim:2.2.0
+        corto:slim=ghcr.io/agntcy/slim:3.4.6
+        lungo:slim=ghcr.io/agntcy/slim:3.4.6
 ```

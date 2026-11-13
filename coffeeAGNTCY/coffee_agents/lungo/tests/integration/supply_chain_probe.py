@@ -20,7 +20,7 @@ Usage, from ``coffeeAGNTCY/coffee_agents/lungo``::
 
     docker run -d --name scc-slim-probe -p 56357:46357 \\
       -v "$PWD/config/docker/slim/server-config.yaml:/config.yaml" \\
-      ghcr.io/agntcy/slim:2.2.0 /slim --config /config.yaml
+      ghcr.io/agntcy/slim:3.4.6 /slim --config /config.yaml
     SLIM_SERVER=localhost:56357 .venv/bin/python tests/integration/supply_chain_probe.py \\
       --case ambiguous --runs 5
 """

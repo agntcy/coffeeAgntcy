@@ -52,6 +52,10 @@ class _FakeBuilder:
         self._card = card
         self._skips: set[str] = set()
 
+    def override(self, transport_type: str, config):
+        self._session.overrides[normalize_transport(transport_type)] = config
+        return self
+
     def with_factory(self, _factory):
         return self
 
@@ -82,6 +86,7 @@ class _FakeSession:
         self.served_transport: str | None = None
         self.start_all_called_with: bool | None = None
         self.placeholder_allowed = False
+        self.overrides: dict[str, object] = {}
 
     def add_a2a_card(self, card: AgentCard, _handler):
         return _FakeBuilder(self, card)
@@ -164,3 +169,33 @@ async def test_placeholder_secret_follows_the_flag(patch_factory, monkeypatch, f
     await farm_server.serve_multi_transport(_make_card(), request_handler=object())
 
     assert [s.placeholder_allowed for s in fake.sessions] == [flag, flag, flag]
+
+
+async def test_jsonrpc_is_served_with_the_configured_public_host(
+    patch_factory, monkeypatch
+):
+    # The card holds the bind address (0.0.0.0); the card the SDK serves to
+    # clients must advertise FARM_AGENT_HOST, and the module card stays intact.
+    monkeypatch.setattr(farm_server, "FARM_AGENT_HOST", "corto-farm")
+    fake = patch_factory(set())
+    card = _make_card()
+
+    await farm_server.serve_multi_transport(card, request_handler=object())
+
+    jsonrpc_session = fake.sessions[1]
+    served = jsonrpc_session.overrides["jsonrpc"].agent_card
+    [http] = [
+        i
+        for i in served.supported_interfaces
+        if normalize_transport(i.protocol_binding) == "jsonrpc"
+    ]
+    assert http.url == "http://corto-farm:9999/"
+    [bind] = [
+        i
+        for i in card.supported_interfaces
+        if normalize_transport(i.protocol_binding) == "jsonrpc"
+    ]
+    assert bind.url == "http://0.0.0.0:9999/"
+    # Only the HTTP session carries an override.
+    assert fake.sessions[0].overrides == {}
+    assert fake.sessions[2].overrides == {}

@@ -88,6 +88,7 @@ services:
       - path: ../.env
         required: false
     environment:
+      - RECRUITER_AGENT_URL=http://recruiter-agent:8881
       - ENABLE_HTTP=true
       - MCP_CONNECTION_MODE=binary
       - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888

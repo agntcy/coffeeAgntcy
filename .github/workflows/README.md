@@ -154,7 +154,7 @@ jobs:
       pip_constraints: |
         grpcio<1.65
       docker_overrides: |
-        lungo:slim=ghcr.io/agntcy/slim:2.2.0
+        lungo:slim=ghcr.io/agntcy/slim:3.4.6
 ```
 
 Override lines apply to every demo that declares the service (compose) or package (`pyproject.toml`). Prefix a line with `<project>:` (`corto`, `lungo`, `recruiter`) to apply it to one demo only, for example when demos are on different SLIM major versions. A project without a root `docker-compose.yaml` (recruiter) skips image overrides.

@@ -8,7 +8,7 @@ from a2a.types import (
     AgentSkill,
 )
 from agntcy_app_sdk.semantic.a2a.transport_types import InterfaceTransport
-from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT, NATS_SERVER, SLIM_SERVER
+from config.config import FARM_AGENT_PORT, NATS_SERVER, SLIM_SERVER
 
 AGENT_ID = "flavor-profile-farm-agent"
 SLIM_TOPIC = f"default/default/{AGENT_ID}"
@@ -38,14 +38,20 @@ AGENT_CARD = AgentCard(
         AgentInterface(
             protocol_binding=InterfaceTransport.SLIM_PATTERNS,
             url=f"slim://{SLIM_SERVER}/{SLIM_TOPIC}",
+            protocol_version="1.0",
         ),
+        # The url is the bind address (the app SDK binds the HTTP server to it),
+        # not a destination. Clients get a copy that advertises FARM_AGENT_HOST
+        # instead, built with common.card_public_url.with_public_http_host.
         AgentInterface(
             protocol_binding=InterfaceTransport.JSONRPC,
-            url=f"http://{FARM_AGENT_HOST}:{FARM_AGENT_PORT}/",
+            url=f"http://0.0.0.0:{FARM_AGENT_PORT}/",
+            protocol_version="1.0",
         ),
         AgentInterface(
             protocol_binding=InterfaceTransport.NATS_PATTERNS,
             url=f"nats://{NATS_SERVER}/{SLIM_TOPIC}",
+            protocol_version="1.0",
         ),
     ],
 )

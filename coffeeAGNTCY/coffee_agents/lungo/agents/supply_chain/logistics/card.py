@@ -38,6 +38,7 @@ AGENT_CARD = AgentCard(
         AgentInterface(
             protocol_binding=InterfaceTransport.SLIM_PATTERNS,
             url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
+            protocol_version="1.0",
         ),
     ],
 )

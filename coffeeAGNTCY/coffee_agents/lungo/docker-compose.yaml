@@ -148,7 +148,7 @@ services:
       start_period: 5s
 
   slim:
-    image: ghcr.io/agntcy/slim:2.2.0@sha256:0d329cc438d4bbc6695917a94a59b8cb8d8c137dc59124357483dd709c677ba7
+    image: ghcr.io/agntcy/slim:3.4.6@sha256:54fde7ce0ef8efa6a61fee47996e941e87acb4e62284e5d9c00eb761295619b7
     container_name: lungo-slim
     ports:
       - "46357:46357"
@@ -808,17 +808,20 @@ services:
         condition: service_healthy
     environment:
       - TZ=UTC
-      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
-      - SLIM_SERVER=${SLIM_SERVER}
-      - NATS_SERVER=${NATS_SERVER}
-      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - RECRUITER_AGENT_URL=http://recruiter:8881
+      # Farm records published in the directory carry http://0.0.0.0:<port>
+      # (the card's bind address); the evaluator reaches those through the host
+      # gateway and the farms' host-published ports.
+      - RECRUITER_DISCOVERED_AGENT_HOST=${DISCOVERED_AGENT_HOST:-host.docker.internal}
       - ENABLE_HTTP=true
       - MCP_CONNECTION_MODE=binary
       - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
       - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
       - OASF_API_VALIDATION_SCHEMA_URL=https://schema.oasf.outshift.com
+    extra_hosts:
+      # Make host.docker.internal resolvable on Linux (no-op on Docker Desktop).
+      - "host.docker.internal:host-gateway"
     ports:
       - "8881:8881"
     profiles:
@@ -854,8 +857,9 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
-      # Discovered farm records advertise http://0.0.0.0:<port>; reach them via
-      # the host gateway and their host-published ports from inside the network.
+      # Farm records published in the directory still carry http://0.0.0.0:<port>
+      # (the card's bind address); reach those via the host gateway and their
+      # host-published ports from inside the network.
       - DISCOVERED_AGENT_HOST=${DISCOVERED_AGENT_HOST:-host.docker.internal}
     extra_hosts:
       # Make host.docker.internal resolvable on Linux (no-op on Docker Desktop).

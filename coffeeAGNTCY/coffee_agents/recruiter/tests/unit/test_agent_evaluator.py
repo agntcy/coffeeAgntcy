@@ -7,7 +7,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-from a2a.types import AgentCard, AgentProvider
+from a2a.types import AgentCard, AgentInterface, AgentProvider
 
 from agent_recruiter.interviewers.agent_evaluator import (
     evaluate_agents_tool,
@@ -43,15 +43,21 @@ def sample_agent_card() -> AgentCard:
     return AgentCard(
         name="Test Agent",
         description="A test agent for evaluation",
-        url="http://localhost:3000",
         version="1.0.0",
         provider=AgentProvider(
             organization="Test Org", url="http://testorg.example.com"
         ),
-        defaultInputModes=["text"],
-        defaultOutputModes=["text"],
-        capabilities={"streaming": False, "pushNotifications": False},
+        default_input_modes=["text"],
+        default_output_modes=["text"],
+        capabilities={"streaming": False, "push_notifications": False},
         skills=[],
+        supported_interfaces=[
+            AgentInterface(
+                url="http://localhost:3000",
+                protocol_binding="JSONRPC",
+                protocol_version="1.0",
+            )
+        ],
     )
 
 

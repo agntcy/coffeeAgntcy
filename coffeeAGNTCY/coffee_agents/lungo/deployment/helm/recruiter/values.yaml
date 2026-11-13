@@ -26,11 +26,9 @@ config:
   llmModel: ""
   azureApiBase: ""
   azureApiVersion: ""
-  defaultMessageTransport: ""
-  transportServerEndpoint: ""
-  slimServer: ""
-  natsServer: ""
-  slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
+  recruiterAgentUrl: "" # RECRUITER_AGENT_URL: the URL clients use to reach the recruiter, published in its agent card. Empty keeps the code default (http://localhost:8881), which only works from the pod itself
+  discoveredAgentHost: "" # RECRUITER_DISCOVERED_AGENT_HOST: host used instead of 0.0.0.0 or localhost in the HTTP address of a discovered agent (port is kept). Empty keeps the code default (localhost), which inside the pod is the recruiter itself
+  discoveredAgentAddresses: "" # RECRUITER_DISCOVERED_AGENT_ADDRESSES: comma-separated PORT=HOST[:PORT] pairs, the port of a discovered agent's record mapped to where the pod can reach it, e.g. "9998=colombia-farm:9999". Wins over discoveredAgentHost for the ports it lists. Empty means none
   otlpHttpEndpoint: ""
 
 # You can use your own config here for service account

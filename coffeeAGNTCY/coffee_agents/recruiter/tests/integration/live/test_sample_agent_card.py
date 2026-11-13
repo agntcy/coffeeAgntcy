@@ -17,7 +17,7 @@ class TestSampleAgentIntegration:
         process, url = run_sample_a2a_agent()
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{url}/.well-known/agent.json")
+            response = await client.get(f"{url}/.well-known/agent-card.json")
             assert response.status_code == 200
 
             card = response.json()

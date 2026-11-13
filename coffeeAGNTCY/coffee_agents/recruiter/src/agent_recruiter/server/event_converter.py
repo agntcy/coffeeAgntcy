@@ -1,7 +1,11 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Convert ADK events to A2A event types for streaming."""
+"""Convert ADK events to A2A event types for streaming.
+
+a2a-sdk 1.x has no ``final`` flag on status updates: the stream ends when the
+task reaches a terminal state, which the executor sets on its last event.
+"""
 
 from typing import Generator, Any
 from uuid import uuid4
@@ -9,9 +13,6 @@ from uuid import uuid4
 from google.adk.events.event import Event as AdkEvent
 from a2a.types import (
     Message,
-    Part,
-    TextPart,
-    DataPart,
     Role,
     TaskStatus,
     TaskState,
@@ -20,9 +21,32 @@ from a2a.types import (
     Artifact,
 )
 
+from agent_recruiter.common.a2a_helpers import data_part, text_part, to_struct
 from agent_recruiter.common.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _working_update(
+    task_id: str,
+    context_id: str,
+    text: str,
+    metadata: dict[str, Any] | None,
+) -> TaskStatusUpdateEvent:
+    """A status update in the working state carrying one text message."""
+    return TaskStatusUpdateEvent(
+        task_id=task_id,
+        context_id=context_id,
+        status=TaskStatus(
+            state=TaskState.TASK_STATE_WORKING,
+            message=Message(
+                message_id=str(uuid4()),
+                role=Role.ROLE_AGENT,
+                parts=[text_part(text)],
+                metadata=to_struct(metadata),
+            ),
+        ),
+    )
 
 
 def convert_adk_to_a2a_events(
@@ -53,54 +77,28 @@ def convert_adk_to_a2a_events(
         logger.debug(
             f"Agent transfer: {adk_event.author} -> {adk_event.actions.transfer_to_agent}"
         )
-        yield TaskStatusUpdateEvent(
-            task_id=task_id,
-            context_id=context_id,
-            final=False,
-            status=TaskStatus(
-                state=TaskState.working,
-                message=Message(
-                    message_id=str(uuid4()),
-                    role=Role.agent,
-                    parts=[
-                        Part(
-                            root=TextPart(
-                                text=f"Transferring to {adk_event.actions.transfer_to_agent}..."
-                            )
-                        )
-                    ],
-                    metadata={
-                        "event_type": "agent_transfer",
-                        "from_agent": adk_event.author,
-                        "to_agent": adk_event.actions.transfer_to_agent,
-                    },
-                ),
-            ),
+        yield _working_update(
+            task_id,
+            context_id,
+            f"Transferring to {adk_event.actions.transfer_to_agent}...",
+            {
+                "event_type": "agent_transfer",
+                "from_agent": adk_event.author,
+                "to_agent": adk_event.actions.transfer_to_agent,
+            },
         )
 
     # Handle escalation
     if adk_event.actions.escalate:
         logger.debug(f"Agent escalation from: {adk_event.author}")
-        yield TaskStatusUpdateEvent(
-            task_id=task_id,
-            context_id=context_id,
-            final=False,
-            status=TaskStatus(
-                state=TaskState.working,
-                message=Message(
-                    message_id=str(uuid4()),
-                    role=Role.agent,
-                    parts=[
-                        Part(
-                            root=TextPart(text=f"Escalating from {adk_event.author}...")
-                        )
-                    ],
-                    metadata={
-                        "event_type": "escalation",
-                        "from_agent": adk_event.author,
-                    },
-                ),
-            ),
+        yield _working_update(
+            task_id,
+            context_id,
+            f"Escalating from {adk_event.author}...",
+            {
+                "event_type": "escalation",
+                "from_agent": adk_event.author,
+            },
         )
 
     # Handle function calls (tool invocations) - only non-partial events
@@ -110,24 +108,16 @@ def convert_adk_to_a2a_events(
             logger.debug(f"Tool call: {fc.name} by {adk_event.author}")
             # Safely convert args to dict for JSON serialization
             args_dict = dict(fc.args) if fc.args else {}
-            yield TaskStatusUpdateEvent(
-                task_id=task_id,
-                context_id=context_id,
-                final=False,
-                status=TaskStatus(
-                    state=TaskState.working,
-                    message=Message(
-                        message_id=str(uuid4()),
-                        role=Role.agent,
-                        parts=[Part(root=TextPart(text=f"Calling tool: {fc.name}"))],
-                        metadata={
-                            "event_type": "tool_call",
-                            "tool_name": fc.name,
-                            "tool_args": args_dict,
-                            "author": adk_event.author,
-                        },
-                    ),
-                ),
+            yield _working_update(
+                task_id,
+                context_id,
+                f"Calling tool: {fc.name}",
+                {
+                    "event_type": "tool_call",
+                    "tool_name": fc.name,
+                    "tool_args": args_dict,
+                    "author": adk_event.author,
+                },
             )
 
     # Handle function responses (tool results) - only non-partial events
@@ -135,23 +125,15 @@ def convert_adk_to_a2a_events(
     if function_responses and not adk_event.partial:
         for fr in function_responses:
             logger.debug(f"Tool response: {fr.name}")
-            yield TaskStatusUpdateEvent(
-                task_id=task_id,
-                context_id=context_id,
-                final=False,
-                status=TaskStatus(
-                    state=TaskState.working,
-                    message=Message(
-                        message_id=str(uuid4()),
-                        role=Role.agent,
-                        parts=[Part(root=TextPart(text=f"Tool {fr.name} completed"))],
-                        metadata={
-                            "event_type": "tool_response",
-                            "tool_name": fr.name,
-                            "author": adk_event.author,
-                        },
-                    ),
-                ),
+            yield _working_update(
+                task_id,
+                context_id,
+                f"Tool {fr.name} completed",
+                {
+                    "event_type": "tool_response",
+                    "tool_name": fr.name,
+                    "author": adk_event.author,
+                },
             )
 
     # Handle artifact updates
@@ -165,12 +147,7 @@ def convert_adk_to_a2a_events(
                     name=filename,
                     artifact_id=str(uuid4()),
                     parts=[
-                        Part(
-                            root=DataPart(
-                                data={"version": version},
-                                metadata={"filename": filename},
-                            )
-                        )
+                        data_part({"version": version}, metadata={"filename": filename})
                     ],
                 ),
             )
@@ -191,22 +168,14 @@ def convert_adk_to_a2a_events(
             logger.debug(
                 f"Intermediate text from {adk_event.author}: {combined_text[:100]}..."
             )
-            yield TaskStatusUpdateEvent(
-                task_id=task_id,
-                context_id=context_id,
-                final=False,
-                status=TaskStatus(
-                    state=TaskState.working,
-                    message=Message(
-                        message_id=str(uuid4()),
-                        role=Role.agent,
-                        parts=[Part(root=TextPart(text=combined_text))],
-                        metadata={
-                            "event_type": "intermediate_response",
-                            "author": adk_event.author,
-                        },
-                    ),
-                ),
+            yield _working_update(
+                task_id,
+                context_id,
+                combined_text,
+                {
+                    "event_type": "intermediate_response",
+                    "author": adk_event.author,
+                },
             )
 
 
@@ -215,7 +184,6 @@ def create_working_status_event(
     context_id: str,
     message_text: str,
     metadata: dict[str, Any] | None = None,
-    final: bool = False,
 ) -> TaskStatusUpdateEvent:
     """Create a TaskStatusUpdateEvent with working state.
 
@@ -224,22 +192,8 @@ def create_working_status_event(
         context_id: The context ID for the conversation
         message_text: Text to include in the status message
         metadata: Optional metadata to include
-        final: Whether this is the final event
 
     Returns:
         A TaskStatusUpdateEvent with working state
     """
-    return TaskStatusUpdateEvent(
-        task_id=task_id,
-        context_id=context_id,
-        final=final,
-        status=TaskStatus(
-            state=TaskState.working,
-            message=Message(
-                message_id=str(uuid4()),
-                role=Role.agent,
-                parts=[Part(root=TextPart(text=message_text))],
-                metadata=metadata,
-            ),
-        ),
-    )
+    return _working_update(task_id, context_id, message_text, metadata)
