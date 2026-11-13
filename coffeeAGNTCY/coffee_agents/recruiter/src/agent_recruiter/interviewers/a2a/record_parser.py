@@ -30,18 +30,67 @@ _UNROUTABLE_ADVERTISED_HOSTS = frozenset(
     {"0.0.0.0", "::", "127.0.0.1", "::1", "localhost"}
 )
 
+_DISCOVERED_ADDRESSES_ENV = "RECRUITER_DISCOVERED_AGENT_ADDRESSES"
+
+
+def _discovered_address_overrides() -> dict[int, str]:
+    """Read ``RECRUITER_DISCOVERED_AGENT_ADDRESSES`` into ``{advertised port: netloc}``.
+
+    The value is a comma-separated list of ``PORT=HOST[:PORT]`` pairs, for
+    example ``9998=colombia-farm:9999``. ``PORT`` is the port in the record,
+    ``HOST[:PORT]`` is where the agent can be reached from the recruiter. A
+    target without a port keeps the advertised port. An entry that does not
+    parse is logged and skipped, so one typo does not disable the others. The
+    variable is read on every call, like ``RECRUITER_DISCOVERED_AGENT_HOST``.
+    """
+    overrides: dict[int, str] = {}
+    for entry in (os.getenv(_DISCOVERED_ADDRESSES_ENV) or "").split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        advertised, _, target = (part.strip() for part in entry.partition("="))
+        try:
+            if not advertised.isdigit():
+                raise ValueError("the part before '=' must be a port number")
+            parsed = urlsplit(f"//{target}")
+            if (
+                not parsed.hostname
+                or parsed.netloc != target
+                or parsed.username is not None
+            ):
+                raise ValueError("the part after '=' must be HOST or HOST:PORT")
+            target_port = parsed.port  # Raises ValueError for an invalid port.
+        except ValueError as err:
+            logger.warning(
+                "Ignoring {} entry {!r}: {}", _DISCOVERED_ADDRESSES_ENV, entry, err
+            )
+            continue
+        overrides[int(advertised)] = (
+            target if target_port is not None else f"{target}:{advertised}"
+        )
+    return overrides
+
 
 def _reachable_url(url: str) -> str:
-    """Replace a bind or loopback host in ``url`` with ``RECRUITER_DISCOVERED_AGENT_HOST``.
+    """Replace a bind or loopback host in ``url`` with an address the recruiter can dial.
 
     Directory records of agents that listen on every interface carry URLs such
     as ``http://0.0.0.0:9998``. The evaluator fetches the agent card from the
     URL it is given, so it needs an address that reaches the agent from where
-    the recruiter runs (for example ``host.docker.internal`` for agents whose
-    ports are published on the Docker host). The scheme, port, path and query
-    are kept. Non-HTTP urls (``slim://``, ``nats://``) and other hosts are
-    returned unchanged. The variable is read on every call and defaults to
-    ``localhost``, which leaves a loopback host as it is.
+    the recruiter runs. Two settings decide it:
+
+    * ``RECRUITER_DISCOVERED_AGENT_ADDRESSES`` maps the port of the record to
+      the host and port of one agent, for deployments where each agent has its
+      own host or a different port (for example one Kubernetes Service per
+      farm). It wins when it has the port of the url.
+    * ``RECRUITER_DISCOVERED_AGENT_HOST`` replaces only the host and keeps the
+      port (for example ``host.docker.internal`` for agents whose ports are
+      published on the Docker host). It defaults to ``localhost``, which
+      leaves a loopback host as it is.
+
+    The scheme, path and query are kept. Non-HTTP urls (``slim://``,
+    ``nats://``) and other hosts are returned unchanged. Both variables are
+    read on every call.
     """
     if not url:
         return url
@@ -50,8 +99,10 @@ def _reachable_url(url: str) -> str:
         return url
     if parts.hostname not in _UNROUTABLE_ADVERTISED_HOSTS:
         return url
-    host = os.getenv("RECRUITER_DISCOVERED_AGENT_HOST") or "localhost"
-    netloc = f"{host}:{parts.port}" if parts.port else host
+    netloc = _discovered_address_overrides().get(parts.port) if parts.port else None
+    if netloc is None:
+        host = os.getenv("RECRUITER_DISCOVERED_AGENT_HOST") or "localhost"
+        netloc = f"{host}:{parts.port}" if parts.port else host
     rewritten = urlunsplit(
         (parts.scheme, netloc, parts.path, parts.query, parts.fragment)
     )

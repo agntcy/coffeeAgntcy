@@ -13,4 +13,6 @@ data:
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
   RECRUITER_AGENT_URL: "{{ .Values.config.recruiterAgentUrl }}"
+  RECRUITER_DISCOVERED_AGENT_HOST: "{{ .Values.config.discoveredAgentHost }}"
+  RECRUITER_DISCOVERED_AGENT_ADDRESSES: "{{ .Values.config.discoveredAgentAddresses }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"

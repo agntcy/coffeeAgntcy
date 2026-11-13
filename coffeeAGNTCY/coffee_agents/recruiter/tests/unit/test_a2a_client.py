@@ -242,6 +242,147 @@ class TestDiscoveredAgentHost:
         assert config.evaluated_agent_url == "slim://localhost:1/x"
 
 
+# One Service per farm, all on port 9999, while the records carry the bind port
+# of each farm (see the Helm local-cluster overlay).
+FARM_ADDRESSES = "9999=brazil-farm:9999,9998=colombia-farm:9999,9997=vietnam-farm:9999"
+
+
+class TestDiscoveredAgentAddresses:
+    """``RECRUITER_DISCOVERED_AGENT_ADDRESSES`` maps a record port to one agent."""
+
+    @pytest.fixture(autouse=True)
+    def _clean_env(self, monkeypatch):
+        monkeypatch.delenv("RECRUITER_DISCOVERED_AGENT_HOST", raising=False)
+        monkeypatch.delenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", raising=False)
+
+    @pytest.mark.parametrize(
+        "port, expected",
+        [
+            (9999, "http://brazil-farm:9999"),
+            (9998, "http://colombia-farm:9999"),
+            (9997, "http://vietnam-farm:9999"),
+        ],
+    )
+    def test_each_port_goes_to_its_own_host_and_port(self, monkeypatch, port, expected):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+
+        config = parse_a2a_agent_record(
+            {"name": "Farm", "url": f"http://0.0.0.0:{port}"}
+        )
+
+        assert config.evaluated_agent_url == expected
+
+    def test_farm_record_is_rewritten(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://colombia-farm:9999"
+
+    def test_path_and_query_are_kept(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+
+        config = parse_a2a_agent_record(
+            {"name": "Farm", "url": "https://localhost:9998/a?x=1"}
+        )
+
+        assert config.evaluated_agent_url == "https://colombia-farm:9999/a?x=1"
+
+    def test_target_without_a_port_keeps_the_advertised_port(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", "9998=colombia-farm")
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://colombia-farm:9998"
+
+    def test_ipv6_target(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", "9998=[fd00::1]")
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://[fd00::1]:9998"
+
+    def test_unlisted_port_falls_back_to_the_discovered_host(self, monkeypatch):
+        monkeypatch.setenv(
+            "RECRUITER_DISCOVERED_AGENT_ADDRESSES", "9999=brazil-farm:9999"
+        )
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "gateway")
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://gateway:9998"
+
+    def test_url_without_a_port_falls_back_to_the_discovered_host(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "gateway")
+
+        config = parse_a2a_agent_record({"name": "Farm", "url": "http://0.0.0.0"})
+
+        assert config.evaluated_agent_url == "http://gateway"
+
+    def test_routable_host_is_not_rewritten(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+
+        config = parse_a2a_agent_record(
+            {"name": "Farm", "url": "http://203.0.113.7:9998"}
+        )
+
+        assert config.evaluated_agent_url == "http://203.0.113.7:9998"
+
+    def test_non_http_url_is_not_rewritten(self, monkeypatch):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", FARM_ADDRESSES)
+
+        config = parse_a2a_agent_record({"name": "Bus", "url": "slim://0.0.0.0:9998/x"})
+
+        assert config.evaluated_agent_url == "slim://0.0.0.0:9998/x"
+
+    @pytest.mark.parametrize("value", ["", "  ", ",", " , "])
+    def test_empty_setting_is_treated_as_unset(self, monkeypatch, value):
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_ADDRESSES", value)
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://localhost:9998"
+
+    @pytest.mark.parametrize(
+        "bad_entry",
+        [
+            "9998",
+            "9998=",
+            "=colombia-farm:9999",
+            "colombia=colombia-farm:9999",
+            "9998=colombia-farm:abc",
+            "9998=colombia-farm:99999",
+            "9998=http://colombia-farm:9999",
+            "9998=user@colombia-farm:9999",
+            "9998=colombia-farm:9999/x",
+        ],
+    )
+    def test_malformed_entry_is_skipped_and_the_others_still_apply(
+        self, monkeypatch, bad_entry
+    ):
+        monkeypatch.setenv(
+            "RECRUITER_DISCOVERED_AGENT_ADDRESSES",
+            f"{bad_entry},9997=vietnam-farm:9999",
+        )
+        monkeypatch.setenv("RECRUITER_DISCOVERED_AGENT_HOST", "gateway")
+
+        malformed = parse_a2a_agent_record(FARM_RECORD)
+        valid = parse_a2a_agent_record({"name": "Farm", "url": "http://0.0.0.0:9997"})
+
+        assert malformed.evaluated_agent_url == "http://gateway:9998"
+        assert valid.evaluated_agent_url == "http://vietnam-farm:9999"
+
+    def test_whitespace_around_entries_is_ignored(self, monkeypatch):
+        monkeypatch.setenv(
+            "RECRUITER_DISCOVERED_AGENT_ADDRESSES", " 9998 = colombia-farm:9999 , "
+        )
+
+        config = parse_a2a_agent_record(FARM_RECORD)
+
+        assert config.evaluated_agent_url == "http://colombia-farm:9999"
+
+
 class TestTaskCallback:
     @staticmethod
     def _status(task_id, state, text=None, metadata=None):
@@ -522,8 +663,12 @@ class TestEnsureJsonrpcInterface:
             "http://host.docker.internal:9998"
         ]
 
-    @pytest.mark.parametrize("card_url", ["http://localhost:9998", "http://127.0.0.1:9998"])
-    def test_loopback_url_is_kept_when_the_card_was_fetched_over_loopback(self, card_url):
+    @pytest.mark.parametrize(
+        "card_url", ["http://localhost:9998", "http://127.0.0.1:9998"]
+    )
+    def test_loopback_url_is_kept_when_the_card_was_fetched_over_loopback(
+        self, card_url
+    ):
         card = self._card(
             AgentInterface(
                 url=card_url, protocol_binding="JSONRPC", protocol_version="1.0"

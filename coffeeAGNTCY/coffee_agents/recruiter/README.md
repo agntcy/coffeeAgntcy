@@ -121,18 +121,18 @@ The server is a Starlette app built on `a2a-sdk` 1.x and served with uvicorn on 
 
 The URL in the card is the address clients dial, not the address the server binds to, so set it to a host name that clients can resolve:
 
-| Variable | Default | Meaning |
-|----------|---------|---------|
+| Variable              | Default                 | Meaning                                                                                                  |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
 | `RECRUITER_AGENT_URL` | `http://localhost:8881` | URL published in the agent card, for example `http://recruiter:8881` inside a compose network or cluster |
-| `RECRUITER_BIND_HOST` | `0.0.0.0` | Interface the server listens on |
-| `RECRUITER_PORT` | `8881` | Port the server listens on |
+| `RECRUITER_BIND_HOST` | `0.0.0.0`               | Interface the server listens on                                                                          |
+| `RECRUITER_PORT`      | `8881`                  | Port the server listens on                                                                               |
 
 The server refuses to start (exit code 1) when `RECRUITER_AGENT_URL` has a wildcard host such as `0.0.0.0`, and logs a warning when it points at `localhost` inside a container or pod, because no other service can reach that address. An empty value is treated as unset.
 
 Directory records of agents that listen on every interface publish their HTTP address as a bind address, for example `http://0.0.0.0:9998`. From the recruiter that address is the recruiter itself, and the evaluator fetches the agent card from it before anything else. When a record carries a wildcard or loopback host, the recruiter replaces it with `RECRUITER_DISCOVERED_AGENT_HOST` and keeps the port and path:
 
-| Variable | Default | Meaning |
-|----------|---------|---------|
+| Variable                          | Default     | Meaning                                                                                                                                                                                                                                              |
+| --------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `RECRUITER_DISCOVERED_AGENT_HOST` | `localhost` | Host used instead of `0.0.0.0`, `::`, `127.0.0.1`, `::1` or `localhost` in the HTTP address of a discovered agent. In Docker Compose use `host.docker.internal` for agents whose ports are published on the host. An empty value is treated as unset |
 
 The port is not changed, so the record must carry the port the agent is reachable on.
@@ -191,6 +191,7 @@ docker compose -f docker/docker-compose.yaml up --build -d
 ```
 
 This starts:
+
 - **postgres**: PostgreSQL for directory metadata (`directory` database)
 - **dir-api-server**: Agent Directory Service API (`ghcr.io/agntcy/dir-apiserver:v1.8.0`)
 - **dir-mcp-server**: MCP bridge for Docker-mode MCP (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`)
@@ -199,12 +200,12 @@ This starts:
 
 #### Service Endpoints
 
-| Service | Port | Description |
-|---------|------|-------------|
-| dir-api-server | 8888 | Directory gRPC API |
-| postgres | (internal) | PostgreSQL; not exposed in compose by default |
-| recruiter-agent | 8881 | A2A server endpoint |
-| zot | 5555 | OCI registry (host maps to container 5000) |
+| Service         | Port       | Description                                   |
+| --------------- | ---------- | --------------------------------------------- |
+| dir-api-server  | 8888       | Directory gRPC API                            |
+| postgres        | (internal) | PostgreSQL; not exposed in compose by default |
+| recruiter-agent | 8881       | A2A server endpoint                           |
+| zot             | 5555       | OCI registry (host maps to container 5000)    |
 
 ## Testing
 
@@ -219,13 +220,13 @@ docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server d
 
 ### Test directories
 
-| Directory | Purpose |
-|-----------|---------|
-| `tests/unit/` | Mocks only |
-| `tests/integration/` | Docker-compose session; no live webserver; no LLM |
-| `tests/integration/live/` | Subprocess HTTP against live A2A server; no LLM |
-| `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
-| `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
+| Directory                    | Purpose                                           |
+| ---------------------------- | ------------------------------------------------- |
+| `tests/unit/`                | Mocks only                                        |
+| `tests/integration/`         | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/live/`    | Subprocess HTTP against live A2A server; no LLM   |
+| `tests/integration/llm/`     | Docker + LLM credentials (needs `.env`)           |
+| `tests/integration/helpers/` | Docker/process helpers (not collected as tests)   |
 
 <!-- alphabetize-exempt: directories follow the test-tree hierarchy (parent before children) -->
 
@@ -258,11 +259,11 @@ uv run pytest tests/integration/live/test_sample_agent_card.py -v
 
 ### Test Descriptions
 
-| Test File | Description |
-|-----------|-------------|
-| `tests/integration/live/test_sample_agent_card.py` | Sample agent card smoke test |
-| `tests/integration/llm/test_a2a.py` | A2A server integration tests (search, streaming, evaluation flow) |
-| `tests/integration/llm/test_agent_evaluator_llm.py` | Agent evaluation scenario tests (LLM) |
+| Test File                                           | Description                                                       |
+| --------------------------------------------------- | ----------------------------------------------------------------- |
+| `tests/integration/live/test_sample_agent_card.py`  | Sample agent card smoke test                                      |
+| `tests/integration/llm/test_a2a.py`                 | A2A server integration tests (search, streaming, evaluation flow) |
+| `tests/integration/llm/test_agent_evaluator_llm.py` | Agent evaluation scenario tests (LLM)                             |
 
 ## Claude Code Plugin
 
@@ -286,10 +287,10 @@ claude --plugin-dir ./plugin
 
 ### Plugin Commands
 
-| Command | Description |
-|---------|-------------|
-| **`/recruit <query>`** | Search the AGNTCY directory for agents matching your query, preview candidates in a summary table, and connect them as skills or sub-agents |
-| **`/a2a-send <url> <message>`** | Send a message directly to any A2A agent endpoint for quick testing or one-off communication |
+| Command                         | Description                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`/recruit <query>`**          | Search the AGNTCY directory for agents matching your query, preview candidates in a summary table, and connect them as skills or sub-agents |
+| **`/a2a-send <url> <message>`** | Send a message directly to any A2A agent endpoint for quick testing or one-off communication                                                |
 
 **Example usage:**
 
@@ -299,6 +300,7 @@ claude --plugin-dir ./plugin
 ```
 
 **`/recruit` workflow:**
+
 1. Searches the directory using multiple strategies (skill match, domain match, name wildcard, DHT routing)
 2. Presents discovered agents in a summary table
 3. User picks which agents to connect
@@ -308,15 +310,14 @@ claude --plugin-dir ./plugin
 
 The plugin can connect remote agents in two modes:
 
-| Mode | How it works | Invoke with | Pros |
-|------|-------------|-------------|------|
-| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` - the parent model runs `a2a-send` directly | `/agent-name <message>` | Available immediately, no intermediary model to refuse requests |
-| **Sub-agent** | Creates `.claude/agents/<name>.md` - Claude Code spawns a separate model | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
+| Mode                    | How it works                                                                         | Invoke with                             | Pros                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
+| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` - the parent model runs `a2a-send` directly | `/agent-name <message>`                 | Available immediately, no intermediary model to refuse requests  |
+| **Sub-agent**           | Creates `.claude/agents/<name>.md` - Claude Code spawns a separate model             | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
 
 > **Tip:** Start with skills. If a sub-agent refuses to forward requests the remote agent can handle, delete the sub-agent and re-run `/recruit` to create a skill instead.
 
 > **Note:** If a newly created skill doesn't appear as a slash command, start a new Claude Code session (`/exit` or `Ctrl+C` twice, then relaunch `claude`) for it to be picked up.
-
 
 **Managing recruited agents:**
 

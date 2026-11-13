@@ -7,6 +7,17 @@
 {{- $logisticsTargets := list "logistics-farm" "logistics-accountant" "logistics-shipper" "logistics-helpdesk" -}}
 {{- $supplyChainTargets := list "supply-chain-supplier-a" "supply-chain-supplier-b" "supply-chain-supplier-c" "supply-chain-logistics" -}}
 
+{{- /*
+  The recruiter reaches the farms through their Services. The directory records carry the bind
+  port of each farm (http://0.0.0.0:<record port>), the farm charts listen on service.port (9999).
+*/ -}}
+{{- $farmRecordPorts := dict "brazil-farm" "9999" "colombia-farm" "9998" "vietnam-farm" "9997" -}}
+{{- $farmServicePort := "9999" -}}
+{{- $farmAddresses := list -}}
+{{- range $name := $auctionTargets }}
+{{- $farmAddresses = append $farmAddresses (printf "%s=%s:%s" (index $farmRecordPorts $name) $name $farmServicePort) }}
+{{- end }}
+
 {{- $shared := dict "config" (dict
   "azureApiBase" (env "AZURE_API_BASE")
   "azureApiVersion" (env "AZURE_API_VERSION")
@@ -163,6 +174,7 @@ recruiter:
   config:
 {{- toYaml (deepCopy $shared.config) | nindent 4 }}
     recruiterAgentUrl: "http://recruiter:8881"
+    discoveredAgentAddresses: {{ join "," $farmAddresses | quote }}
     enableHttp: "true"
     mcpConnectionMode: "binary"
     directoryClientServerAddress: ""

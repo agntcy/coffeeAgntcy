@@ -46,7 +46,7 @@ dependencies:
   version: 0.2.0
 - name: recruiter
   repository: file://../recruiter
-  version: 0.2.0
+  version: 0.3.0
 - name: recruiter-supervisor
   repository: file://../recruiter-supervisor
   version: 0.2.0
@@ -74,5 +74,5 @@ dependencies:
 - name: supply-chain-logistics
   repository: file://../supply-chain-logistics
   version: 0.1.1
-digest: sha256:c021b36927e832fe246149cb894eee965132182afc1536f101b8e43d0f709be7
-generated: "2026-11-10T18:23:37.268983+01:00"
+digest: sha256:f07114d5960fbd22ca56013b1e901c5647193cffcfc45ecc0e33cb57c6b4965b
+generated: "2026-11-13T14:43:37.144029+01:00"
