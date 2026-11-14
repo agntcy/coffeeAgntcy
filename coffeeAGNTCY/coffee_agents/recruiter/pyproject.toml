@@ -7,7 +7,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "a2a-sdk[http-server]==1.2.3",
     "uvicorn==0.48.0",
-    "mcp==1.30.0",
+    "mcp==2.3.0",
     "loguru==0.7.3",
     "pydantic==2.13.4",
     "python-dotenv==1.2.2",
