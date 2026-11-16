@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { RefObject, useEffect, useRef, useState, useCallback } from "react"
 
 interface UseChatAreaMeasurementOptions {
   debounceMs?: number
@@ -13,7 +13,7 @@ interface UseChatAreaMeasurementOptions {
 interface ChatAreaMeasurement {
   height: number
   isExpanded: boolean
-  chatRef: React.RefObject<HTMLDivElement | null>
+  chatRef: RefObject<HTMLDivElement | null>
 }
 
 export const useChatAreaMeasurement = (

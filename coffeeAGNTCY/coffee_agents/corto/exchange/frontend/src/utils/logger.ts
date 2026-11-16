@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import { isDev } from "./env"
+
 export type LogLevel = "debug" | "info" | "warn" | "error"
 
 class Logger {
-  private isDev = process.env.NODE_ENV === "development"
+  private isDev = isDev()
 
   private log(level: LogLevel, message: string, data?: unknown) {
     if (!this.isDev && level === "debug") return
