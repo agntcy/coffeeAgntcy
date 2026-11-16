@@ -119,7 +119,7 @@ Before you begin, ensure the following tools are installed:
   brew install uv
   ```
 
-- **Node.js** version **16.14.0 or higher**  
+- **Node.js** 24.x with **npm** 11.10.1 or higher  
   Check your version:
   ```sh
   node -v
