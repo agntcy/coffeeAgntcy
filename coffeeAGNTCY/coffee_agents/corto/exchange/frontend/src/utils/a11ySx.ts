@@ -9,6 +9,19 @@ export function getDisabledRowOpacity(theme: Theme): number {
   return theme.palette.mode === "light" ? 0.6 : 0.5
 }
 
+/** Hide visually; keep available to screen readers and associated controls. */
+export const visuallyHiddenSx: SxProps<Theme> = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+}
+
 /** Skip link: off-screen until keyboard focus. */
 export const skipLinkSx: SxProps<Theme> = {
   position: "absolute",

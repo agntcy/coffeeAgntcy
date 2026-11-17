@@ -11,7 +11,8 @@ import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import Message from "./Message"
 import { ChatAgentAvatar } from "./shared/ChatAvatarCircle"
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
+import { LoadingDots } from "@/components/loading/LoadingDots"
+import { visuallyHiddenSx } from "@/utils/a11ySx"
 import { mainAreaContentHorizontalPadding } from "@/components/MainArea/mainAreaContentPadding"
 import {
   chatComposerNarrowContainerQuery,
@@ -205,9 +206,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 880 }}>
                   <UserMessage content={currentUserMessage} />
                   {(isAgentLoading || agentResponse) && (
-                    <Message icon={<ChatAgentAvatar />} highlighted>
+                    <Message icon={<ChatAgentAvatar />}>
                       {isAgentLoading ? (
-                        <LoadingSpinner size="small" compact />
+                        <>
+                          <Box component="span" sx={visuallyHiddenSx}>
+                            Agent is responding
+                          </Box>
+                          <LoadingDots />
+                        </>
                       ) : (
                         agentResponse
                       )}
