@@ -4,8 +4,13 @@
  **/
 
 import { Node, Edge } from "@xyflow/react"
+import { Box } from "@open-ui-kit/core"
 import supervisorIcon from "@/assets/supervisor.png"
 import graderIcon from "@/assets/Grader-Agent.png"
+import {
+  assetPngIconBareSx,
+  assetPngIconMonochromeDarkFilterSx,
+} from "@/utils/assetPngIcon"
 
 export interface GraphConfig {
   title: string
@@ -15,16 +20,11 @@ export interface GraphConfig {
 }
 
 const GraderAgentIcon = (
-  <img
+  <Box
+    component="img"
     src={graderIcon}
     alt="Grader Agent Icon"
-    style={{
-      width: "16px",
-      height: "16px",
-      objectFit: "contain",
-      opacity: 1,
-    }}
-    className="dark-icon"
+    sx={assetPngIconBareSx(assetPngIconMonochromeDarkFilterSx())}
   />
 )
 
@@ -36,15 +36,11 @@ const SLIM_A2A_CONFIG: GraphConfig = {
       type: "customNode",
       data: {
         icon: (
-          <img
+          <Box
+            component="img"
             src={supervisorIcon}
             alt="Supervisor Icon"
-            style={{
-              width: "16px",
-              height: "16px",
-              objectFit: "contain",
-            }}
-            className="dark-icon"
+            sx={assetPngIconBareSx(assetPngIconMonochromeDarkFilterSx())}
           />
         ),
         label1: "Supervisor Agent",
@@ -89,10 +85,10 @@ const SLIM_A2A_CONFIG: GraphConfig = {
 export const graphConfig = SLIM_A2A_CONFIG
 
 export const updateA2ALabels = async (
-  setEdges: (updater: (edges: any[]) => any[]) => void,
+  setEdges: (updater: (edges: Edge[]) => Edge[]) => void,
 ): Promise<void> => {
-  setEdges((edges: any[]) =>
-    edges.map((edge: any) =>
+  setEdges((edges: Edge[]) =>
+    edges.map((edge: Edge) =>
       edge.id === "1-2"
         ? { ...edge, data: { ...edge.data, label: "A2A: SLIM" } }
         : edge,

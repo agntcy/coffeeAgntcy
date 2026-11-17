@@ -5,6 +5,11 @@
 
 import React from "react"
 import { Handle, Position } from "@xyflow/react"
+import { Box, OverflowTooltip, Typography, useTheme } from "@open-ui-kit/core"
+import {
+  getGraphNodeHandleStyle,
+  graphNodeRootSurfaceSx,
+} from "./Elements/nodes/graphNodeSurface"
 
 interface SlimNodeData {
   label: string
@@ -16,69 +21,55 @@ interface SlimNodeProps {
 }
 
 const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
-  const activeClasses = data.active
-    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-    : "bg-node-background"
+  const theme = useTheme()
+  const handleStyle = getGraphNodeHandleStyle(theme)
 
   return (
-    <div
-      className={` ${activeClasses} flex items-center justify-center border border-gray-100 text-center text-gray-50 hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
-      style={{
-        width: "1200px",
-        height: "52px",
-        padding: "16px",
-        borderRadius: "8px",
-      }}
+    <Box
+      sx={(t) => ({
+        ...graphNodeRootSurfaceSx(t, { active: data.active }),
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
+        textAlign: "center",
+        width: 1200,
+        height: 52,
+      })}
     >
-      <div>{data.label}</div>
+      <Box sx={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+        <OverflowTooltip value={data.label}>
+          <Typography variant="h6" component="span">
+            {data.label}
+          </Typography>
+        </OverflowTooltip>
+      </Box>
       <Handle
         type="target"
         id="top"
         position={Position.Top}
-        style={{
-          width: "0.1px",
-          height: "0.1px",
-          border: `1px solid darkgrey`,
-        }}
-        className="bg-node-data-background"
+        style={handleStyle}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom_left"
-        style={{
-          left: "25%",
-          width: "0.1px",
-          height: "0.1px",
-          border: `1px solid darkgrey`,
-        }}
-        className="bg-node-data-background"
+        style={{ ...handleStyle, left: "25%" }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom_center"
-        style={{
-          left: "50%",
-          width: "0.1px",
-          height: "0.1px",
-          border: `1px solid darkgrey`,
-        }}
-        className="bg-node-data-background"
+        style={{ ...handleStyle, left: "50%" }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom_right"
-        style={{
-          left: "75%",
-          width: "0.1px",
-          height: "0.1px",
-          border: `1px solid darkgrey`,
-        }}
-        className="bg-node-data-background"
+        style={{ ...handleStyle, left: "75%" }}
       />
-    </div>
+    </Box>
   )
 }
 

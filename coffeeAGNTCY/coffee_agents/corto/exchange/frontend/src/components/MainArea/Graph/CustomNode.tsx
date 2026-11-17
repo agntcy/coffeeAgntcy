@@ -5,14 +5,33 @@
 
 import React, { useCallback } from "react"
 import { Handle, Position } from "@xyflow/react"
-import githubIconDark from "@/assets/Github.png"
-import githubIconLight from "@/assets/Github_lightmode.png"
+import {
+  Box,
+  IconButton,
+  Icons,
+  OverflowTooltip,
+  Stack,
+  Typography,
+  useTheme,
+} from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import {
+  getGraphNodeHandleStyle,
+  graphNodeDirectoryIconControlSx,
+  graphNodeRootSurfaceSx,
+  graphNodeSideIconControlSx,
+} from "./Elements/nodes/graphNodeSurface"
+import { GraphIconChip } from "./Elements/nodes/GraphIconChip"
+import { GraphSideIconTooltip } from "./Elements/nodes/GraphSideIconTooltip"
+import {
+  CUSTOM_NODE_HEIGHT,
+  CUSTOM_NODE_WIDTH,
+  GRAPH_NODE_PADDING_X,
+  GRAPH_NODE_PADDING_Y,
+} from "@/utils/graphNodeDimensions"
 
-// A type alias (not an interface) so it is assignable to Record<string, unknown>,
-// which OasfRecordModal takes as `nodeData`.
 export type CustomNodeData = {
   icon: React.ReactNode
   label1: string
@@ -24,150 +43,146 @@ export type CustomNodeData = {
   githubLink?: string
   agentDirectoryLink?: string
   slug?: string
-  onOpenOasfModal?: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  onOpenOasfModal?: (nodeData: CustomNodeData) => void
 }
 
 interface CustomNodeProps {
   data: CustomNodeData
 }
 
-function handleNodeIconMouseEnter(e: React.MouseEvent<HTMLDivElement>) {
-  e.currentTarget.style.opacity = "0.8"
-}
-
-function handleNodeIconMouseLeave(e: React.MouseEvent<HTMLDivElement>) {
-  e.currentTarget.style.opacity = "1"
-}
-
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
-  const nodeRef = React.useRef<HTMLDivElement>(null)
-  const githubIcon = useThemeIcon({
-    light: githubIconLight,
-    dark: githubIconDark,
-  })
-  const agentDirectoryIcon = useThemeIcon({
-    light: agentDirectoryIconLight,
-    dark: agentDirectoryIconDark,
-  })
+  const theme = useTheme()
+  const { isDarkMode } = useAppThemeMode()
+  const agentDirectoryIcon = isDarkMode
+    ? agentDirectoryIconDark
+    : agentDirectoryIconLight
+  const handleStyle = getGraphNodeHandleStyle(theme)
 
   const handleAgentDirectoryClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
-      if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
-        const buttonRect = (
-          e.currentTarget as HTMLElement
-        ).getBoundingClientRect()
-        const position = {
-          x: buttonRect.left + buttonRect.width / 2,
-          y: buttonRect.bottom + 12,
-        }
-        data.onOpenOasfModal(data, position)
+      if (typeof data.onOpenOasfModal === "function") {
+        data.onOpenOasfModal(data)
       }
     },
     [data],
   )
 
-  const activeClasses = data.active
-    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-    : "bg-node-background"
-
   return (
-    <div
-      ref={nodeRef}
-      className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
+    <Box
+      sx={(t) => ({
+        ...graphNodeRootSurfaceSx(t, { active: data.active }),
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        justifyContent: "flex-start",
+        gap: t.spacing(1),
+        px: GRAPH_NODE_PADDING_X,
+        py: GRAPH_NODE_PADDING_Y,
+        boxSizing: "border-box",
+        width: CUSTOM_NODE_WIDTH,
+        height: CUSTOM_NODE_HEIGHT,
+        flexGrow: 0,
+        flexShrink: 0,
+        order: 0,
+      })}
     >
-      <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
-        <div className="flex h-4 w-4 items-center justify-center opacity-100">
-          {data.icon}
-        </div>
-      </div>
+      <GraphIconChip>{data.icon}</GraphIconChip>
 
-      <div
-        className="order-0 flex h-5 flex-none grow-0 flex-row items-center gap-1 self-stretch p-0"
-        style={{
-          width: data.verificationStatus === "verified" ? "160px" : "162px",
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 0.5,
+          p: 0,
+          width: "100%",
+          minWidth: 0,
         }}
       >
-        <span className="order-0 flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-node-text-primary opacity-100">
-          {data.label1}
-        </span>
-      </div>
+        <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
+          <OverflowTooltip value={data.label1}>
+            <Typography variant="h6" component="span">
+              {data.label1}
+            </Typography>
+          </OverflowTooltip>
+        </Box>
+      </Box>
 
-      <div
-        className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-node-text-secondary"
-        style={{
-          width: "162px",
+      <Box
+        sx={{
+          order: 1,
+          alignSelf: "stretch",
+          flexGrow: 0,
+          flexShrink: 0,
+          height: 16,
+          width: "100%",
+          minWidth: 0,
         }}
       >
-        {data.label2}
-      </div>
-
-      <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
-        {data.githubLink && (
-          <a
-            href={data.githubLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: "none",
-            }}
+        <OverflowTooltip value={data.label2}>
+          <Typography
+            variant="caption"
+            component="span"
+            sx={{ fontWeight: 300, lineHeight: "16px" }}
           >
-            <div
-              className="node-icon-container flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
-              style={{
-                backgroundColor: "var(--custom-node-background)",
-                borderColor: "var(--custom-node-border)",
-              }}
-              onMouseEnter={handleNodeIconMouseEnter}
-              onMouseLeave={handleNodeIconMouseLeave}
+            {data.label2}
+          </Typography>
+        </OverflowTooltip>
+      </Box>
+
+      <Stack
+        direction="column"
+        spacing={0.5}
+        sx={{
+          position: "absolute",
+          right: -16,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 10,
+        }}
+      >
+        {data.githubLink && (
+          <GraphSideIconTooltip title="Open repository on GitHub">
+            <IconButton
+              component="a"
+              href={data.githubLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open GitHub repository"
+              sx={(t) => graphNodeSideIconControlSx(t)}
             >
-              <img src={githubIcon} alt="GitHub" className="h-5 w-5" />
-            </div>
-          </a>
+              <Icons.Github />
+            </IconButton>
+          </GraphSideIconTooltip>
         )}
 
         {data.onOpenOasfModal && (
-          <button
-            type="button"
-            onClick={handleAgentDirectoryClick}
-            style={{
-              textDecoration: "none",
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-            }}
-            aria-label="AGNTCY Directory"
-          >
-            <div
-              className="node-icon-container flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
-              style={{
-                backgroundColor: "var(--custom-node-background)",
-                borderColor: "var(--custom-node-border)",
-              }}
-              onMouseEnter={handleNodeIconMouseEnter}
-              onMouseLeave={handleNodeIconMouseLeave}
+          <GraphSideIconTooltip title="View OASF record in AGNTCY Directory">
+            <IconButton
+              type="button"
+              onClick={handleAgentDirectoryClick}
+              aria-label="AGNTCY Directory"
+              sx={(t) => graphNodeDirectoryIconControlSx(t)}
             >
-              <img
+              <Box
+                component="img"
                 src={agentDirectoryIcon}
                 alt="AGNTCY Directory"
-                className="h-5 w-5"
               />
-            </div>
-          </button>
+            </IconButton>
+          </GraphSideIconTooltip>
         )}
-      </div>
+      </Stack>
 
       {(data.handles === "all" || data.handles === "target") && (
         <Handle
           type="target"
           position={Position.Top}
           id="target"
-          className="h-[0.1px] w-[0.1px] border border-gray-600 bg-node-data-background"
+          style={handleStyle}
         />
       )}
       {(data.handles === "all" || data.handles === "source") && (
@@ -175,10 +190,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           type="source"
           position={Position.Bottom}
           id="source"
-          className="h-[0.1px] w-[0.1px] border border-gray-600 bg-node-data-background"
+          style={handleStyle}
         />
       )}
-    </div>
+    </Box>
   )
 }
 

@@ -2,64 +2,137 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  **/
-import React, { useState } from "react"
-import { HelpCircle } from "lucide-react"
+
+import React, { useCallback, useEffect, useState } from "react"
+import {
+  Box,
+  Header,
+  IconButton,
+  Icons,
+  Stack,
+  Tooltip,
+} from "@open-ui-kit/core"
+
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
+import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import type { SidebarProps } from "@/components/Sidebar/Sidebar"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
-import { useTheme } from "@/hooks/useTheme"
+import CatalogNavigationDrawer, {
+  CATALOG_NAV_DRAWER_ID,
+} from "./CatalogNavigationDrawer"
 import InfoModal from "./InfoModal"
+import {
+  navigationHeaderIconButtonSx,
+  navigationHeaderSx,
+} from "./navigationHeaderSx"
 
-const Navigation: React.FC = () => {
+const CATALOG_MENU_BUTTON_LABEL = "Open conversation catalog"
+
+interface NavigationProps {
+  /** When set, shows a catalog menu trigger below the `sm` breakpoint. */
+  catalogSidebarProps?: SidebarProps
+}
+
+const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { isLightMode, toggleTheme } = useTheme()
+  const [isCatalogMenuOpen, setIsCatalogMenuOpen] = useState(false)
+  const { isDarkMode, toggleTheme } = useAppThemeMode()
 
-  const handleHelpClick = () => {
+  const showCatalogMenu = catalogSidebarProps !== undefined
+
+  useEffect(() => {
+    if (!showCatalogMenu) {
+      setIsCatalogMenuOpen(false)
+    }
+  }, [showCatalogMenu])
+
+  const handleHelpClick = useCallback(() => {
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false)
-  }
+  }, [])
 
-  const handleThemeToggle = () => {
-    toggleTheme()
-  }
+  const handleToggleCatalogMenu = useCallback(() => {
+    setIsCatalogMenuOpen((prev) => !prev)
+  }, [])
+
+  const handleCloseCatalogMenu = useCallback(() => {
+    setIsCatalogMenuOpen(false)
+  }, [])
+
+  const themeToggleLabel = `Switch to ${isDarkMode ? "light" : "dark"} mode`
+
   return (
-    <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-col items-start self-stretch border-r border-nav-border bg-nav-background p-0">
-      <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-row items-center justify-between gap-2 self-stretch border-b border-nav-border bg-nav-background-secondary px-2 py-[10px] sm:px-4">
-        <div className="order-0 ml-2 flex h-[45px] w-32 flex-none flex-grow-0 flex-row items-center gap-2 p-0 opacity-100 sm:ml-4 sm:w-40">
-          <div className="order-0 flex h-[45px] w-32 flex-none flex-grow-0 flex-row items-center gap-1 p-0 opacity-100 sm:w-40">
-            <div className="order-0 flex h-[42px] w-auto flex-none flex-grow-0 items-center justify-center gap-0.5 opacity-100">
-              <img
-                src={coffeeAgntcyLogo}
-                alt="Coffee AGNTCY Logo"
-                className="h-full w-32 object-contain sm:w-40"
-              />
-            </div>
-          </div>
-        </div>
+    <>
+      <Header
+        position="static"
+        sx={(theme) => navigationHeaderSx(theme)}
+        logo={
+          <Stack direction="row" alignItems="center" spacing={2}>
+            {showCatalogMenu ? (
+              <Tooltip title={CATALOG_MENU_BUTTON_LABEL}>
+                <Box component="span" sx={{ display: "inline-flex" }}>
+                  <IconButton
+                    aria-label={CATALOG_MENU_BUTTON_LABEL}
+                    aria-controls={CATALOG_NAV_DRAWER_ID}
+                    aria-expanded={isCatalogMenuOpen}
+                    aria-haspopup="true"
+                    onClick={handleToggleCatalogMenu}
+                    sx={(theme) => navigationHeaderIconButtonSx(theme)}
+                  >
+                    <Icons.Menu />
+                  </IconButton>
+                </Box>
+              </Tooltip>
+            ) : null}
+            <Box
+              component="img"
+              src={coffeeAgntcyLogo}
+              alt="Coffee AGNTCY Logo"
+            />
+          </Stack>
+        }
+        userSection={
+          <Stack
+            direction="row"
+            sx={{
+              gap: { xs: 0.5, sm: 1 },
+            }}
+          >
+            <Tooltip title={themeToggleLabel}>
+              <IconButton
+                aria-label={themeToggleLabel}
+                onClick={toggleTheme}
+                sx={(theme) => navigationHeaderIconButtonSx(theme)}
+              >
+                <ThemeToggleIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Help">
+              <IconButton
+                aria-label="Help"
+                onClick={handleHelpClick}
+                sx={(theme) => navigationHeaderIconButtonSx(theme)}
+              >
+                <Icons.QuestionCircleOutline />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      />
 
-        <div className="order-3 flex flex-none flex-grow-0 flex-row items-center justify-end gap-2 p-0">
-          <button
-            className="order-0 flex h-8 w-8 flex-none flex-grow-0 items-center justify-center rounded p-1.5 transition-opacity hover:opacity-80"
-            title={`Switch between dark and light mode (currently ${isLightMode ? "light" : "dark"} mode)`}
-            aria-label={`Switch between dark and light mode (currently ${isLightMode ? "light" : "dark"} mode)`}
-            onClick={handleThemeToggle}
-          >
-            <ThemeToggleIcon className="h-5 w-5 text-nav-text" />
-          </button>
-          <button
-            className="order-0 flex h-8 w-8 flex-none flex-grow-0 items-center justify-center rounded p-1.5 transition-opacity hover:opacity-80"
-            title="Help"
-            onClick={handleHelpClick}
-          >
-            <HelpCircle className="h-5 w-5 text-nav-text" />
-          </button>
-        </div>
-      </div>
+      {showCatalogMenu ? (
+        <CatalogNavigationDrawer
+          open={isCatalogMenuOpen}
+          onClose={handleCloseCatalogMenu}
+          sidebarProps={catalogSidebarProps}
+        />
+      ) : null}
 
       <InfoModal isOpen={isModalOpen} onClose={handleCloseModal} />
-    </div>
+    </>
   )
 }
 

@@ -22,4 +22,15 @@ export default defineConfig({
     },
     extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
   },
+  build: {
+    rolldownOptions: {
+      treeshake: {
+        // rolldown cannot tell that @open-ui-kit/core's unused namespace
+        // Object.freeze({__proto__:null, ...}) statements are pure, so it keeps
+        // the whole Graphics set (about +1.7 MB in the main chunk). Remove once
+        // fixed upstream, and re-check the bundle size when bumping the library.
+        manualPureFunctions: ["Object.freeze"],
+      },
+    },
+  },
 })

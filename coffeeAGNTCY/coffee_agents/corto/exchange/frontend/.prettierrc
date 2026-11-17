@@ -5,6 +5,5 @@
   "singleQuote": false,
   "printWidth": 80,
   "endOfLine": "auto",
-  "arrowParens": "always",
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "arrowParens": "always"
 }
