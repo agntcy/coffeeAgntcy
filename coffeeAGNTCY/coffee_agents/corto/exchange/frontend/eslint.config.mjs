@@ -9,6 +9,7 @@ import prettierConfig from "eslint-config-prettier"
 
 export default [
   { ignores: ["dist", "node_modules"] },
+  reactHooks.configs.flat.recommended,
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     languageOptions: {
@@ -25,14 +26,12 @@ export default [
       },
     },
     plugins: {
-      "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
       "@typescript-eslint": tseslint,
       prettier: prettier,
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
       ...prettierConfig.rules,
       "prettier/prettier": "error",
       "no-unused-vars": "off",

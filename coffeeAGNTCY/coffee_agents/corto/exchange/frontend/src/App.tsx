@@ -56,18 +56,14 @@ const App: React.FC = () => {
   const [agentResponse, setAgentResponse] = useState<string>("")
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
   const [isChatMinimized, setIsChatMinimized] = useState<boolean>(false)
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const storedMessages = localStorage.getItem(LOCAL_STORAGE_KEY)
+    return storedMessages ? JSON.parse(storedMessages) : []
+  })
   const { sendMessageWithCallback } = useAgentAPI()
 
   const isCompactShell = useIsBelowSmBreakpoint()
   const chatRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const storedMessages = localStorage.getItem(LOCAL_STORAGE_KEY)
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages))
-    }
-  }, [])
 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
