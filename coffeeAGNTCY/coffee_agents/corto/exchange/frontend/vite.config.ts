@@ -13,12 +13,12 @@ export default defineConfig({
     port: 3000,
     fs: {
       strict: true,
-      allow: [path.resolve(__dirname)],
+      allow: [path.resolve(import.meta.dirname)],
     },
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(import.meta.dirname, "src"),
     },
     extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
   },

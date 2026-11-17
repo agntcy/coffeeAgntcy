@@ -11,7 +11,9 @@ import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 
-export interface CustomNodeData {
+// A type alias (not an interface) so it is assignable to Record<string, unknown>,
+// which OasfRecordModal takes as `nodeData`.
+export type CustomNodeData = {
   icon: React.ReactNode
   label1: string
   label2: string

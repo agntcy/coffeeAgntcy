@@ -90,13 +90,17 @@ const App: React.FC = () => {
 
           const { status, message } = parseApiError(error)
 
-          // 4xx errors
-          if (status && status >= 400 && status < 500) {
+          if (!message && !status) {
             handleApiResponse(
-              `HTTP ${status} - ${message}` ||
-                "Sorry, I encountered an error. Please try again later",
+              "Sorry, I encountered an error. Please try again later.",
               true,
             )
+            return
+          }
+
+          // 4xx errors
+          if (status && status >= 400 && status < 500 && message) {
+            handleApiResponse(`HTTP ${status} - ${message}`, true)
             return
           }
 
