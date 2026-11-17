@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import {
   Box,
   Link,
@@ -44,9 +44,14 @@ const OasfRecordDialog: React.FC<OasfRecordDialogProps> = ({
 }) => {
   const directoryServerUrl = getDirectoryServerUrl()
   const directoryVersion = getDirectoryVersion()
-  const [record, setRecord] = useState<OasfRecord | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const [settled, setSettled] = useState<{
+    nodeData: CustomNodeData
+    chatApiTarget: ChatApiTarget | null
+    attempt: number
+    record: OasfRecord | null
+    error: string | null
+  } | null>(null)
 
   const combinedLabel = useMemo(
     () =>
@@ -65,29 +70,57 @@ const OasfRecordDialog: React.FC<OasfRecordDialogProps> = ({
     [nodeName, combinedLabel],
   )
 
-  useEffect(() => {
-    if (!isOpen || !nodeData) return
-    if (isDirectoryNode) return // do not fetch JSON for Directory view
-    fetchOasfRecordData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, nodeName, nodeData, isDirectoryNode])
+  const shouldFetch = Boolean(isOpen && nodeData && !isDirectoryNode)
 
-  const fetchOasfRecordData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchOasfRecord(nodeData, chatApiTarget)
-      setRecord(data)
-    } catch (error) {
-      const httpError = reportRequestError(
-        oasfRecordRequest(nodeData, chatApiTarget).endpointLabel,
-        error,
-      )
-      setError(httpError.message)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!shouldFetch || !nodeData) return
+    let cancelled = false
+    const requestedNode = nodeData
+    const requestedTarget = chatApiTarget
+    const requestedAttempt = attempt
+    fetchOasfRecord(requestedNode, requestedTarget)
+      .then((data) => {
+        if (cancelled) return
+        setSettled({
+          nodeData: requestedNode,
+          chatApiTarget: requestedTarget,
+          attempt: requestedAttempt,
+          record: data,
+          error: null,
+        })
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const httpError = reportRequestError(
+          oasfRecordRequest(requestedNode, requestedTarget).endpointLabel,
+          err,
+        )
+        setSettled({
+          nodeData: requestedNode,
+          chatApiTarget: requestedTarget,
+          attempt: requestedAttempt,
+          record: null,
+          error: httpError.message,
+        })
+      })
+    return () => {
+      cancelled = true
     }
-  }
+  }, [shouldFetch, nodeData, chatApiTarget, attempt])
+
+  const isCurrent =
+    shouldFetch &&
+    settled !== null &&
+    settled.nodeData === nodeData &&
+    settled.chatApiTarget === chatApiTarget &&
+    settled.attempt === attempt
+  const loading = shouldFetch && !isCurrent
+  const record = isCurrent ? settled.record : null
+  const error = isCurrent ? settled.error : null
+
+  const retryFetch = useCallback(() => {
+    setAttempt((current) => current + 1)
+  }, [])
 
   const nodeDataExt = nodeData as Record<string, unknown> | null | undefined
   const recordObj = record as Record<string, unknown> | null
@@ -162,9 +195,7 @@ const OasfRecordDialog: React.FC<OasfRecordDialogProps> = ({
             title: "Failed to load OASF record",
             description: error ?? "",
             actionTitle: "Retry",
-            actionCallback: () => {
-              void fetchOasfRecordData()
-            },
+            actionCallback: retryFetch,
           }}
           emptyStateProps={{
             variant: "info",

@@ -58,10 +58,13 @@ export function useAppChatState({
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
   }, [messages])
 
-  useEffect(() => {
+  const workflowName = selectedWorkflowSummary?.name
+  const [chatWorkflowName, setChatWorkflowName] = useState(workflowName)
+  if (workflowName !== chatWorkflowName) {
+    setChatWorkflowName(workflowName)
     setButtonClicked(false)
     setAiReplied(false)
-  }, [selectedWorkflowSummary?.name])
+  }
 
   const handleApiResponse = useCallback(
     (response: ApiResponse | string, isError: boolean = false) => {

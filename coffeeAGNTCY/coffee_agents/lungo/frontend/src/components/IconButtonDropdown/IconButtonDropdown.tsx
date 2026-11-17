@@ -3,14 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, {
-  useCallback,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-} from "react"
+import React, { useCallback, useId, useState, type ComponentProps } from "react"
 import {
   Box,
   IconButton,
@@ -68,24 +61,18 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
   onOpenChange,
 }) => {
   const menuId = useId()
-  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const [buttonEl, setButtonEl] = useState<HTMLButtonElement | null>(null)
   const [uncontrolledAnchor, setUncontrolledAnchor] =
     useState<HTMLElement | null>(null)
 
   const isControlled = openProp !== undefined
   const openControlled = Boolean(openProp)
 
-  const setAnchorFromRef = useCallback(() => {
-    if (buttonRef.current) setUncontrolledAnchor(buttonRef.current)
-  }, [])
-
-  useLayoutEffect(() => {
-    if (!isControlled) return
-    if (openControlled) setAnchorFromRef()
-    else setUncontrolledAnchor(null)
-  }, [isControlled, openControlled, setAnchorFromRef])
-
-  const anchorEl = isControlled ? uncontrolledAnchor : uncontrolledAnchor
+  const anchorEl = isControlled
+    ? openControlled
+      ? buttonEl
+      : null
+    : uncontrolledAnchor
   const menuOpen = Boolean(anchorEl)
 
   const handleUncontrolledOpen = useCallback(
@@ -116,7 +103,7 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
 
   const triggerButton = (
     <IconButton
-      ref={buttonRef}
+      ref={setButtonEl}
       aria-label={ariaLabel}
       aria-controls={menuOpen ? menuId : undefined}
       aria-haspopup="menu"

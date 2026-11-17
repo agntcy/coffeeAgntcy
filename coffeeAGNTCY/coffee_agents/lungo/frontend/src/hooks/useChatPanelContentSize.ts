@@ -32,15 +32,18 @@ export function useChatPanelContentSize({
   chatPanelRef,
   chatContentRef,
 }: UseChatPanelContentSizeOptions) {
-  const [contentSized, setContentSized] = useState(false)
+  const [measuredFor, setMeasuredFor] = useState<{
+    fillPanelHeight: boolean
+    remeasureKey: unknown
+  } | null>(null)
+  const contentSized =
+    enabled &&
+    measuredFor !== null &&
+    measuredFor.fillPanelHeight === fillPanelHeight &&
+    Object.is(measuredFor.remeasureKey, remeasureKey)
 
   useLayoutEffect(() => {
-    if (!enabled) {
-      setContentSized(false)
-      return
-    }
-
-    setContentSized(false)
+    if (!enabled) return
 
     let cancelled = false
     let attempts = 0
@@ -92,19 +95,28 @@ export function useChatPanelContentSize({
         return false
       }
 
+      const markMeasured = () => {
+        setMeasuredFor((prev) => {
+          if (
+            prev &&
+            prev.fillPanelHeight === fillPanelHeight &&
+            Object.is(prev.remeasureKey, remeasureKey)
+          ) {
+            return prev
+          }
+          return { fillPanelHeight, remeasureKey }
+        })
+      }
+
       if (height === lastAppliedHeight) {
-        if (!cancelled) {
-          setContentSized(true)
-        }
+        if (!cancelled) markMeasured()
         return true
       }
 
       try {
         chatPanel.resize(`${height}px`)
         lastAppliedHeight = height
-        if (!cancelled) {
-          setContentSized(true)
-        }
+        if (!cancelled) markMeasured()
         return true
       } catch {
         return false

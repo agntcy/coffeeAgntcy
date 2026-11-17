@@ -22,7 +22,6 @@ export function useAppPatternCategories() {
 
   useEffect(() => {
     const controller = new AbortController()
-    setPatternCategoriesError(null)
     fetchPatternCategories(controller.signal)
       .then((items) => {
         setPatternCategories(items)

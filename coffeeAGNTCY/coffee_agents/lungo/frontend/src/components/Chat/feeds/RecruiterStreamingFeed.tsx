@@ -42,12 +42,16 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   }, [])
 
   // Auto-expand when a new prompt arrives and reset auto-collapse flag
+  const [expandedPrompt, setExpandedPrompt] = useState(prompt)
+  if (prompt !== expandedPrompt) {
+    setExpandedPrompt(prompt)
+    if (prompt) setIsExpanded(true)
+  }
+
   useEffect(() => {
-    if (prompt) {
-      setIsExpanded(true)
-      hasAutoCollapsedRef.current = false
-      lastProcessedEventRef.current = null
-    }
+    if (!prompt) return
+    hasAutoCollapsedRef.current = false
+    lastProcessedEventRef.current = null
   }, [prompt])
 
   useEffect(() => {

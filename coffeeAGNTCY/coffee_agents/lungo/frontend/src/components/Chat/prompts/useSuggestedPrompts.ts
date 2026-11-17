@@ -33,13 +33,10 @@ export function useSuggestedPrompts(
   )
   const url = request?.url ?? null
   const endpointLabel = request?.endpointLabel ?? null
+  const hasRequest = url !== null && endpointLabel !== null
 
   useEffect(() => {
-    if (!url || !endpointLabel) {
-      setCategories([])
-      setIsLoading(false)
-      setIsUnavailable(false)
-      setUnavailableMessage(null)
+    if (!hasRequest || !url || !endpointLabel) {
       return
     }
 
@@ -112,7 +109,16 @@ export function useSuggestedPrompts(
         clearTimeout(retryTimeoutId)
       }
     }
-  }, [url, endpointLabel])
+  }, [hasRequest, url, endpointLabel])
+
+  if (!hasRequest) {
+    return {
+      categories: [],
+      isLoading: false,
+      isUnavailable: false,
+      unavailableMessage: null,
+    }
+  }
 
   return {
     categories,
