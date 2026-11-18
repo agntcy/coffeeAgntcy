@@ -4,18 +4,39 @@
  **/
 
 import React, { useState } from "react"
-import airplaneSvg from "@/assets/airplane.svg"
+import { Box, Button, Icons, InputField, Stack } from "@open-ui-kit/core"
 import CoffeeGraderDropdown from "./CoffeeGraderDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
-import { Message } from "@/types/Message"
+import Message from "./Message"
+import { ChatAgentAvatar } from "./shared/ChatAvatarCircle"
+import { LoadingDots } from "@/components/loading/LoadingDots"
+import { visuallyHiddenSx } from "@/utils/a11ySx"
+import { mainAreaContentHorizontalPadding } from "@/components/MainArea/mainAreaContentPadding"
+import {
+  chatComposerNarrowContainerQuery,
+  CHAT_COMPOSER_STACKED_GAP_PX,
+} from "./composer/chatComposerLayout"
+import { composerPrimaryButtonSx } from "@/utils/composerPrimaryButtonSx"
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
+import { Message as MessageType } from "@/types/Message"
 import { logger } from "@/utils/logger"
 
+const COMPOSER_CONTROL_HEIGHT_PX = 34
+
+const promptsDropdownSx = {
+  flexShrink: 0,
+  alignSelf: "flex-end" as const,
+  [chatComposerNarrowContainerQuery]: {
+    alignSelf: "stretch",
+  },
+}
+
 interface ChatAreaProps {
-  messages: Message[]
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  messages: MessageType[]
+  setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>
   setButtonClicked: (clicked: boolean) => void
   setAiReplied: (replied: boolean) => void
   isBottomLayout: boolean
@@ -29,6 +50,9 @@ interface ChatAreaProps {
   agentResponse?: string
   isAgentLoading?: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
+  isMinimized?: boolean
+  onMinimizedChange?: (minimized: boolean) => void
+  fillHeight?: boolean
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -44,22 +68,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   agentResponse,
   isAgentLoading,
   chatRef,
+  isMinimized = false,
+  onMinimizedChange,
+  fillHeight = true,
 }) => {
   const [content, setContent] = useState<string>("")
-  const [isMinimized, setIsMinimized] = useState<boolean>(false)
   const { loading, sendMessageWithCallback } = useAgentAPI()
 
   const handleMinimize = () => {
-    setIsMinimized(true)
+    onMinimizedChange?.(true)
   }
 
   const handleRestore = () => {
-    setIsMinimized(false)
+    onMinimizedChange?.(false)
   }
 
   const handleDropdownQuery = (query: string) => {
     if (isMinimized) {
-      setIsMinimized(false)
+      onMinimizedChange?.(false)
     }
 
     if (onDropdownSelect) {
@@ -93,21 +119,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   const processMessage = async (): Promise<void> => {
+    const query = content.trim()
+    if (!query || loading) {
+      return
+    }
+
     if (isMinimized) {
-      setIsMinimized(false)
+      onMinimizedChange?.(false)
     }
 
     if (onUserInput) {
-      onUserInput(content)
+      onUserInput(query)
     }
-    await processMessageWithQuery(content)
+    await processMessageWithQuery(query)
     setContent("")
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      processMessage()
+      void processMessage()
     }
   }
 
@@ -116,86 +147,189 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   return (
-    <div
+    <Box
       ref={chatRef}
-      className="relative flex w-full flex-col"
-      style={{ backgroundColor: "var(--overlay-background)" }}
+      sx={{
+        containerType: "inline-size",
+        containerName: "chat",
+        position: "relative",
+        display: "flex",
+        width: "100%",
+        height: fillHeight ? "100%" : "fit-content",
+        maxHeight: fillHeight ? "100%" : "none",
+        minHeight: fillHeight ? 0 : "fit-content",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        backgroundColor: (theme) => theme.palette.action.selected,
+        ...(!fillHeight
+          ? { borderTop: "1px solid", borderColor: "divider" }
+          : {}),
+      }}
     >
-      {currentUserMessage && (
-        <ChatHeader
-          onMinimize={isMinimized ? handleRestore : handleMinimize}
-          onClearConversation={onClearConversation}
-          isMinimized={isMinimized}
-          showActions={!!agentResponse && !isAgentLoading}
-        />
-      )}
-
-      <div
-        className={`flex w-full flex-col items-center justify-center gap-2 px-4 ${currentUserMessage ? "py-2" : "py-4"} sm:px-8 md:px-16 lg:px-[120px]`}
-        style={{ minHeight: currentUserMessage ? "auto" : "120px" }}
-      >
-        {currentUserMessage && !isMinimized && (
-          <div className="mb-4 flex w-full max-w-[880px] flex-col gap-3">
-            <UserMessage content={currentUserMessage} />
-            {(isAgentLoading || agentResponse) && (
-              <div className="flex w-full flex-row items-start gap-1">
-                <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                  <img
-                    src={AgentIcon}
-                    alt="Agent"
-                    className="h-[22px] w-[22px]"
-                  />
-                </div>
-                <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                  <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                    {isAgentLoading ? (
-                      <div className="animate-pulse text-accent-primary">
-                        ...
-                      </div>
-                    ) : (
-                      agentResponse
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-          <CoffeeGraderDropdown visible={true} onSelect={handleDropdownQuery} />
-        </div>
-
-        <div className="flex w-full max-w-[880px] flex-col items-stretch gap-4 p-0 sm:flex-row sm:items-center">
-          <div className="box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border border-node-background bg-chat-input-background px-0 py-[5px]">
-            <div className="flex h-[34px] w-full flex-row items-center gap-[10px] px-4 py-[7px]">
-              <input
-                className="h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] text-chat-text outline-none placeholder:text-chat-text placeholder:opacity-60"
-                placeholder="Type a prompt to interact with the agents"
-                value={content}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setContent(e.target.value)
-                }
-                onKeyDown={handleKeyDown}
-                disabled={loading}
-              />
-            </div>
-          </div>
-          <div className="flex h-11 w-[50px] flex-none flex-row items-start p-0">
-            <button
-              onClick={() => {
-                if (content.trim() && !loading) {
-                  processMessage()
-                }
-              }}
-              className="flex h-11 w-[50px] cursor-pointer flex-row items-center justify-center gap-[10px] rounded-md border-none bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] px-4 py-[15px]"
+      {currentUserMessage ? (
+        <>
+          <Box sx={{ flexShrink: 0, width: "100%" }}>
+            <ChatHeader
+              onMinimize={isMinimized ? handleRestore : handleMinimize}
+              onClearConversation={onClearConversation}
+              isMinimized={isMinimized}
+              showActions={!!agentResponse && !isAgentLoading}
+            />
+          </Box>
+          {!isMinimized ? (
+            <Box
+              role="region"
+              aria-label="Chat messages"
+              sx={(theme) => ({
+                flex: fillHeight ? "1 1 auto" : "0 0 auto",
+                minHeight: fillHeight ? 0 : undefined,
+                width: "100%",
+                overflowY: "auto",
+                overflowX: "hidden",
+                scrollbarGutter: "stable both-edges",
+                borderTop: "1px solid",
+                borderColor: "divider",
+                ...transparentScrollbarSx(theme),
+              })}
             >
-              <img src={airplaneSvg} alt="Send" className="h-[18px] w-[18px]" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+              <Stack
+                alignItems="center"
+                spacing={1}
+                sx={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  px: mainAreaContentHorizontalPadding,
+                  py: 1,
+                }}
+              >
+                <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 880 }}>
+                  <UserMessage content={currentUserMessage} />
+                  {(isAgentLoading || agentResponse) && (
+                    <Message icon={<ChatAgentAvatar />}>
+                      {isAgentLoading ? (
+                        <>
+                          <Box component="span" sx={visuallyHiddenSx}>
+                            Agent is responding
+                          </Box>
+                          <LoadingDots />
+                        </>
+                      ) : (
+                        agentResponse
+                      )}
+                    </Message>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
+          ) : null}
+        </>
+      ) : null}
+
+      <Stack
+        data-chat-composer-region
+        alignItems="space-between"
+        spacing={1}
+        sx={{
+          flexShrink: 0,
+          width: "100%",
+          boxSizing: "border-box",
+          px: mainAreaContentHorizontalPadding,
+          py: currentUserMessage ? 1 : 2,
+          borderTop: currentUserMessage ? "1px solid" : "none",
+          borderColor: "divider",
+          ...(!fillHeight
+            ? {
+                height: "fit-content",
+                minHeight: "fit-content",
+              }
+            : {}),
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={2}
+          sx={{
+            width: "100%",
+            [chatComposerNarrowContainerQuery]: {
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: `${CHAT_COMPOSER_STACKED_GAP_PX}px`,
+              "& > :not(style) ~ :not(style)": {
+                margin: 0,
+              },
+            },
+          }}
+        >
+          <Box sx={promptsDropdownSx}>
+            <CoffeeGraderDropdown
+              visible={true}
+              onSelect={handleDropdownQuery}
+            />
+          </Box>
+
+          <InputField
+            fullWidth
+            size="small"
+            placeholder="Type a prompt to interact with the agents"
+            value={content}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setContent(e.target.value)
+            }
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+            slotProps={{
+              htmlInput: {
+                "aria-label": "Message to agents",
+              },
+            }}
+            sx={(theme) => ({
+              "& .MuiInput-root.MuiInputBase-sizeSmall": {
+                marginTop: 0,
+                height: COMPOSER_CONTROL_HEIGHT_PX,
+                minHeight: COMPOSER_CONTROL_HEIGHT_PX,
+                borderColor: "transparent",
+
+                "&:has(.MuiInput-input:not(:placeholder-shown))": {
+                  borderColor: theme.palette.vars.interactiveTertiaryDefault,
+                },
+                "&:has(.MuiInput-input:not(:placeholder-shown)):hover": {
+                  borderColor: theme.palette.vars.interactiveTertiaryHover,
+                },
+              },
+            })}
+          />
+          <Button
+            size="medium"
+            type="button"
+            variant="primary"
+            disabled={loading || !content.trim()}
+            onClick={() => {
+              if (content.trim() && !loading) {
+                void processMessage()
+              }
+            }}
+            endIcon={<Icons.Send />}
+            sx={(theme) => ({
+              flexShrink: 0,
+              alignSelf: "flex-end",
+              [chatComposerNarrowContainerQuery]: {
+                alignSelf: "stretch",
+              },
+              ...theme.typography.body1,
+              ...composerPrimaryButtonSx(theme),
+              "& .MuiButton-endIcon": iconGlyphFillSx(
+                theme.palette.vars.baseTextInverse,
+                { important: true },
+              ),
+            })}
+          >
+            Send
+          </Button>
+        </Stack>
+      </Stack>
+    </Box>
   )
 }
 

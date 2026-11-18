@@ -3,126 +3,125 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useCallback } from "react"
-import { createPortal } from "react-dom"
+import React, { useState, useEffect, useCallback, useRef } from "react"
+import { Box, LoadingErrorState, Stack, Typography } from "@open-ui-kit/core"
+import Dialog from "@/components/dialog/Dialog"
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
+import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"
+import {
+  graphDialogLoadingOverlaySx,
+  graphDialogPreSx,
+  graphDialogScrollBodySx,
+} from "../graphDialogStyles"
 import { fetchOasfRecord, OasfRecord, OasfApiError } from "./DirectoryApi"
-import { useEscapeKey } from "@/hooks/useEscapeKey"
 
 export interface OasfRecordModalProps {
   isOpen: boolean
   onClose: () => void
   nodeName: string
   nodeData?: Record<string, unknown> | null
-  position: { x: number; y: number }
 }
-
-const Spinner: React.FC = () => (
-  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent" />
-)
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   isOpen,
   onClose,
   nodeName,
   nodeData,
-  position,
 }) => {
   const [record, setRecord] = useState<OasfRecord | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
-  useEffect(() => {
-    if (!isOpen || !nodeData) return
+  const loadRecord = useCallback(() => {
+    if (!nodeData) return
+    const requestId = ++requestIdRef.current
     setRecord(null)
     setError(null)
     setLoading(true)
-    fetchOasfRecord(nodeData)
-      .then(setRecord)
-      .catch((err: OasfApiError) =>
-        setError(
-          err.message ??
-            "An unexpected error occurred while fetching OASF record.",
-        ),
-      )
-      .finally(() => setLoading(false))
-  }, [isOpen, nodeData])
-
-  useEscapeKey(isOpen, onClose)
-
-  const handleModalClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-  }, [])
-
-  const handleRetry = useCallback(() => {
-    if (!nodeData) return
-    setError(null)
-    setLoading(true)
-    fetchOasfRecord(nodeData)
-      .then(setRecord)
-      .catch((err: OasfApiError) =>
-        setError(err.message ?? "Failed to fetch OASF record."),
-      )
-      .finally(() => setLoading(false))
+    void fetchOasfRecord(nodeData)
+      .then((nextRecord) => {
+        if (requestId === requestIdRef.current) {
+          setRecord(nextRecord)
+        }
+      })
+      .catch((err: OasfApiError) => {
+        if (requestId === requestIdRef.current) {
+          setError(
+            err.message ??
+              "An unexpected error occurred while fetching OASF record.",
+          )
+        }
+      })
+      .finally(() => {
+        if (requestId === requestIdRef.current) {
+          setLoading(false)
+        }
+      })
   }, [nodeData])
 
-  if (!isOpen) return null
+  useEffect(() => {
+    if (!isOpen || !nodeData) {
+      requestIdRef.current += 1
+      return
+    }
+    loadRecord()
+    return () => {
+      requestIdRef.current += 1
+    }
+  }, [isOpen, nodeData, loadRecord])
 
-  return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-50">
-      <div
-        className="pointer-events-auto absolute -translate-x-1/2"
-        style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      title="Directory Information"
+      PaperProps={
+        { "data-modal-content": "" } as React.ComponentProps<
+          typeof Dialog
+        >["PaperProps"]
+      }
+    >
+      <LoadingErrorState
+        loading={loading && !record}
+        error={error !== null}
+        data={error ? null : record}
+        skipEmptyCheck
+        errorStateProps={{
+          variant: "negative",
+          ...compactNegativeEmptyStateProps,
+          title: "Failed to load OASF record",
+          description: error ?? "",
+          actionTitle: "Retry",
+          actionCallback: loadRecord,
+        }}
+        emptyStateProps={{
+          variant: "info",
+          title: "No data available",
+        }}
       >
-        <div
-          className="relative flex max-h-[70vh] w-[550px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
-          onClick={handleModalClick}
-          data-modal-content
-        >
-          <button
-            onClick={onClose}
-            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
-          >
-            ×
-          </button>
-
-          {loading && !record ? (
-            <div className="flex w-full items-center justify-center py-8">
-              <Spinner />
-            </div>
-          ) : error ? (
-            <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
-              <div className="text-center text-node-text-primary">
-                <p className="font-medium">Failed to load OASF record</p>
-                <p className="mt-2 text-sm text-node-text-secondary opacity-80">
-                  {error}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleRetry}
-                className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
-              >
-                Retry
-              </button>
-            </div>
-          ) : record ? (
-            <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
-              <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
-                {nodeName} OASF Record
-              </h3>
-              <pre className="overflow-auto whitespace-pre-wrap rounded border border-gray-600 p-3 font-mono text-xs text-node-text-primary">
-                {JSON.stringify(record, null, 2)}
-              </pre>
-            </div>
-          ) : (
-            <div className="flex w-full items-center justify-center py-8">
-              <div className="text-node-text-primary">No data available</div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+        {record ? (
+          <Stack sx={graphDialogScrollBodySx}>
+            <Typography
+              variant="subtitle1"
+              component="h3"
+              fontWeight={600}
+              sx={{ mb: 1.5 }}
+            >
+              {nodeName} OASF Record
+            </Typography>
+            <Box component="pre" sx={graphDialogPreSx}>
+              {JSON.stringify(record, null, 2)}
+            </Box>
+            {loading ? (
+              <Box sx={graphDialogLoadingOverlaySx}>
+                <LoadingSpinner compact />
+              </Box>
+            ) : null}
+          </Stack>
+        ) : null}
+      </LoadingErrorState>
+    </Dialog>
   )
 }
 

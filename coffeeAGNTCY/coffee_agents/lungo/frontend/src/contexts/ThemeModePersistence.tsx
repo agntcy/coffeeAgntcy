@@ -2,25 +2,65 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Loads and saves light/dark mode via localStorage.
+ * Saves light, dark, or system.
+ * System, and nothing saved, follow the OS color scheme.
  * Must render inside ThemeProvider from @open-ui-kit/core.
  */
 
-import { type ReactNode, useEffect } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 
+import { ThemePreferenceContext } from "@/contexts/themePreference"
 import { useAppThemeMode, ThemeMode } from "@/hooks/useApp"
-import { writeStoredThemeMode } from "@/utils/themeStorage"
+import {
+  readOsColorScheme,
+  readStoredThemeMode,
+  subscribeToOsColorScheme,
+  writeStoredThemeMode,
+  type ResolvedColorScheme,
+  type StoredThemeMode,
+} from "@/utils/themeStorage"
+
+function toThemeMode(scheme: ResolvedColorScheme): ThemeMode {
+  return scheme === "dark" ? ThemeMode.Dark : ThemeMode.Light
+}
 
 export function ThemeModePersistence({ children }: { children: ReactNode }) {
-  const { mode } = useAppThemeMode()
+  const { setMode } = useAppThemeMode()
+  const setModeRef = useRef(setMode)
+  const [preference, setPreference] = useState<StoredThemeMode | null>(() =>
+    readStoredThemeMode(),
+  )
 
   useEffect(() => {
-    if (mode === ThemeMode.Dark) {
-      writeStoredThemeMode("dark")
-    } else if (mode === ThemeMode.Light) {
-      writeStoredThemeMode("light")
-    }
-  }, [mode])
+    setModeRef.current = setMode
+  }, [setMode])
 
-  return children
+  useEffect(() => {
+    if (preference === null) {
+      return
+    }
+    writeStoredThemeMode(preference)
+  }, [preference])
+
+  useEffect(() => {
+    const apply = (scheme: ResolvedColorScheme) => {
+      setModeRef.current(toThemeMode(scheme))
+    }
+
+    if (preference === "light" || preference === "dark") {
+      apply(preference)
+      return
+    }
+
+    apply(readOsColorScheme())
+    return subscribeToOsColorScheme(apply)
+  }, [preference])
+
+  const value = useMemo(() => ({ preference, setPreference }), [preference])
+
+  return (
+    <ThemePreferenceContext.Provider value={value}>
+      {children}
+    </ThemePreferenceContext.Provider>
+  )
 }

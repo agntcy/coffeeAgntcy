@@ -1,0 +1,20 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
+
+import React from "react"
+import { IconButton, Icons } from "@open-ui-kit/core"
+import { dialogCloseIconButtonSx } from "@/components/dialog/dialogTitleSx"
+
+interface DialogCloseButtonProps {
+  onClose: () => void
+}
+
+const DialogCloseButton: React.FC<DialogCloseButtonProps> = ({ onClose }) => (
+  <IconButton onClick={onClose} aria-label="Close" sx={dialogCloseIconButtonSx}>
+    <Icons.Close />
+  </IconButton>
+)
+
+export default DialogCloseButton

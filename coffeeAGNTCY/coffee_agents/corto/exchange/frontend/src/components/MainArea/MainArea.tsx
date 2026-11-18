@@ -3,24 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useRef, useCallback, useState } from "react"
+import React, { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import {
   ReactFlow,
   ReactFlowProvider,
   useNodesState,
   useEdgesState,
-  Controls,
   Node,
   Edge,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
+import { Box } from "@open-ui-kit/core"
+import { isLayoutWidthBelowSm } from "@/constants/layoutBreakpoints"
+import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
+import { ReactFlowThemeGlobalStyles } from "./ReactFlowThemeGlobalStyles"
+import { getAppShellBackgroundColor } from "./mainAreaBackground"
 import SlimNode from "./Graph/TransportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import CustomNode from "./Graph/CustomNode"
+import CustomControls from "./Graph/Elements/controls/CustomControls"
+import CustomControlsBar from "./Graph/Elements/controls/CustomControlsBar"
 import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import { graphConfig, updateA2ALabels } from "@/utils/graphConfigs"
+import {
+  GRAPH_DEFAULT_VIEWPORT,
+  GRAPH_MAX_ZOOM,
+  GRAPH_MIN_ZOOM,
+} from "@/config/graphViewDefaults"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
+import { useGraphCanvasFitViewOnResize } from "@/hooks/graph/useGraphCanvasFitViewOnResize"
+import {
+  useElementHeight,
+  useIsBelowSmBreakpoint,
+  type ElementSize,
+} from "@/hooks/layout"
 import type { CustomNodeData } from "./Graph/CustomNode"
 
 const proOptions = { hideAttribution: true }
@@ -49,8 +66,6 @@ interface MainAreaProps {
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
   setAiReplied: (replied: boolean) => void
-  chatHeight?: number
-  isExpanded?: boolean
 }
 
 const DELAY_DURATION = 500
@@ -64,9 +79,16 @@ const MainArea: React.FC<MainAreaProps> = ({
   setButtonClicked,
   aiReplied,
   setAiReplied,
-  chatHeight = 0,
-  isExpanded = false,
 }) => {
+  const { graphCanvasWidth } = useGraphCanvasLayout()
+  const isViewportBelowSm = useIsBelowSmBreakpoint()
+  const useCompactGraphControls = useMemo(() => {
+    if (graphCanvasWidth !== undefined && graphCanvasWidth > 0) {
+      return isLayoutWidthBelowSm(graphCanvasWidth)
+    }
+    return isViewportBelowSm
+  }, [graphCanvasWidth, isViewportBelowSm])
+
   const config: GraphConfig = graphConfig
   const fitViewWithViewport = useViewportAwareFitView()
 
@@ -81,19 +103,31 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
     null,
   )
-  const [oasfModalPosition, setOasfModalPosition] = useState({
-    x: 0,
-    y: 0,
-  })
 
-  const handleOpenOasfModal = useCallback(
-    (nodeData: CustomNodeData, position: { x: number; y: number }) => {
-      setOasfModalData(nodeData)
-      setOasfModalPosition(position)
-      setOasfModalOpen(true)
-    },
-    [],
-  )
+  const graphCanvasRef = useRef<HTMLDivElement>(null)
+  const graphCanvasHeight = useElementHeight(graphCanvasRef)
+  const graphCanvasSize = useMemo((): ElementSize | undefined => {
+    if (
+      graphCanvasWidth === undefined ||
+      graphCanvasWidth <= 0 ||
+      graphCanvasHeight === undefined ||
+      graphCanvasHeight <= 0
+    ) {
+      return undefined
+    }
+    return { width: graphCanvasWidth, height: graphCanvasHeight }
+  }, [graphCanvasWidth, graphCanvasHeight])
+
+  const triggerFitView = useCallback(() => {
+    fitViewWithViewport()
+  }, [fitViewWithViewport])
+
+  useGraphCanvasFitViewOnResize(graphCanvasSize, triggerFitView, true)
+
+  const handleOpenOasfModal = useCallback((nodeData: CustomNodeData) => {
+    setOasfModalData(nodeData)
+    setOasfModalOpen(true)
+  }, [])
 
   const handleCloseOasfModal = useCallback(() => {
     setOasfModalOpen(false)
@@ -114,53 +148,13 @@ const MainArea: React.FC<MainAreaProps> = ({
     setNodes(nodesWithHandlers)
     setEdges(newConfig.edges)
 
-    setTimeout(() => {
-      fitViewWithViewport({
-        chatHeight,
-        isExpanded,
-      })
-    }, 100)
-  }, [
-    setNodes,
-    setEdges,
-    fitViewWithViewport,
-    chatHeight,
-    isExpanded,
-    handleOpenOasfModal,
-  ])
-
-  useEffect(() => {
-    // Trigger fitView whenever chat height or expansion state changes
-    fitViewWithViewport({
-      chatHeight,
-      isExpanded,
+    const frameId = window.requestAnimationFrame(() => {
+      fitViewWithViewport()
     })
-  }, [chatHeight, isExpanded, fitViewWithViewport])
-
-  useEffect(() => {
-    const addTooltips = () => {
-      const controlButtons = document.querySelectorAll(
-        ".react-flow__controls-button",
-      )
-      const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
-
-      controlButtons.forEach((button, index) => {
-        if (index < tooltips.length) {
-          if (index === 3) {
-            const isLocked = !nodesDraggable || !nodesConnectable
-            button.setAttribute("data-tooltip", isLocked ? "Unlock" : "Lock")
-          } else {
-            button.setAttribute("data-tooltip", tooltips[index])
-          }
-          button.removeAttribute("title")
-        }
-      })
+    return () => {
+      window.cancelAnimationFrame(frameId)
     }
-
-    const timeoutId = setTimeout(addTooltips, 100)
-
-    return () => clearTimeout(timeoutId)
-  }, [nodesDraggable, nodesConnectable])
+  }, [setNodes, setEdges, fitViewWithViewport, handleOpenOasfModal])
 
   const delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))
@@ -224,38 +218,97 @@ const MainArea: React.FC<MainAreaProps> = ({
     updateStyle,
   ])
 
+  const graphInteractivityEnabled = nodesDraggable && nodesConnectable
+  const handleToggleGraphInteractivity = () => {
+    const next = !graphInteractivityEnabled
+    setNodesDraggable(next)
+    setNodesConnectable(next)
+  }
+
   return (
-    <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
-      <OasfRecordModal
-        isOpen={oasfModalOpen}
-        onClose={handleCloseOasfModal}
-        nodeName={oasfModalData?.label1 ?? ""}
-        nodeData={oasfModalData ?? null}
-        position={oasfModalPosition}
-      />
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        proOptions={proOptions}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
-        minZoom={0.15}
-        maxZoom={1.8}
-        nodesDraggable={nodesDraggable}
-        nodesConnectable={nodesConnectable}
-        elementsSelectable={nodesDraggable}
+    <>
+      <ReactFlowThemeGlobalStyles />
+      <Box
+        sx={{
+          order: 1,
+          position: "relative",
+          display: "flex",
+          width: "100%",
+          height: "100%",
+          flexShrink: 0,
+          flexGrow: 1,
+          flexDirection: "column",
+          alignItems: "flex-start",
+          alignSelf: "stretch",
+          p: 0,
+          bgcolor: (theme) => getAppShellBackgroundColor(theme),
+        }}
       >
-        <Controls
-          onInteractiveChange={(interactiveEnabled) => {
-            setNodesDraggable(interactiveEnabled)
-            setNodesConnectable(interactiveEnabled)
+        <Box
+          sx={{
+            position: "relative",
+            display: "grid",
+            flex: 1,
+            alignSelf: "stretch",
+            width: "100%",
+            minHeight: 0,
+            minWidth: 0,
+            overflow: "hidden",
+            gridTemplateRows: useCompactGraphControls
+              ? "minmax(0, 1fr) auto"
+              : "minmax(0, 1fr)",
           }}
+        >
+          <Box
+            ref={graphCanvasRef}
+            sx={{
+              position: "relative",
+              minHeight: 0,
+              minWidth: 0,
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              proOptions={proOptions}
+              defaultViewport={GRAPH_DEFAULT_VIEWPORT}
+              minZoom={GRAPH_MIN_ZOOM}
+              maxZoom={GRAPH_MAX_ZOOM}
+              nodesDraggable={nodesDraggable}
+              nodesConnectable={nodesConnectable}
+              elementsSelectable={nodesDraggable}
+              style={{ width: "100%", height: "100%" }}
+            >
+              {!useCompactGraphControls ? (
+                <CustomControls
+                  isInteractive={graphInteractivityEnabled}
+                  onToggleInteractivity={handleToggleGraphInteractivity}
+                />
+              ) : null}
+            </ReactFlow>
+          </Box>
+          {useCompactGraphControls ? (
+            <CustomControlsBar
+              isInteractive={graphInteractivityEnabled}
+              onToggleInteractivity={handleToggleGraphInteractivity}
+            />
+          ) : null}
+        </Box>
+
+        <OasfRecordModal
+          isOpen={oasfModalOpen}
+          onClose={handleCloseOasfModal}
+          nodeName={oasfModalData?.label1 ?? ""}
+          nodeData={oasfModalData ?? null}
         />
-      </ReactFlow>
-    </div>
+      </Box>
+    </>
   )
 }
 

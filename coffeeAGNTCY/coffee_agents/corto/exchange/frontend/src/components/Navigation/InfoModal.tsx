@@ -4,7 +4,9 @@
  **/
 
 import React, { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import type { SxProps, Theme } from "@mui/material/styles"
+import { Stack, Typography } from "@open-ui-kit/core"
+import Dialog from "@/components/dialog/Dialog"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -26,6 +28,46 @@ const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
   env.get("VITE_EXCHANGE_APP_API_URL") ?? DEFAULT_EXCHANGE_APP_API_URL
 
+const infoDialogRowSx: SxProps<Theme> = {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 1,
+  minWidth: 0,
+}
+
+const infoDialogLabelSx: SxProps<Theme> = {
+  flexShrink: 0,
+}
+
+const infoDialogValueSx: SxProps<Theme> = {
+  wordBreak: "break-word",
+  overflowWrap: "anywhere",
+  textAlign: { xs: "left", sm: "right" },
+  minWidth: 0,
+  flex: { sm: "1 1 12rem" },
+}
+
+function InfoDialogRow({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}) {
+  return (
+    <Stack sx={infoDialogRowSx}>
+      <Typography component="span" variant="body2" sx={infoDialogLabelSx}>
+        {label}
+      </Typography>
+      <Typography component="span" variant="body2" sx={infoDialogValueSx}>
+        {value}
+      </Typography>
+    </Stack>
+  )
+}
+
 const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const [info, setInfo] = useState<BuildInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,66 +88,60 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         if (!cancelled) setError("Failed to load build info")
       }
     }
-    fetchInfo()
+    void fetchInfo()
     return () => {
       cancelled = true
     }
   }, [isOpen])
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0" onClick={onClose} />
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      title="About"
+      titleProps={{ id: "info-dialog-title" }}
+      aria-labelledby="info-dialog-title"
+    >
+      <Stack spacing={3}>
+        <Stack spacing={2}>
+          <Typography variant="h6">Build and Release Information</Typography>
+          <Stack spacing={1}>
+            {error && (
+              <Typography variant="body2" color="error">
+                {error}
+              </Typography>
+            )}
+            <InfoDialogRow
+              label="Release Version:"
+              value={info?.version ?? "…"}
+            />
+            <InfoDialogRow
+              label="Build Date:"
+              value={info?.build_date ?? "…"}
+            />
+          </Stack>
+        </Stack>
 
-      <div className="absolute right-4 top-16 w-80 rounded-lg border border-modal-border bg-modal-background shadow-lg">
-        <button
-          onClick={onClose}
-          className="absolute right-2 top-2 rounded-lg p-1 text-modal-text-secondary transition-colors hover:bg-modal-hover"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="space-y-4 p-4 pr-10">
-          <div>
-            <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
-              Build and Release Information
-            </h3>
-            <div className="space-y-2 text-sm text-modal-text-secondary">
-              {error && <div className="text-red-500">{error}</div>}
-              <div className="flex justify-between">
-                <span>Release Version:</span>
-                <span className="font-mono text-modal-accent">
-                  {info?.version ?? "…"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Build Date:</span>
-                <span className="font-mono">{info?.build_date ?? "…"}</span>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
-                Dependencies:
-              </h3>
-              <div className="space-y-2 text-sm text-modal-text-secondary">
-                {info ? (
-                  Object.entries(info.dependencies).map(([k, v]) => (
-                    <div className="flex justify-between" key={k}>
-                      <span>{k}:</span>
-                      <span className="font-mono text-modal-accent">{v}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-modal-text-secondary">Loading…</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        <Stack spacing={2}>
+          <Typography variant="h6">Dependencies:</Typography>
+          <Stack spacing={1}>
+            {info?.dependencies &&
+              Object.entries(info.dependencies).map(([k, v]) => (
+                <InfoDialogRow key={k} label={`${k}:`} value={v} />
+              ))}
+            {!info?.dependencies && !error && (
+              <Typography variant="body2">Loading...</Typography>
+            )}
+            {!info?.dependencies && error && (
+              <Typography color="error" variant="body2">
+                No dependency info
+              </Typography>
+            )}
+          </Stack>
+        </Stack>
+      </Stack>
+    </Dialog>
   )
 }
 

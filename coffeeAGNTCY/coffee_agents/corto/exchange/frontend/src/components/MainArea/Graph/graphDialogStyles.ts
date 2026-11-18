@@ -1,0 +1,42 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
+
+import { alpha } from "@mui/material/styles"
+import type { SxProps, Theme } from "@mui/material/styles"
+
+export const graphDialogScrollBodySx: SxProps<Theme> = {
+  position: "relative",
+  display: "flex",
+  maxHeight: "min(40vh, 320px)",
+  minHeight: 0,
+  width: "100%",
+  flexDirection: "column",
+  gap: 1.5,
+  overflowY: "auto",
+}
+
+export const graphDialogPreSx: SxProps<Theme> = {
+  overflow: "auto",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  borderRadius: 1,
+  border: "1px solid",
+  borderColor: "divider",
+  p: 1.5,
+  fontFamily: "monospace",
+  fontSize: "0.75rem",
+  lineHeight: 1.5,
+  color: "text.primary",
+}
+
+export const graphDialogLoadingOverlaySx: SxProps<Theme> = {
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bgcolor: (theme) => alpha(theme.palette.background.paper, 0.85),
+  backdropFilter: "blur(8px)",
+}

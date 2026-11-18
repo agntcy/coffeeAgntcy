@@ -4,27 +4,64 @@
  **/
 
 import React from "react"
+import { ListItem, ListItemButton, Typography } from "@open-ui-kit/core"
+import {
+  sidebarBorderRadius,
+  sidebarItemButtonSx,
+  sidebarItemMarginTop,
+  sidebarListItemSx,
+  sidebarRowTitleSx,
+} from "./sidebarSx"
+import { getDisabledRowOpacity } from "@/utils/a11ySx"
 
 interface SidebarItemProps {
   title: string
   isSelected?: boolean
   onClick?: () => void
-  className?: string
+  disabled?: boolean
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
   isSelected = false,
   onClick,
-  className = "",
+  disabled = false,
 }) => {
+  const isRowDisabled = disabled || onClick === undefined
+
   return (
-    <div
-      className={`flex h-9 w-80 cursor-pointer items-center gap-2 py-2 pb-2 pl-12 pr-5 font-inter text-sm font-normal leading-5 tracking-normal !text-sidebar-text opacity-100 ${isSelected ? "bg-sidebar-item-selected" : "bg-transparent"} ${className}`}
-      onClick={onClick}
+    <ListItem
+      component="div"
+      disablePadding
+      sx={() => ({
+        width: "100%",
+        mt: sidebarItemMarginTop,
+        ...sidebarListItemSx(),
+      })}
     >
-      {title}
-    </div>
+      <ListItemButton
+        component={!isRowDisabled ? "button" : "div"}
+        disabled={isRowDisabled}
+        aria-disabled={isRowDisabled || undefined}
+        aria-label={isRowDisabled ? `${title}, unavailable` : undefined}
+        onClick={!disabled ? onClick : undefined}
+        selected={isSelected}
+        sx={(theme) => ({
+          ...sidebarItemButtonSx(theme),
+          width: "100%",
+          minWidth: 0,
+          justifyContent: "flex-start",
+          borderRadius: sidebarBorderRadius(theme),
+          textWrap: "wrap",
+          ...(disabled && { opacity: getDisabledRowOpacity(theme) }),
+          ...(isRowDisabled && { pointerEvents: "none" }),
+        })}
+      >
+        <Typography component="span" variant="body1" sx={sidebarRowTitleSx}>
+          {title}
+        </Typography>
+      </ListItemButton>
+    </ListItem>
   )
 }
 

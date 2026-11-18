@@ -4,8 +4,8 @@
  **/
 
 import React from "react"
-import { Trash2 } from "lucide-react"
-import collapseIcon from "@/assets/collapse.png"
+import { Box, IconButton, Icons, Stack, Tooltip } from "@open-ui-kit/core"
+import { chatHeaderIconButtonSx } from "./header/chatHeaderIconButtonSx"
 
 interface ChatHeaderProps {
   onMinimize?: () => void
@@ -25,39 +25,51 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   }
 
   return (
-    <div
-      className="flex w-full items-center justify-end px-2 py-2 sm:px-4 md:px-8 lg:px-4"
-      style={{ borderBottom: "1px solid var(--control-border-weak)" }}
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        px: { xs: 1, sm: 2, md: 4, lg: 2 },
+        py: 1,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
     >
-      <div className="flex h-7 w-16 gap-2">
+      <Stack direction="row" spacing={1}>
         {onMinimize && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+          <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
+            <IconButton
               onClick={onMinimize}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title={isMinimized ? "Maximize" : "Minimize"}
+              aria-label={isMinimized ? "Maximize" : "Minimize"}
+              sx={chatHeaderIconButtonSx}
             >
-              <img
-                src={collapseIcon}
-                alt={isMinimized ? "Maximize" : "Minimize"}
-                className={`chat-header-icon h-5 w-5 ${isMinimized ? "rotate-180" : ""}`}
+              <Icons.KeyboardArrowDown
+                sx={{
+                  transition: (theme) =>
+                    theme.transitions.create("transform", {
+                      duration: theme.transitions.duration.shortest,
+                    }),
+                  transform: isMinimized ? "rotate(180deg)" : "rotate(0deg)",
+                }}
               />
-            </button>
-          </div>
+            </IconButton>
+          </Tooltip>
         )}
         {onClearConversation && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+          <Tooltip title="Clear conversation">
+            <IconButton
               onClick={onClearConversation}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title="Clear conversation"
+              aria-label="Clear conversation"
+              sx={chatHeaderIconButtonSx}
             >
-              <Trash2 className="chat-header-trash-icon h-5 w-5" />
-            </button>
-          </div>
+              <Icons.Delete />
+            </IconButton>
+          </Tooltip>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Box>
   )
 }
 

@@ -3,8 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useRef, useEffect } from "react"
-import LoadingSpinner from "./LoadingSpinner"
+import React, { useState, useEffect, useCallback } from "react"
+import {
+  Box,
+  Button,
+  Icons,
+  Menu,
+  MenuItem,
+  Typography,
+} from "@open-ui-kit/core"
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
+import { composerPrimaryButtonSx } from "@/utils/composerPrimaryButtonSx"
 import { env } from "@/utils/env"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
@@ -20,45 +29,15 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
   visible,
   onSelect,
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const [dropdownItems, setDropdownItems] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-
-      if (
-        isOpen &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target)
-      ) {
-        setIsOpen(false)
-      }
-    }
-
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false)
-      }
-    }
-
-    if (visible && isOpen) {
-      document.addEventListener("mousedown", handleClickOutside, true)
-      document.addEventListener("keydown", handleEscapeKey)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside, true)
-      document.removeEventListener("keydown", handleEscapeKey)
-    }
-  }, [isOpen, visible])
+  const open = Boolean(anchorEl)
 
   useEffect(() => {
     const controller = new AbortController()
     let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
-    const MAX_RETRY_DELAY = 5000 // 5 seconds max
+    const MAX_RETRY_DELAY = 5000
 
     const fetchPrompts = async (retryCount = 0) => {
       try {
@@ -75,7 +54,6 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
         ) {
           setDropdownItems(data as string[])
 
-          // Retry if no prompts returned
           if (data.length === 0) {
             const delay = Math.min(
               5000 * Math.pow(2, retryCount),
@@ -90,7 +68,6 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Failed to load prompts from API.", err)
-          // Retry on error with exponential backoff
           const delay = Math.min(
             5000 * Math.pow(2, retryCount),
             MAX_RETRY_DELAY,
@@ -102,7 +79,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
       }
     }
 
-    fetchPrompts()
+    void fetchPrompts()
 
     return () => {
       controller.abort()
@@ -110,14 +87,25 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
     }
   }, [])
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen)
-  }
+  const handleOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(event.currentTarget)
+      event.stopPropagation()
+    },
+    [],
+  )
 
-  const handleItemClick = (item: string) => {
-    onSelect(item)
-    setIsOpen(false)
-  }
+  const handleClose = useCallback(() => {
+    setAnchorEl(null)
+  }, [])
+
+  const handleItemClick = useCallback(
+    (item: string) => {
+      onSelect(item)
+      setAnchorEl(null)
+    },
+    [onSelect],
+  )
 
   if (!visible) {
     return null
@@ -126,44 +114,67 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
   const hasNoPrompts = dropdownItems.length === 0
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
-      <div
-        className={`flex h-9 w-166 cursor-pointer flex-row items-center gap-1 rounded-lg bg-chat-background p-2 transition-colors duration-200 ease-in-out hover:bg-chat-background-hover ${isOpen ? "bg-chat-background-hover" : ""} `}
-        onClick={handleToggle}
+    <>
+      <Button
+        variant="primary"
+        size="medium"
+        aria-haspopup="menu"
+        aria-expanded={open ? "true" : undefined}
+        onClick={handleOpen}
+        sx={(theme) => ({
+          ...theme.typography.body1,
+          ...composerPrimaryButtonSx(theme),
+        })}
+        endIcon={
+          <Icons.KeyboardArrowDown
+            aria-hidden
+            sx={{
+              transition: (theme) =>
+                theme.transitions.create("transform", {
+                  duration: theme.transitions.duration.shortest,
+                }),
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+        }
       >
-        <div className="order-0 flex h-5 w-122 flex-none flex-grow-0 flex-col items-start gap-1 p-0">
-          <div className="order-0 h-5 w-122 flex-none flex-grow-0 self-stretch whitespace-nowrap font-cisco text-sm font-normal leading-5 text-chat-text">
-            Suggested Prompts
-          </div>
-        </div>
-        <div className="relative order-1 h-6 w-6 flex-none flex-grow-0">
-          <div
-            className={`absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""} `}
-            style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }}
-          ></div>
-        </div>
-      </div>
+        Suggested Prompts
+      </Button>
 
-      <div
-        className={`absolute bottom-full left-0 z-[1000] mb-1 ${isLoading || hasNoPrompts ? "h-auto" : "max-h-[365px]"} w-269 overflow-y-auto rounded-md border border-nav-border bg-chat-dropdown-background p-0.5 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "top", horizontal: "left" }}
+        transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: 365,
+              maxWidth: 480,
+            },
+          },
+        }}
       >
         {isLoading || hasNoPrompts ? (
-          <LoadingSpinner message="Loading suggested prompts from exchange server" />
+          <Box sx={{ p: 1 }}>
+            <LoadingSpinner message="Loading suggested prompts from exchange server" />
+          </Box>
         ) : (
           dropdownItems.map((item, index) => (
-            <div
+            <MenuItem
               key={index}
-              className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
               onClick={() => handleItemClick(item)}
+              sx={{ whiteSpace: "normal", alignItems: "flex-start", py: 1 }}
             >
-              <div className="w-full break-words font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+              <Typography variant="body1" sx={{ wordBreak: "break-word" }}>
                 {item}
-              </div>
-            </div>
+              </Typography>
+            </MenuItem>
           ))
         )}
-      </div>
-    </div>
+      </Menu>
+    </>
   )
 }
 

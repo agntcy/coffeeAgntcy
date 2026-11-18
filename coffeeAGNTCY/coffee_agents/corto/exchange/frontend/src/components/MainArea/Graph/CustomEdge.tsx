@@ -5,7 +5,9 @@
 
 import React from "react"
 import { getBezierPath, BaseEdge, Position } from "@xyflow/react"
+import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
+import { getGraphEdgeColor } from "./Elements/nodes/graphNodeSurface"
 
 interface CustomEdgeData {
   active?: boolean
@@ -34,6 +36,9 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
   targetPosition,
   data,
 }) => {
+  const theme = useTheme()
+  const edgeColor = getGraphEdgeColor(theme, data?.active)
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -42,8 +47,6 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
     targetY,
     targetPosition,
   })
-
-  const defaultEdgeColor = data?.active ? "#00409F" : "#00409F"
 
   return (
     <>
@@ -57,7 +60,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
             refY="2.5"
             orient="auto"
           >
-            <path d="M5,0 L0,2.5 L5,5 Z" fill={defaultEdgeColor} />
+            <path d="M5,0 L0,2.5 L5,5 Z" fill={edgeColor} />
           </marker>
           <marker
             id={`${id}-arrow-end`}
@@ -67,7 +70,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
             refY="2.5"
             orient="auto"
           >
-            <path d="M0,0 L5,2.5 L0,5 Z" fill={defaultEdgeColor} />
+            <path d="M0,0 L5,2.5 L0,5 Z" fill={edgeColor} />
           </marker>
         </defs>
       </svg>
@@ -77,7 +80,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
         markerStart={`url(#${id}-arrow-start)`}
         markerEnd={`url(#${id}-arrow-end)`}
         style={{
-          stroke: defaultEdgeColor,
+          stroke: edgeColor,
           strokeWidth: 1,
           cursor: "pointer",
         }}

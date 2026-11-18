@@ -1,0 +1,133 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
+
+import type { Theme } from "@mui/material/styles"
+import type { SystemStyleObject } from "@mui/system"
+import { getAssetPngIconSize } from "@/utils/assetPngIcon"
+import {
+  getControlIconColor,
+  getControlIconDisabledColor,
+} from "../nodes/graphNodeSurface"
+
+const GRAPH_CANVAS_ICON_FILTERS = {
+  light: {
+    hover:
+      "brightness(0) saturate(100%) invert(37%) sepia(93%) saturate(1352%) hue-rotate(186deg) brightness(97%) contrast(101%)",
+    active:
+      "brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(2476%) hue-rotate(196deg) brightness(92%) contrast(101%)",
+  },
+  dark: {
+    hover:
+      "brightness(0) saturate(100%) invert(72%) sepia(44%) saturate(749%) hue-rotate(183deg) brightness(103%) contrast(101%)",
+    active:
+      "brightness(0) saturate(100%) invert(37%) sepia(93%) saturate(1352%) hue-rotate(186deg) brightness(97%) contrast(101%)",
+  },
+} as const
+
+const GRAPH_CANVAS_DISABLED_GLYPH_OPACITY = 0.6
+
+function getCanvasIconFilters(theme: Theme) {
+  return theme.palette.mode === "dark"
+    ? GRAPH_CANVAS_ICON_FILTERS.dark
+    : GRAPH_CANVAS_ICON_FILTERS.light
+}
+
+function canvasIconRestingGlyphSx(theme: Theme): SystemStyleObject<Theme> {
+  const restingIconColor = getControlIconColor(theme)
+
+  return {
+    color: restingIconColor,
+    "& .MuiSvgIcon-root": {
+      color: restingIconColor,
+      fill: restingIconColor,
+    },
+    "& .MuiSvgIcon-root path, & .MuiSvgIcon-root svg": {
+      fill: restingIconColor,
+    },
+  }
+}
+
+function canvasIconDisabledGlyphSx(theme: Theme): SystemStyleObject<Theme> {
+  const disabledIconColor = getControlIconDisabledColor(theme)
+
+  return {
+    color: disabledIconColor,
+    "& .MuiSvgIcon-root": {
+      color: disabledIconColor,
+      fill: disabledIconColor,
+    },
+    "& .MuiSvgIcon-root path, & .MuiSvgIcon-root svg": {
+      fill: disabledIconColor,
+    },
+  }
+}
+
+function canvasIconFilterSx(filter: string): SystemStyleObject<Theme> {
+  return {
+    "& .MuiSvgIcon-root": {
+      filter,
+    },
+  }
+}
+
+export function graphCanvasIconButtonSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  const iconSize = getAssetPngIconSize(theme)
+  const iconButtonSize = iconSize
+  const iconFilters = getCanvasIconFilters(theme)
+  const iconFilterTransition = theme.transitions.create(["filter"], {
+    duration: theme.transitions.duration.shortest,
+    easing: theme.transitions.easing.easeInOut,
+  })
+
+  return {
+    width: iconButtonSize,
+    height: iconButtonSize,
+    minWidth: iconButtonSize,
+    padding: theme.spacing(1),
+    borderRadius: theme.shape.borderRadius,
+    border: "none",
+    boxShadow: "none",
+    outline: "none",
+    bgcolor: "transparent",
+    backgroundColor: "transparent",
+    ...canvasIconRestingGlyphSx(theme),
+    "& .MuiSvgIcon-root": {
+      fontSize: iconSize,
+      filter: "none",
+      transition: iconFilterTransition,
+    },
+    "&:hover": {
+      bgcolor: "transparent",
+      backgroundColor: "transparent",
+      boxShadow: "none",
+      ...canvasIconFilterSx(iconFilters.hover),
+      "@media (hover: none)": {
+        ...canvasIconFilterSx("none"),
+      },
+    },
+    "&:active": {
+      bgcolor: "transparent",
+      backgroundColor: "transparent",
+      ...canvasIconFilterSx(iconFilters.active),
+    },
+    "&.Mui-focusVisible": {
+      bgcolor: "transparent",
+      backgroundColor: "transparent",
+      ...canvasIconFilterSx(iconFilters.hover),
+    },
+    "&.Mui-disabled": {
+      bgcolor: "transparent",
+      backgroundColor: "transparent",
+      opacity: 1,
+      ...canvasIconDisabledGlyphSx(theme),
+      ...canvasIconFilterSx("none"),
+      "& .MuiSvgIcon-root": {
+        opacity: GRAPH_CANVAS_DISABLED_GLYPH_OPACITY,
+      },
+    },
+  }
+}
