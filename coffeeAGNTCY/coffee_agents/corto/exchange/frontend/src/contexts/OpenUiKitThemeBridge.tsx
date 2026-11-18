@@ -2,7 +2,8 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Open UI Kit theme provider with persisted light/dark mode.
+ * Open UI Kit theme provider. Saved choices are light, dark, or system.
+ * System, and nothing saved, follow the OS color scheme.
  */
 
 import { type ReactNode } from "react"
@@ -11,11 +12,15 @@ import { ThemeProvider as OpenUiKitThemeProvider } from "@open-ui-kit/core"
 import { CompactTheme } from "@/contexts/CompactTheme"
 import { ThemeModePersistence } from "@/contexts/ThemeModePersistence"
 import { ThemeMode } from "@/hooks/useAppThemeMode"
-import { readStoredIsDarkMode } from "@/utils/themeStorage"
+import {
+  readStoredThemeMode,
+  resolveStoredColorScheme,
+} from "@/utils/themeStorage"
 
 export function OpenUiKitThemeBridge({ children }: { children: ReactNode }) {
-  const storedIsDarkMode = readStoredIsDarkMode()
-  const defaultMode = storedIsDarkMode ? ThemeMode.Dark : ThemeMode.Light
+  const defaultScheme = resolveStoredColorScheme(readStoredThemeMode())
+  const defaultMode =
+    defaultScheme === "dark" ? ThemeMode.Dark : ThemeMode.Light
 
   return (
     <OpenUiKitThemeProvider defaultMode={defaultMode}>

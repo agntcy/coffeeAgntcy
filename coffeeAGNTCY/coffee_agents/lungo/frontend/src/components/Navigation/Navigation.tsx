@@ -14,9 +14,8 @@ import {
 } from "@open-ui-kit/core"
 
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
-import { useAppThemeMode } from "@/hooks/useApp"
 import type { SidebarProps } from "@/components/Sidebar/Sidebar"
-import ThemeToggleIcon from "../icons/ThemeToggleIcon"
+import ThemeMenu from "./ThemeMenu"
 import CatalogNavigationDrawer, {
   CATALOG_NAV_DRAWER_ID,
 } from "./CatalogNavigationDrawer"
@@ -36,8 +35,6 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isCatalogMenuOpen, setIsCatalogMenuOpen] = useState(false)
-  const { isDarkMode, toggleTheme } = useAppThemeMode()
-
   const showCatalogMenu = catalogSidebarProps !== undefined
 
   useEffect(() => {
@@ -92,8 +89,6 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
     }
   }, [catalogSidebarProps])
 
-  const themeToggleLabel = `Switch to ${isDarkMode ? "light" : "dark"} mode`
-
   return (
     <>
       <Header
@@ -131,15 +126,7 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
               gap: { xs: 0.5, sm: 1 },
             }}
           >
-            <Tooltip title={themeToggleLabel}>
-              <IconButton
-                aria-label={themeToggleLabel}
-                onClick={toggleTheme}
-                sx={(theme) => navigationHeaderIconButtonSx(theme)}
-              >
-                <ThemeToggleIcon />
-              </IconButton>
-            </Tooltip>
+            <ThemeMenu />
             <Tooltip title="Help">
               <IconButton
                 aria-label="Help"
