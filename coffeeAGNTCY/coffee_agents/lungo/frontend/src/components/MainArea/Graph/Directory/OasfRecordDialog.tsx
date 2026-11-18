@@ -45,6 +45,7 @@ const OasfRecordDialog: React.FC<OasfRecordDialogProps> = ({
   const directoryServerUrl = getDirectoryServerUrl()
   const directoryVersion = getDirectoryVersion()
   const [attempt, setAttempt] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
   const [settled, setSettled] = useState<{
     nodeData: CustomNodeData
     chatApiTarget: ChatApiTarget | null
@@ -52,6 +53,10 @@ const OasfRecordDialog: React.FC<OasfRecordDialogProps> = ({
     record: OasfRecord | null
     error: string | null
   } | null>(null)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setAttempt((current) => current + 1)
+  }
 
   const combinedLabel = useMemo(
     () =>

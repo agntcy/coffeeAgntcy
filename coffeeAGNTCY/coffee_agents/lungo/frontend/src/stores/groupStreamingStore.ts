@@ -4,6 +4,7 @@
  **/
 
 import { create } from "zustand"
+import { useShallow } from "zustand/react/shallow"
 import type { HttpRequestTarget } from "@/urls"
 import { logger } from "@/utils/logger"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
@@ -298,17 +299,19 @@ export const useGroupSessionId = () =>
   useGroupStreamingStore((state) => state.sessionId)
 
 export const useGroupStreamingActions = () =>
-  useGroupStreamingStore((state) => ({
-    addEvent: state.addEvent,
-    addNegotiationEvent: state.addNegotiationEvent,
-    setFinalResponse: state.setFinalResponse,
-    setError: state.setError,
-    setCurrentOrderId: state.setCurrentOrderId,
-    setExecutionKey: state.setExecutionKey,
-    setSessionId: state.setSessionId,
-    startStreaming: state.startStreaming,
-    reset: state.reset,
-  }))
+  useGroupStreamingStore(
+    useShallow((state) => ({
+      addEvent: state.addEvent,
+      addNegotiationEvent: state.addNegotiationEvent,
+      setFinalResponse: state.setFinalResponse,
+      setError: state.setError,
+      setCurrentOrderId: state.setCurrentOrderId,
+      setExecutionKey: state.setExecutionKey,
+      setSessionId: state.setSessionId,
+      startStreaming: state.startStreaming,
+      reset: state.reset,
+    })),
+  )
 
 export const useStartGroupStreaming = () =>
   useGroupStreamingStore((state) => state.startStreaming)

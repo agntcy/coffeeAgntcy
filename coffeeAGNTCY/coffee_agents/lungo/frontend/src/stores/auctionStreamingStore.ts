@@ -4,6 +4,7 @@
  **/
 
 import { create } from "zustand"
+import { useShallow } from "zustand/react/shallow"
 import type { HttpRequestTarget } from "@/urls"
 import { logger } from "@/utils/logger"
 import type { AuctionStreamingResponse } from "./auctionStreaming.types"
@@ -106,8 +107,10 @@ export const useStreamingSessionId = () =>
   useAuctionStreamingStore((state) => state.sessionId)
 
 export const useStreamingActions = () =>
-  useAuctionStreamingStore((state) => ({
-    connect: state.connect,
-    disconnect: state.disconnect,
-    reset: state.reset,
-  }))
+  useAuctionStreamingStore(
+    useShallow((state) => ({
+      connect: state.connect,
+      disconnect: state.disconnect,
+      reset: state.reset,
+    })),
+  )

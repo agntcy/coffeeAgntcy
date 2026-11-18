@@ -33,7 +33,16 @@ export function useSuggestedPrompts(
   )
   const url = request?.url ?? null
   const endpointLabel = request?.endpointLabel ?? null
-  const hasRequest = url !== null && endpointLabel !== null
+  const hasRequest = Boolean(url && endpointLabel)
+  const requestKey = hasRequest ? `${url}\u0000${endpointLabel}` : null
+  const [activeRequestKey, setActiveRequestKey] = useState(requestKey)
+  if (requestKey !== activeRequestKey) {
+    setActiveRequestKey(requestKey)
+    setCategories([])
+    setIsLoading(requestKey !== null)
+    setIsUnavailable(false)
+    setUnavailableMessage(null)
+  }
 
   useEffect(() => {
     if (!hasRequest || !url || !endpointLabel) {

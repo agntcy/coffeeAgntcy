@@ -43,6 +43,7 @@ const GraphIdentityJsonDetailsDialog: React.FC<
   endpointLabelForReport,
 }) => {
   const [attempt, setAttempt] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
   const [settled, setSettled] = useState<{
     nodeData: CustomNodeData
     nodeName: string
@@ -50,6 +51,10 @@ const GraphIdentityJsonDetailsDialog: React.FC<
     data: unknown | null
     error: string | null
   } | null>(null)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setAttempt((current) => current + 1)
+  }
 
   const shouldFetch = isOpen && Boolean(nodeData)
 

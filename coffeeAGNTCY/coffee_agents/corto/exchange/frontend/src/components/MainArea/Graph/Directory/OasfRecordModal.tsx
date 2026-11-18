@@ -29,12 +29,17 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   nodeData,
 }) => {
   const [attempt, setAttempt] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
   const [settled, setSettled] = useState<{
     nodeData: Record<string, unknown>
     attempt: number
     record: OasfRecord | null
     error: string | null
   } | null>(null)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setAttempt((current) => current + 1)
+  }
 
   useEffect(() => {
     if (!isOpen || !nodeData) return
