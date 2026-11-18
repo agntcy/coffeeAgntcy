@@ -15,8 +15,11 @@ export function useGraphCanvasFitViewOnResize(
   debounceMs: number = DEFAULT_DEBOUNCE_MS,
 ): void {
   const fitViewRef = useRef(fitView)
-  fitViewRef.current = fitView
   const debounceTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    fitViewRef.current = fitView
+  }, [fitView])
   const wasEnabledRef = useRef(enabled)
 
   useEffect(() => {
