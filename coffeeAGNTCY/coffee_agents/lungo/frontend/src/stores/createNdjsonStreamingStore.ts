@@ -153,14 +153,22 @@ export function createAbortableNdjsonStreamingActions<
         signal: abortController.signal,
         splitMode: config.splitMode,
         onStreamStart: () => {
+          if (abortController.signal.aborted) return
+          if (config.get().abortController !== abortController) return
           config.set({
             status: NDJSON_STREAMING_STATUS.STREAMING,
           } as Partial<TState>)
         },
-        onLine: (parsed) =>
-          config.onLine(parsed, { get: config.get, set: config.set }),
+        onLine: (parsed) => {
+          if (abortController.signal.aborted) return "stop"
+          if (config.get().abortController !== abortController) return "stop"
+          return config.onLine(parsed, { get: config.get, set: config.set })
+        },
         onParseError: config.onParseError ?? logNdjsonLineParseWarning,
       })
+
+      if (abortController.signal.aborted) return
+      if (config.get().abortController !== abortController) return
 
       if (config.guardCompletedOnError) {
         if (config.get().status !== NDJSON_STREAMING_STATUS.ERROR) {
@@ -213,9 +221,10 @@ export function createAbortableNdjsonStreamingActions<
   return { connect, disconnect, reset }
 }
 
-/** NDJSON session without abort/disconnect (group messaging stream). */
+/** NDJSON session. Pass `signal` so a caller can cancel the stream. */
 export async function runNdjsonStreamingSession(options: {
   streamRequest?: HttpRequestTarget
+  signal?: AbortSignal
   onMissingTarget: () => void
   buildBody: () => Record<string, unknown>
   splitMode?: NdjsonSplitMode
@@ -237,12 +246,14 @@ export async function runNdjsonStreamingSession(options: {
     await runNdjsonStreamRequest({
       streamRequest,
       body: options.buildBody(),
+      signal: options.signal,
       splitMode: options.splitMode,
       onStreamStart: options.onStreamStart,
       onLine: options.onLine,
       onParseError: options.onParseError,
     })
 
+    if (options.signal?.aborted) return
     if (!options.isErrorStatus()) {
       options.onCompleted()
     }
@@ -250,7 +261,7 @@ export async function runNdjsonStreamingSession(options: {
     const message = ndjsonStreamErrorMessage(
       streamRequest.endpointLabel,
       error,
-      false,
+      options.signal?.aborted ?? false,
     )
     if (message !== null) {
       options.onFailed(message)

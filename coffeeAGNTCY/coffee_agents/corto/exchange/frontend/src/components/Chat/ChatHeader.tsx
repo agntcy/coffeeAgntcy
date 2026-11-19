@@ -20,7 +20,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMinimized,
   showActions = false,
 }) => {
-  if (!showActions) {
+  if (!onClearConversation && !(showActions && onMinimize)) {
     return null
   }
 
@@ -38,7 +38,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       }}
     >
       <Stack direction="row" spacing={1}>
-        {onMinimize && (
+        {showActions && onMinimize ? (
           <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
             <IconButton
               onClick={onMinimize}
@@ -56,8 +56,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               />
             </IconButton>
           </Tooltip>
-        )}
-        {onClearConversation && (
+        ) : null}
+        {onClearConversation ? (
           <Tooltip title="Clear conversation">
             <IconButton
               onClick={onClearConversation}
@@ -67,7 +67,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               <Icons.Delete />
             </IconButton>
           </Tooltip>
-        )}
+        ) : null}
       </Stack>
     </Box>
   )

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   handleGroupStreamPayload,
   useGroupStreamingStore,
@@ -164,5 +164,42 @@ describe("useGroupStreamingStore negotiation events", () => {
     useGroupStreamingStore.getState().addNegotiationEvent(status("started"))
 
     expect(useGroupStreamingStore.getState().events).toEqual([])
+  })
+})
+
+describe("group stream cancellation", () => {
+  afterEach(() => {
+    useGroupStreamingStore.getState().reset()
+    vi.unstubAllGlobals()
+  })
+
+  it("aborts an in-flight stream on reset and does not keep an error", async () => {
+    const fetchMock = vi.fn((_url: string, init?: { signal?: AbortSignal }) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new DOMException("The operation was aborted.", "AbortError"))
+        })
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const pending = useGroupStreamingStore
+      .getState()
+      .startStreaming("brew", null, {
+        url: "https://example.test/stream",
+        endpointLabel: "group stream",
+      })
+
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+
+    useGroupStreamingStore.getState().reset()
+    await pending
+
+    const state = useGroupStreamingStore.getState()
+    expect(state.status).toBe(NDJSON_STREAMING_STATUS.IDLE)
+    expect(state.error).toBeNull()
+    expect(state.finalResponse).toBeNull()
   })
 })

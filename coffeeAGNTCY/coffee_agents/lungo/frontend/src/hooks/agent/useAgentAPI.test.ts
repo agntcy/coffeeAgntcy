@@ -5,7 +5,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
-import { HttpError, REQUEST_CANCELLED_MESSAGE } from "@/api/http"
+import {
+  HttpError,
+  isRequestCancelledError,
+  REQUEST_CANCELLED_MESSAGE,
+} from "@/api/http"
+import { reportRequestError } from "@/errors/request"
 import { CHAT_RETRY_DELAYS_MS } from "@/config/requestRetryPolicy"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
@@ -52,6 +57,7 @@ const settle = <T>(promise: Promise<T>) =>
 beforeEach(() => {
   vi.useFakeTimers()
   fetchJson.mockReset()
+  vi.mocked(reportRequestError).mockClear()
 })
 
 afterEach(() => {
@@ -89,7 +95,11 @@ describe("useAgentAPI retries", () => {
       act(() => result.current.cancel())
       await act(() => vi.runAllTimersAsync())
 
-      await expect(outcome).resolves.toMatchObject({ status: "rejected" })
+      const settled = await outcome
+      expect(settled.status).toBe("rejected")
+      if (settled.status !== "rejected") return
+      expect(isRequestCancelledError(settled.error)).toBe(true)
+      expect(reportRequestError).not.toHaveBeenCalled()
       expect(fetchJson).toHaveBeenCalledTimes(1)
     })
 
@@ -107,6 +117,7 @@ describe("useAgentAPI retries", () => {
       await act(() => vi.runAllTimersAsync())
 
       await expect(outcome).resolves.toMatchObject({ status: "rejected" })
+      expect(reportRequestError).not.toHaveBeenCalled()
       expect(fetchJson).toHaveBeenCalledTimes(1)
     })
 
@@ -123,6 +134,7 @@ describe("useAgentAPI retries", () => {
       await vi.runAllTimersAsync()
 
       await expect(outcome).resolves.toMatchObject({ status: "rejected" })
+      expect(reportRequestError).not.toHaveBeenCalled()
       expect(fetchJson).toHaveBeenCalledTimes(1)
     })
   })
@@ -133,12 +145,13 @@ describe("useAgentAPI retries", () => {
     it("does not retry a request that was cancelled while in flight", async () => {
       fetchJson.mockImplementation(hangUntilAborted)
       const onRetryAttempt = vi.fn()
+      const onError = vi.fn()
       const { result } = renderHook(() => useAgentAPI())
 
       const outcome = result.current.sendMessageWithCallback(
         "hi",
         setMessages,
-        { onRetryAttempt },
+        { onRetryAttempt, onError },
         RETRYING_WORKFLOW,
       )
       await act(() => vi.advanceTimersByTimeAsync(0))
@@ -149,6 +162,8 @@ describe("useAgentAPI retries", () => {
 
       expect(fetchJson).toHaveBeenCalledTimes(1)
       expect(onRetryAttempt).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+      expect(reportRequestError).not.toHaveBeenCalled()
     })
 
     it("stops the retry countdown when cancelled while backing off", async () => {

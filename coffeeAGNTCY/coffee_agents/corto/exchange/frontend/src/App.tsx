@@ -60,7 +60,7 @@ const App: React.FC = () => {
     const storedMessages = localStorage.getItem(LOCAL_STORAGE_KEY)
     return storedMessages ? JSON.parse(storedMessages) : []
   })
-  const { sendMessageWithCallback } = useAgentAPI()
+  const { sendMessageWithCallback, cancel: cancelAgentPrompt } = useAgentAPI()
 
   const isCompactShell = useIsBelowSmBreakpoint()
   const chatRef = useRef<HTMLDivElement>(null)
@@ -185,6 +185,7 @@ const App: React.FC = () => {
   }
 
   const handleClearConversation = () => {
+    cancelAgentPrompt()
     setMessages([])
     setCurrentUserMessage("")
     setAgentResponse("")
