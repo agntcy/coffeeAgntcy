@@ -15,7 +15,7 @@ BATS_VERSION="1.14.0" # bats-core git tag, installed from its own source tarball
 # renovate: datasource=github-releases depName=helm/helm
 HELM_VERSION="v4.3.0"
 # renovate: datasource=node-version depName=node
-NODE_VERSION="24.21.0"
+NODE_VERSION="26.13.0"
 # renovate: datasource=npm depName=@fission-ai/openspec
 OPENSPEC_VERSION="1.13.2"
 # renovate: datasource=npm depName=renovate

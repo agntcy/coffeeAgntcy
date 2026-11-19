@@ -23,7 +23,7 @@ b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba567b1138c6315a5847e5  https://github
 aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f  https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz
 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
 325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6  https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz
-bed7eea5325e1108f32ce5228ddd6a5f0f08a499ee42aa7442aea583702f6057  https://nodejs.org/dist/v24.21.0/node-v24.21.0-darwin-arm64.tar.gz
-1462cb3b3046b815cf8ea436d3da450ec1a9f11dac7e5a46b0ada5305d7e8097  https://nodejs.org/dist/v24.21.0/node-v24.21.0-darwin-x64.tar.gz
-724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5  https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-arm64.tar.gz
-6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff  https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.gz
+d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6  https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz
+525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e  https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-x64.tar.gz
+439e9c438acdf6a6ffe47418da709153d66c4bed812e30a473faacb107dd2791  https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.gz
+5848553868b402d3fabb5b09270649977780a390f832155721025a08b5104455  https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.gz
