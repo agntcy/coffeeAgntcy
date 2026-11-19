@@ -22,10 +22,10 @@ vi.mock("@/errors/request", () => ({
 
 describe("useAppPatternCategoryDoc", () => {
   it("shows loading as soon as a category is selected", async () => {
+    const initialProps: { category: string | null } = { category: null }
     const { result, rerender } = renderHook(
-      ({ category }: { category: string | null }) =>
-        useAppPatternCategoryDoc(category),
-      { initialProps: { category: null } },
+      ({ category }) => useAppPatternCategoryDoc(category),
+      { initialProps },
     )
 
     expect(result.current.categoryDocState.status).toBe("idle")

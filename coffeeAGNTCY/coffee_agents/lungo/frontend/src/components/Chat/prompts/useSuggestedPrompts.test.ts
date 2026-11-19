@@ -141,10 +141,12 @@ describe("useSuggestedPrompts", () => {
       General: [{ prompt: "Hello", description: "Say hi" }],
     })
 
+    const initialProps: { request: typeof coffeePromptsRequest | null } = {
+      request: coffeePromptsRequest,
+    }
     const { result, rerender } = renderHook(
-      ({ request }: { request: typeof coffeePromptsRequest | null }) =>
-        useSuggestedPrompts(request),
-      { initialProps: { request: coffeePromptsRequest } },
+      ({ request }) => useSuggestedPrompts(request),
+      { initialProps },
     )
 
     await waitFor(() => {
