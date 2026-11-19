@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { v4 as uuid } from "uuid"
+import { isRequestCancelledError } from "@/api/http"
 import type { useAppChatState, useAppStreamingState } from "@/hooks/useApp"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import type { useAgentAPI } from "@/hooks/agent"
@@ -25,6 +26,7 @@ interface UseAppPromptHandlersParams {
   selectedWorkflowSummary: WorkflowSummary | null
   activeWorkflowInstanceId: string | null
   sendMessage: ReturnType<typeof useAgentAPI>["sendMessage"]
+  cancelAgentPrompt: ReturnType<typeof useAgentAPI>["cancel"]
   selectedReferencePattern: string | null
   setPatternChatSessionId: (id: string | null) => void
 }
@@ -35,16 +37,23 @@ export function useAppPromptHandlers({
   selectedWorkflowSummary,
   activeWorkflowInstanceId,
   sendMessage,
+  cancelAgentPrompt,
   selectedReferencePattern,
   setPatternChatSessionId,
 }: UseAppPromptHandlersParams) {
   const streamCompleteRef = useRef<boolean>(false)
+  const promptEpochRef = useRef(0)
+  const activePromptEpochRef = useRef(0)
   const [highlightNodeFunction, setHighlightNodeFunction] = useState<
     ((nodeId: string) => void) | null
   >(null)
 
   const handleSendPrompt = useCallback(
     async (query: string) => {
+      const epoch = ++promptEpochRef.current
+      activePromptEpochRef.current = epoch
+      const stillCurrent = () => promptEpochRef.current === epoch
+
       chat.setCurrentUserMessage(query)
       chat.setIsAgentLoading(true)
       chat.setButtonClicked(true)
@@ -83,7 +92,8 @@ export function useAppPromptHandlers({
               activeWorkflowInstanceId,
               streamRequest,
             )
-          } catch {
+          } catch (err) {
+            if (!stillCurrent() || isRequestCancelledError(err)) return
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with streaming.",
@@ -104,7 +114,8 @@ export function useAppPromptHandlers({
               activeWorkflowInstanceId,
               streamRequest,
             )
-          } catch {
+          } catch (err) {
+            if (!stillCurrent() || isRequestCancelledError(err)) return
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with auction streaming.",
@@ -127,7 +138,8 @@ export function useAppPromptHandlers({
               priorSessionId,
               streamRequest,
             )
-          } catch {
+          } catch (err) {
+            if (!stillCurrent() || isRequestCancelledError(err)) return
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with recruiter streaming.",
@@ -137,10 +149,12 @@ export function useAppPromptHandlers({
         } else {
           chat.setShowFinalResponse(true)
           const response = await sendMessage(query, selectedWorkflowSummary)
+          if (!stillCurrent()) return
           chat.handleApiResponse(response, false)
           chat.setAiReplied(true)
         }
       } catch (err) {
+        if (!stillCurrent() || isRequestCancelledError(err)) return
         chat.handleApiResponse(
           err instanceof Error ? err.message : String(err),
           true,
@@ -158,6 +172,7 @@ export function useAppPromptHandlers({
   )
 
   const handleStreamComplete = useCallback(() => {
+    if (activePromptEpochRef.current !== promptEpochRef.current) return
     streamCompleteRef.current = true
     const uiMode = workflowChatUiMode(selectedWorkflowSummary)
     if (uiMode?.isGroupMessaging) {
@@ -174,7 +189,11 @@ export function useAppPromptHandlers({
   }, [selectedWorkflowSummary, chat])
 
   const handleClearConversation = useCallback(() => {
+    promptEpochRef.current += 1
+    cancelAgentPrompt()
     chat.resetChatState()
+    chat.setShowAuctionStreaming(false)
+    streaming.reset()
     streaming.resetGroup()
     streaming.resetRecruiter()
     if (selectedReferencePattern !== null) {
@@ -182,7 +201,10 @@ export function useAppPromptHandlers({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable reset fns only
   }, [
+    cancelAgentPrompt,
     chat.resetChatState,
+    chat.setShowAuctionStreaming,
+    streaming.reset,
     streaming.resetGroup,
     streaming.resetRecruiter,
     selectedReferencePattern,

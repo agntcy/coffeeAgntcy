@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useRef, useState, useEffect } from "react"
+import React, { useCallback, useRef, useState, useEffect } from "react"
 import { v4 as uuid } from "uuid"
-import { fetchJson, isHttpError } from "@/api/http"
+import { fetchJson, isHttpError, isRequestCancelledError } from "@/api/http"
 import type { Message } from "@/components/Chat/types"
 import { reportRequestError } from "@/errors/request"
 import { isLocalDev, Role } from "@/utils/const"
@@ -39,6 +39,10 @@ export const buildPromptRequestBody = (
 }
 
 function rethrowAgentPromptError(error: unknown): never {
+  if (isRequestCancelledError(error)) {
+    throw error
+  }
+
   if (isHttpError(error)) {
     if (
       error.status !== undefined &&
@@ -82,12 +86,10 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   const abortRef = useRef<AbortController | null>(null)
   const requestIdRef = useRef<number>(0)
 
-  const cancel = () => {
-    if (abortRef.current) {
-      abortRef.current.abort()
-    }
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
     requestIdRef.current += 1
-  }
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -128,6 +130,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
       return await makeApiCall()
     } catch (error) {
+      if (controller.signal.aborted) {
+        rethrowAgentPromptError(error)
+      }
       reportRequestError(promptRequest.endpointLabel, error)
       rethrowAgentPromptError(error)
     } finally {
@@ -251,6 +256,8 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onSuccess(apiResponse)
       }
     } catch (error) {
+      if (controller.signal.aborted) return
+
       reportRequestError(promptRequest.endpointLabel, error)
 
       let userMessage: string

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Role } from "@/utils/const"
@@ -20,7 +20,7 @@ interface ApiResponse {
 
 interface UseAgentAPIReturn {
   loading: boolean
-  sendMessage: (prompt: string) => Promise<string>
+  sendMessage: (prompt: string) => Promise<string | undefined>
   sendMessageWithCallback: (
     prompt: string,
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -30,29 +30,61 @@ interface UseAgentAPIReturn {
       onError?: (error: any) => void
     },
   ) => Promise<void>
+  cancel: () => void
 }
 
 export const useAgentAPI = (): UseAgentAPIReturn => {
   const [loading, setLoading] = useState<boolean>(false)
+  const abortRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef(0)
 
-  const sendMessage = async (prompt: string): Promise<string> => {
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    requestIdRef.current += 1
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  const beginRequest = () => {
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    setLoading(true)
+    return { controller, requestId }
+  }
+
+  const isCurrent = (requestId: number) => requestIdRef.current === requestId
+
+  const sendMessage = async (prompt: string): Promise<string | undefined> => {
     if (!prompt.trim()) {
       throw new Error("Prompt cannot be empty")
     }
 
-    setLoading(true)
+    const { controller, requestId } = beginRequest()
     try {
       const response = await axios.post<ApiResponse>(
         `${EXCHANGE_APP_API_URL}/agent/prompt`,
         {
           prompt,
         },
+        { signal: controller.signal },
       )
+      if (!isCurrent(requestId)) return
       return response.data.response
     } catch (error) {
+      if (controller.signal.aborted || !isCurrent(requestId)) return
       throw error
     } finally {
-      setLoading(false)
+      if (isCurrent(requestId)) {
+        setLoading(false)
+      }
     }
   }
 
@@ -81,12 +113,13 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       animate: true,
     }
 
+    const { controller, requestId } = beginRequest()
+
     setMessages((prevMessages: Message[]) => [
       ...prevMessages,
       userMessage,
       loadingMessage,
     ])
-    setLoading(true)
 
     if (callbacks?.onStart) {
       callbacks.onStart()
@@ -98,7 +131,10 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         {
           prompt,
         },
+        { signal: controller.signal },
       )
+
+      if (!isCurrent(requestId)) return
 
       setMessages((prevMessages: Message[]) => {
         const updatedMessages = [...prevMessages]
@@ -115,6 +151,8 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onSuccess(response.data.response)
       }
     } catch (error) {
+      if (controller.signal.aborted || !isCurrent(requestId)) return
+
       setMessages((prevMessages: Message[]) => {
         const updatedMessages = [...prevMessages]
         updatedMessages[updatedMessages.length - 1] = {
@@ -130,7 +168,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onError(error)
       }
     } finally {
-      setLoading(false)
+      if (isCurrent(requestId)) {
+        setLoading(false)
+      }
     }
   }
 
@@ -138,5 +178,6 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     loading,
     sendMessage,
     sendMessageWithCallback,
+    cancel,
   }
 }

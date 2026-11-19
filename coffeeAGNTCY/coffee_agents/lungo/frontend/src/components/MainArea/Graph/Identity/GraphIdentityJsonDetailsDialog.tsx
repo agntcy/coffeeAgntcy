@@ -42,32 +42,78 @@ const GraphIdentityJsonDetailsDialog: React.FC<
   fetchData,
   endpointLabelForReport,
 }) => {
-  const [data, setData] = useState<unknown | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  const [settled, setSettled] = useState<{
+    nodeData: CustomNodeData
+    nodeName: string
+    attempt: number
+    data: unknown | null
+    error: string | null
+  } | null>(null)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setAttempt((current) => current + 1)
+  }
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await fetchData(nodeData)
-      setData(result)
-    } catch (err) {
-      const httpError = reportRequestError(
-        endpointLabelForReport(nodeData),
-        err,
-      )
-      setError(httpError.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [endpointLabelForReport, fetchData, nodeData])
+  const shouldFetch = isOpen && Boolean(nodeData)
 
   useEffect(() => {
-    if (isOpen && nodeData) {
-      void loadData()
+    if (!shouldFetch || !nodeData) return
+    let cancelled = false
+    const requestedNode = nodeData
+    const requestedName = nodeName
+    const requestedAttempt = attempt
+    fetchData(requestedNode)
+      .then((result) => {
+        if (cancelled) return
+        setSettled({
+          nodeData: requestedNode,
+          nodeName: requestedName,
+          attempt: requestedAttempt,
+          data: result,
+          error: null,
+        })
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const httpError = reportRequestError(
+          endpointLabelForReport(requestedNode),
+          err,
+        )
+        setSettled({
+          nodeData: requestedNode,
+          nodeName: requestedName,
+          attempt: requestedAttempt,
+          data: null,
+          error: httpError.message,
+        })
+      })
+    return () => {
+      cancelled = true
     }
-  }, [isOpen, loadData, nodeData, nodeName])
+  }, [
+    shouldFetch,
+    nodeData,
+    nodeName,
+    attempt,
+    fetchData,
+    endpointLabelForReport,
+  ])
+
+  const isCurrent =
+    shouldFetch &&
+    settled !== null &&
+    settled.nodeData === nodeData &&
+    settled.nodeName === nodeName &&
+    settled.attempt === attempt
+  const loading = shouldFetch && !isCurrent
+  const data = isCurrent ? settled.data : null
+  const error = isCurrent ? settled.error : null
+
+  const retryFetch = useCallback(() => {
+    setAttempt((current) => current + 1)
+  }, [])
 
   return (
     <Dialog
@@ -86,9 +132,7 @@ const GraphIdentityJsonDetailsDialog: React.FC<
           title: loadErrorTitle,
           description: error ?? "",
           actionTitle: "Retry",
-          actionCallback: () => {
-            void loadData()
-          },
+          actionCallback: retryFetch,
         }}
         emptyStateProps={{
           variant: "info",

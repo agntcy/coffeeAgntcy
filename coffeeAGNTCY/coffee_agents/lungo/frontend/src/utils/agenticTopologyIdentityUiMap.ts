@@ -114,7 +114,7 @@ export function directoryAgentSlugFromAgentRecordUri(
   const raw = agentRecordUri.trim()
   if (!raw) return undefined
 
-  let pathPart = raw
+  let pathPart: string
   if (/^https?:\/\//i.test(raw)) {
     try {
       pathPart = new URL(raw).pathname

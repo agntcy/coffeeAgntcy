@@ -117,13 +117,25 @@ export function useMainArea({
     onTopologyApplied: handleTopologyApplied,
   })
 
-  useEffect(() => {
-    hasInitialViewportFitRef.current = false
+  const workflowName = selectedWorkflowSummary?.name
+  const [layoutScope, setLayoutScope] = useState({
+    workflowName,
+    pattern,
+  })
+  if (
+    layoutScope.workflowName !== workflowName ||
+    layoutScope.pattern !== pattern
+  ) {
+    setLayoutScope({ workflowName, pattern })
     setTopologyApplied(false)
     setLayoutSyncGeneration(0)
     setLayoutSyncNodeIds([])
     setLayoutSyncFitViewport(false)
-  }, [selectedWorkflowSummary?.name, pattern])
+  }
+
+  useEffect(() => {
+    hasInitialViewportFitRef.current = false
+  }, [workflowName, pattern])
 
   const nodeAgentCidKey = useMemo(
     () =>

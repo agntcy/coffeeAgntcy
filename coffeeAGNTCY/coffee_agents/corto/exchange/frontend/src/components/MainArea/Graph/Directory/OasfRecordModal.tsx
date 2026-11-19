@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Box, LoadingErrorState, Stack, Typography } from "@open-ui-kit/core"
 import Dialog from "@/components/dialog/Dialog"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
@@ -28,48 +28,63 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   nodeName,
   nodeData,
 }) => {
-  const [record, setRecord] = useState<OasfRecord | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const requestIdRef = useRef(0)
-
-  const loadRecord = useCallback(() => {
-    if (!nodeData) return
-    const requestId = ++requestIdRef.current
-    setRecord(null)
-    setError(null)
-    setLoading(true)
-    void fetchOasfRecord(nodeData)
-      .then((nextRecord) => {
-        if (requestId === requestIdRef.current) {
-          setRecord(nextRecord)
-        }
-      })
-      .catch((err: OasfApiError) => {
-        if (requestId === requestIdRef.current) {
-          setError(
-            err.message ??
-              "An unexpected error occurred while fetching OASF record.",
-          )
-        }
-      })
-      .finally(() => {
-        if (requestId === requestIdRef.current) {
-          setLoading(false)
-        }
-      })
-  }, [nodeData])
+  const [attempt, setAttempt] = useState(0)
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  const [settled, setSettled] = useState<{
+    nodeData: Record<string, unknown>
+    attempt: number
+    record: OasfRecord | null
+    error: string | null
+  } | null>(null)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setAttempt((current) => current + 1)
+  }
 
   useEffect(() => {
-    if (!isOpen || !nodeData) {
-      requestIdRef.current += 1
-      return
-    }
-    loadRecord()
+    if (!isOpen || !nodeData) return
+    let cancelled = false
+    const requestedNode = nodeData
+    const requestedAttempt = attempt
+    void fetchOasfRecord(requestedNode)
+      .then((data) => {
+        if (cancelled) return
+        setSettled({
+          nodeData: requestedNode,
+          attempt: requestedAttempt,
+          record: data,
+          error: null,
+        })
+      })
+      .catch((err: OasfApiError) => {
+        if (cancelled) return
+        setSettled({
+          nodeData: requestedNode,
+          attempt: requestedAttempt,
+          record: null,
+          error:
+            err.message ??
+            "An unexpected error occurred while fetching OASF record.",
+        })
+      })
     return () => {
-      requestIdRef.current += 1
+      cancelled = true
     }
-  }, [isOpen, nodeData, loadRecord])
+  }, [isOpen, nodeData, attempt])
+
+  const isCurrent =
+    isOpen &&
+    Boolean(nodeData) &&
+    settled !== null &&
+    settled.nodeData === nodeData &&
+    settled.attempt === attempt
+  const loading = isOpen && Boolean(nodeData) && !isCurrent
+  const record = isCurrent ? settled.record : null
+  const error = isCurrent ? settled.error : null
+
+  const retryFetch = useCallback(() => {
+    setAttempt((current) => current + 1)
+  }, [])
 
   return (
     <Dialog
@@ -93,7 +108,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
           title: "Failed to load OASF record",
           description: error ?? "",
           actionTitle: "Retry",
-          actionCallback: loadRecord,
+          actionCallback: retryFetch,
         }}
         emptyStateProps={{
           variant: "info",

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useState } from "react"
 import {
   Box,
   Header,
@@ -36,12 +36,12 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCatalogMenuOpen, setIsCatalogMenuOpen] = useState(false)
   const showCatalogMenu = catalogSidebarProps !== undefined
-
-  useEffect(() => {
-    if (!showCatalogMenu) {
-      setIsCatalogMenuOpen(false)
-    }
-  }, [showCatalogMenu])
+  const [catalogMenuAvailable, setCatalogMenuAvailable] =
+    useState(showCatalogMenu)
+  if (showCatalogMenu !== catalogMenuAvailable) {
+    setCatalogMenuAvailable(showCatalogMenu)
+    if (!showCatalogMenu) setIsCatalogMenuOpen(false)
+  }
 
   const handleHelpClick = useCallback(() => {
     setIsModalOpen(true)

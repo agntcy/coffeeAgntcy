@@ -4,6 +4,7 @@
  **/
 
 import { create } from "zustand"
+import { useShallow } from "zustand/react/shallow"
 import type { HttpRequestTarget } from "@/urls"
 import { logger } from "@/utils/logger"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
@@ -56,6 +57,7 @@ interface LogisticsStreamingState {
   currentOrderId: string | null
   executionKey: string | null
   sessionId: string | null
+  abortController: AbortController | null
 }
 
 interface LogisticsStreamingActions {
@@ -83,6 +85,7 @@ const initialState: LogisticsStreamingState = {
   currentOrderId: null,
   executionKey: null,
   sessionId: null,
+  abortController: null,
 }
 
 function promoteToStreaming(
@@ -239,23 +242,37 @@ export const useGroupStreamingStore = create<
     } = get()
 
     reset()
-    set({ status: NDJSON_STREAMING_STATUS.CONNECTING })
+    const abortController = new AbortController()
+    const isCurrent = () =>
+      !abortController.signal.aborted &&
+      get().abortController === abortController
+    set({
+      status: NDJSON_STREAMING_STATUS.CONNECTING,
+      abortController,
+    })
 
     await runNdjsonStreamingSession({
       streamRequest,
-      onMissingTarget: () => setError("Streaming request target is required"),
+      signal: abortController.signal,
+      onMissingTarget: () => {
+        if (!isCurrent()) return
+        setError("Streaming request target is required")
+      },
       buildBody: () => buildPromptStreamBody(prompt, workflowInstanceId),
       splitMode: "json-objects",
       onStreamStart: () => {
+        if (!isCurrent()) return
         set({ status: NDJSON_STREAMING_STATUS.STREAMING })
       },
-      onLine: (parsed) =>
-        handleGroupStreamPayload(parsed, {
+      onLine: (parsed) => {
+        if (!isCurrent()) return "stop"
+        return handleGroupStreamPayload(parsed, {
           addEvent,
           addNegotiationEvent,
           setFinalResponse,
           setSessionId,
-        }),
+        })
+      },
       onParseError: (jsonStr, parseError) => {
         logger.error("Error parsing JSON object:", {
           error: parseError,
@@ -264,13 +281,23 @@ export const useGroupStreamingStore = create<
       },
       isErrorStatus: () => get().status === NDJSON_STREAMING_STATUS.ERROR,
       onCompleted: () => {
-        set({ status: NDJSON_STREAMING_STATUS.COMPLETED })
+        if (!isCurrent()) return
+        set({
+          status: NDJSON_STREAMING_STATUS.COMPLETED,
+          abortController: null,
+        })
       },
-      onFailed: (message) => setError(message),
+      onFailed: (message) => {
+        if (!isCurrent()) return
+        setError(message)
+      },
     })
   },
 
-  reset: () => set(initialState),
+  reset: () => {
+    get().abortController?.abort()
+    set(initialState)
+  },
 }))
 
 export const useGroupEvents = () =>
@@ -298,17 +325,19 @@ export const useGroupSessionId = () =>
   useGroupStreamingStore((state) => state.sessionId)
 
 export const useGroupStreamingActions = () =>
-  useGroupStreamingStore((state) => ({
-    addEvent: state.addEvent,
-    addNegotiationEvent: state.addNegotiationEvent,
-    setFinalResponse: state.setFinalResponse,
-    setError: state.setError,
-    setCurrentOrderId: state.setCurrentOrderId,
-    setExecutionKey: state.setExecutionKey,
-    setSessionId: state.setSessionId,
-    startStreaming: state.startStreaming,
-    reset: state.reset,
-  }))
+  useGroupStreamingStore(
+    useShallow((state) => ({
+      addEvent: state.addEvent,
+      addNegotiationEvent: state.addNegotiationEvent,
+      setFinalResponse: state.setFinalResponse,
+      setError: state.setError,
+      setCurrentOrderId: state.setCurrentOrderId,
+      setExecutionKey: state.setExecutionKey,
+      setSessionId: state.setSessionId,
+      startStreaming: state.startStreaming,
+      reset: state.reset,
+    })),
+  )
 
 export const useStartGroupStreaming = () =>
   useGroupStreamingStore((state) => state.startStreaming)

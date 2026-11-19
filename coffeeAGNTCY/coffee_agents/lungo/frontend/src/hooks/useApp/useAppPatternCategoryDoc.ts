@@ -25,19 +25,24 @@ export function useAppPatternCategoryDoc(
 ) {
   const [categoryDocState, setCategoryDocState] =
     useState<PatternDocState>(idleCategoryDocState)
+  const [loadedCategory, setLoadedCategory] = useState(selectedPatternCategory)
+  if (selectedPatternCategory !== loadedCategory) {
+    setLoadedCategory(selectedPatternCategory)
+    setCategoryDocState(
+      selectedPatternCategory === null
+        ? idleCategoryDocState
+        : {
+            status: "loading",
+            documentation: null,
+            errorMessage: null,
+          },
+    )
+  }
 
   useEffect(() => {
-    if (selectedPatternCategory === null) {
-      setCategoryDocState(idleCategoryDocState)
-      return
-    }
+    if (selectedPatternCategory === null) return
 
     const controller = new AbortController()
-    setCategoryDocState({
-      status: "loading",
-      documentation: null,
-      errorMessage: null,
-    })
 
     fetchPatternCategoryDocumentation(
       selectedPatternCategory,

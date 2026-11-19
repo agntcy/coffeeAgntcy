@@ -29,11 +29,19 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
   const [error, setError] = useState<boolean>(false)
   const cancelledRef = useRef<boolean>(false)
   const theme = useTheme()
+  const [diagramInput, setDiagramInput] = useState({ chart, svgId, theme })
+  if (
+    diagramInput.chart !== chart ||
+    diagramInput.svgId !== svgId ||
+    diagramInput.theme !== theme
+  ) {
+    setDiagramInput({ chart, svgId, theme })
+    setSvg(null)
+    setError(false)
+  }
 
   useEffect(() => {
     cancelledRef.current = false
-    setError(false)
-    setSvg(null)
 
     const { palette } = theme
     const render = async (): Promise<void> => {

@@ -26,8 +26,6 @@ export function useAppWorkflowCatalog() {
 
   useEffect(() => {
     const controller = new AbortController()
-    setWorkflowCatalogLoading(true)
-    setWorkflowCatalogError(null)
     fetchWorkflowSummariesWithRetry(controller.signal)
       .then((rows) => {
         setWorkflowCatalogSummaries(rows)
@@ -48,21 +46,26 @@ export function useAppWorkflowCatalog() {
     return () => controller.abort()
   }, [])
 
-  useEffect(() => {
-    if (workflowCatalogSummaries === null) return
-    setSelectedWorkflowSummary((prev) => {
-      if (prev) {
-        const still = workflowCatalogSummaries.find((s) => s.name === prev.name)
-        if (still) {
-          return still
+  const [appliedCatalog, setAppliedCatalog] = useState(workflowCatalogSummaries)
+  if (appliedCatalog !== workflowCatalogSummaries) {
+    setAppliedCatalog(workflowCatalogSummaries)
+    if (workflowCatalogSummaries !== null) {
+      setSelectedWorkflowSummary((prev) => {
+        if (prev) {
+          const still = workflowCatalogSummaries.find(
+            (s) => s.name === prev.name,
+          )
+          if (still) {
+            return still
+          }
         }
-      }
-      return pickDefaultWorkflowSummaryForPattern(
-        workflowCatalogSummaries,
-        PATTERNS.GROUP_MESSAGING,
-      )
-    })
-  }, [workflowCatalogSummaries])
+        return pickDefaultWorkflowSummaryForPattern(
+          workflowCatalogSummaries,
+          PATTERNS.GROUP_MESSAGING,
+        )
+      })
+    }
+  }
 
   return {
     workflowCatalogSummaries,

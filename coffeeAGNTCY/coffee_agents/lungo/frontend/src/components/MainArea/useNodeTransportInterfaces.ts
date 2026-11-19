@@ -40,9 +40,12 @@ export function useNodeTransportInterfaces(
   const inFlightKeysRef = useRef<Set<string>>(new Set())
   const transportCacheRef = useRef<Map<string, AgentTransport[]>>(new Map())
   const patternRef = useRef(pattern)
-  patternRef.current = pattern
   const chatApiTargetRef = useRef(chatApiTarget)
-  chatApiTargetRef.current = chatApiTarget
+
+  useEffect(() => {
+    patternRef.current = pattern
+    chatApiTargetRef.current = chatApiTarget
+  }, [pattern, chatApiTarget])
 
   useEffect(() => {
     inFlightKeysRef.current.clear()

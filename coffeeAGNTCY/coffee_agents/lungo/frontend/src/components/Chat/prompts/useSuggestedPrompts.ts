@@ -33,13 +33,19 @@ export function useSuggestedPrompts(
   )
   const url = request?.url ?? null
   const endpointLabel = request?.endpointLabel ?? null
+  const hasRequest = Boolean(url && endpointLabel)
+  const requestKey = hasRequest ? `${url}\u0000${endpointLabel}` : null
+  const [activeRequestKey, setActiveRequestKey] = useState(requestKey)
+  if (requestKey !== activeRequestKey) {
+    setActiveRequestKey(requestKey)
+    setCategories([])
+    setIsLoading(requestKey !== null)
+    setIsUnavailable(false)
+    setUnavailableMessage(null)
+  }
 
   useEffect(() => {
-    if (!url || !endpointLabel) {
-      setCategories([])
-      setIsLoading(false)
-      setIsUnavailable(false)
-      setUnavailableMessage(null)
+    if (!hasRequest || !url || !endpointLabel) {
       return
     }
 
@@ -112,7 +118,16 @@ export function useSuggestedPrompts(
         clearTimeout(retryTimeoutId)
       }
     }
-  }, [url, endpointLabel])
+  }, [hasRequest, url, endpointLabel])
+
+  if (!hasRequest) {
+    return {
+      categories: [],
+      isLoading: false,
+      isUnavailable: false,
+      unavailableMessage: null,
+    }
+  }
 
   return {
     categories,

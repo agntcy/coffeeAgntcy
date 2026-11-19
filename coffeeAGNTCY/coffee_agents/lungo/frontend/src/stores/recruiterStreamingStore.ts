@@ -4,6 +4,7 @@
  **/
 
 import { create } from "zustand"
+import { useShallow } from "zustand/react/shallow"
 import type { AgentRecord } from "@/types/agent"
 import type { HttpRequestTarget } from "@/urls"
 import type { RecruiterStreamingEvent } from "./recruiterStreaming.types"
@@ -199,8 +200,10 @@ export const useRecruiterTraceId = () =>
   useRecruiterStreamingStore((state) => state.traceId)
 
 export const useRecruiterStreamingActions = () =>
-  useRecruiterStreamingStore((state) => ({
-    connect: state.connect,
-    disconnect: state.disconnect,
-    reset: state.reset,
-  }))
+  useRecruiterStreamingStore(
+    useShallow((state) => ({
+      connect: state.connect,
+      disconnect: state.disconnect,
+      reset: state.reset,
+    })),
+  )

@@ -92,7 +92,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [loading, setLoading] = useState<boolean>(false)
   const messagePanelRef = useRef<HTMLDivElement>(null)
   const threadContentRef = useRef<HTMLDivElement>(null)
-  const { sendPatternMessage } = usePatternChatAPI()
+  const sendGeneration = useRef(0)
+  const { sendPatternMessage, cancel: cancelPatternChat } = usePatternChatAPI()
 
   useScrollPanelOnContentResize(
     messagePanelRef,
@@ -110,6 +111,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       selectedReferencePattern &&
       patternChatSessionId
     ) {
+      const generation = ++sendGeneration.current
       const msg = content
       setContent("")
       await streamPatternChat({
@@ -119,9 +121,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         send: sendPatternMessage,
         onUserInput,
         onApiResponse,
-        onStart: () => setLoading(true),
-        onSettled: () => setLoading(false),
-        onSuccess: () => onPatternChatSuccess?.(),
+        onStart: () => {
+          if (sendGeneration.current === generation) setLoading(true)
+        },
+        onSettled: () => {
+          if (sendGeneration.current === generation) setLoading(false)
+        },
+        onSuccess: () => {
+          if (sendGeneration.current === generation) onPatternChatSuccess?.()
+        },
       })
       return
     }
@@ -130,14 +138,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return
     }
 
+    const generation = ++sendGeneration.current
     const msg = content
     setContent("")
     setLoading(true)
     try {
       await onSendPrompt(msg)
     } finally {
-      setLoading(false)
+      if (sendGeneration.current === generation) setLoading(false)
     }
+  }
+
+  const handleClearConversation = () => {
+    sendGeneration.current += 1
+    cancelPatternChat()
+    setLoading(false)
+    setContent("")
+    onClearConversation?.()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -181,7 +198,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <>
           <Box sx={{ flexShrink: 0, width: "100%" }}>
             <ChatHeader
-              onClearConversation={onClearConversation}
+              onClearConversation={handleClearConversation}
               horizontalPadding={mainAreaContentHorizontalPadding}
             />
           </Box>

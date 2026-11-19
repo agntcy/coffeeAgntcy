@@ -114,6 +114,30 @@
     },
     {
       "description": [
+        "Hold typescript below 6 until openapi-typescript supports it (the lungo frontend uses openapi-typescript, whose latest release declares the peer range ^5.x, so typescript 6 makes npm fail with ERESOLVE). typescript 7 is also unsupported by typescript-eslint (peer range >=4.8.4 <6.1.0). Remove once both widen their peer ranges."
+      ],
+      "allowedVersions": "<6.0.0",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "typescript"
+      ]
+    },
+    {
+      "description": [
+        "Hold the MUI packages below 8 until @open-ui-kit/core supports them (it pins @mui/icons-material ^7 and pulls @mui/lab 7, whose peer is @mui/material ^7.3.2, so MUI 9 makes npm fail with ERESOLVE). Remove once @open-ui-kit/core widens its peers."
+      ],
+      "allowedVersions": "<8.0.0",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@mui/**"
+      ]
+    },
+    {
+      "description": [
         "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR.",
         "Regenerate the pinned archive checksums (scripts/lib/checksums.txt) and the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json) once per branch, so the PR carries the new hashes and lockfile setup.sh verifies against. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
       ],

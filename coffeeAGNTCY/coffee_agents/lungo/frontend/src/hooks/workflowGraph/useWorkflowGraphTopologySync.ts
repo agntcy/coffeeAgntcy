@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useCallback, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import type { Edge, Node } from "@xyflow/react"
 import {
   getWorkflowInstanceState,
@@ -75,7 +75,9 @@ export function useWorkflowGraphTopologySync({
   )
 
   const applyInstanceTopologyRef = useRef(applyInstanceTopology)
-  applyInstanceTopologyRef.current = applyInstanceTopology
+  const refetchAndApplyTopologyRef = useRef<
+    (seq: number, attempt: number) => Promise<void>
+  >(async () => {})
 
   const refetchAndApplyTopology = useCallback(
     async (seq: number, attempt: number) => {
@@ -121,9 +123,6 @@ export function useWorkflowGraphTopologySync({
     [sessionRef, setAgenticError],
   )
 
-  const refetchAndApplyTopologyRef = useRef(refetchAndApplyTopology)
-  refetchAndApplyTopologyRef.current = refetchAndApplyTopology
-
   const scheduleTopologyRefetch = useCallback(() => {
     const s = sessionRef.current
     if (!s) return
@@ -143,7 +142,12 @@ export function useWorkflowGraphTopologySync({
   }, [sessionRef])
 
   const scheduleTopologyRefetchRef = useRef(scheduleTopologyRefetch)
-  scheduleTopologyRefetchRef.current = scheduleTopologyRefetch
+
+  useEffect(() => {
+    applyInstanceTopologyRef.current = applyInstanceTopology
+    refetchAndApplyTopologyRef.current = refetchAndApplyTopology
+    scheduleTopologyRefetchRef.current = scheduleTopologyRefetch
+  }, [applyInstanceTopology, refetchAndApplyTopology, scheduleTopologyRefetch])
 
   return {
     applyInstanceTopologyRef,

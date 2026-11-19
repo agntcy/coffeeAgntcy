@@ -18,6 +18,7 @@ const localRulesPlugin = {
 export default [
   { ignores: ["dist", "node_modules", "src/api/generated/**"] },
   ...tseslint.configs.recommended,
+  reactHooks.configs.flat.recommended,
   {
     files: ["**/*.{js,jsx,ts,tsx,mjs}"],
     languageOptions: {
@@ -33,7 +34,6 @@ export default [
       },
     },
     plugins: {
-      "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
       "@typescript-eslint": tsplugin,
       prettier: prettier,
@@ -41,7 +41,6 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
       ...prettierConfig.rules,
       "prettier/prettier": "error",
       "local/no-forbidden-dashes": "error",

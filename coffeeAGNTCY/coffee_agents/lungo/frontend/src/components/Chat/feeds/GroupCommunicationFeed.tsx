@@ -78,26 +78,32 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     setIsExpanded((v) => !v)
   }, [])
 
-  useEffect(() => {
-    if (prompt) {
-      highlightTimeoutsRef.current.forEach(clearTimeout)
-      highlightTimeoutsRef.current = []
+  const [expandedPrompt, setExpandedPrompt] = useState(prompt)
+  if (prompt !== expandedPrompt) {
+    setExpandedPrompt(prompt)
+    if (prompt) setIsExpanded(true)
+  }
 
-      setIsExpanded(true)
-      lastProcessedEventRef.current = null
-      lastHighlightedNegotiationRef.current = null
-    }
+  const [expandedExecutionKey, setExpandedExecutionKey] = useState(executionKey)
+  if (executionKey !== expandedExecutionKey) {
+    setExpandedExecutionKey(executionKey)
+    if (executionKey) setIsExpanded(true)
+  }
+
+  useEffect(() => {
+    if (!prompt) return
+    highlightTimeoutsRef.current.forEach(clearTimeout)
+    highlightTimeoutsRef.current = []
+    lastProcessedEventRef.current = null
+    lastHighlightedNegotiationRef.current = null
   }, [prompt])
 
   useEffect(() => {
-    if (executionKey) {
-      highlightTimeoutsRef.current.forEach(clearTimeout)
-      highlightTimeoutsRef.current = []
-
-      setIsExpanded(true)
-      lastProcessedEventRef.current = null
-      lastHighlightedNegotiationRef.current = null
-    }
+    if (!executionKey) return
+    highlightTimeoutsRef.current.forEach(clearTimeout)
+    highlightTimeoutsRef.current = []
+    lastProcessedEventRef.current = null
+    lastHighlightedNegotiationRef.current = null
   }, [executionKey])
 
   useEffect(() => {

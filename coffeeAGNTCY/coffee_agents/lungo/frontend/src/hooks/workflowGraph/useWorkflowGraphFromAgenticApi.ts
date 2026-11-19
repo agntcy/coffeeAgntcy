@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Node } from "@xyflow/react"
 import { reportRequestError } from "@/errors/request"
 import {
@@ -65,14 +65,10 @@ export function useWorkflowGraphFromAgenticApi({
   const isStreamingRef = useRef(
     selectedWorkflowSummary?.supports_streaming === true,
   )
-  isStreamingRef.current = selectedWorkflowSummary?.supports_streaming === true
 
   const identityRef = useRef(handleOpenIdentityDialog)
   const oasfRef = useRef(handleOpenOasfDialog)
   const onAppliedRef = useRef(onTopologyApplied)
-  identityRef.current = handleOpenIdentityDialog
-  oasfRef.current = handleOpenOasfDialog
-  onAppliedRef.current = onTopologyApplied
 
   const attachHandlers = useCallback((node: Node): Node => {
     return {
@@ -129,7 +125,6 @@ export function useWorkflowGraphFromAgenticApi({
   }, [resetMessagingHighlightState, setWorkflowInstanceId])
 
   const clearSessionRef = useRef(clearSession)
-  clearSessionRef.current = clearSession
 
   const handleWorkflowInstanceSseEvent = useCallback(
     (ev: EventV1Wire, catalogWorkflowName: string, instanceId: string) => {
@@ -182,7 +177,23 @@ export function useWorkflowGraphFromAgenticApi({
   const handleWorkflowInstanceSseEventRef = useRef(
     handleWorkflowInstanceSseEvent,
   )
-  handleWorkflowInstanceSseEventRef.current = handleWorkflowInstanceSseEvent
+
+  useEffect(() => {
+    isStreamingRef.current =
+      selectedWorkflowSummary?.supports_streaming === true
+    identityRef.current = handleOpenIdentityDialog
+    oasfRef.current = handleOpenOasfDialog
+    onAppliedRef.current = onTopologyApplied
+    clearSessionRef.current = clearSession
+    handleWorkflowInstanceSseEventRef.current = handleWorkflowInstanceSseEvent
+  }, [
+    clearSession,
+    handleOpenIdentityDialog,
+    handleOpenOasfDialog,
+    handleWorkflowInstanceSseEvent,
+    onTopologyApplied,
+    selectedWorkflowSummary?.supports_streaming,
+  ])
 
   useWorkflowGraphAgenticBootstrap({
     agenticMode,

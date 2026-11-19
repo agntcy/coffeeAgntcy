@@ -73,7 +73,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fillHeight = true,
 }) => {
   const [content, setContent] = useState<string>("")
-  const { loading, sendMessageWithCallback } = useAgentAPI()
+  const { loading, sendMessageWithCallback, cancel } = useAgentAPI()
 
   const handleMinimize = () => {
     onMinimizedChange?.(true)
@@ -135,6 +135,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     setContent("")
   }
 
+  const handleClearConversation = () => {
+    cancel()
+    setContent("")
+    onClearConversation?.()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -172,7 +178,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <Box sx={{ flexShrink: 0, width: "100%" }}>
             <ChatHeader
               onMinimize={isMinimized ? handleRestore : handleMinimize}
-              onClearConversation={onClearConversation}
+              onClearConversation={handleClearConversation}
               isMinimized={isMinimized}
               showActions={!!agentResponse && !isAgentLoading}
             />

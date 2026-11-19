@@ -27,7 +27,7 @@ import {
 export type { ApiResponse } from "@/types/api"
 
 export function useApp() {
-  const { sendMessage } = useAgentAPI()
+  const { sendMessage, cancel: cancelAgentPrompt } = useAgentAPI()
   const streaming = useAppStreamingState()
   const activeWorkflowInstanceId = useActiveWorkflowInstanceStore(
     (s) => s.workflowInstanceId,
@@ -119,6 +119,7 @@ export function useApp() {
     selectedWorkflowSummary,
     activeWorkflowInstanceId,
     sendMessage,
+    cancelAgentPrompt,
     selectedReferencePattern,
     setPatternChatSessionId,
   })

@@ -120,7 +120,7 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
           signal: controller.signal,
           endpointLabel: chatRequest.endpointLabel,
           onLine: (rawFrame, line) => {
-            if (streamError) return "stop"
+            if (controller.signal.aborted || streamError) return "stop"
 
             const frame = parseFrame(rawFrame)
             if (frame === null) {
@@ -142,6 +142,8 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
           },
         })
 
+        if (controller.signal.aborted) return
+
         if (streamError) {
           reportRequestError(chatRequest.endpointLabel, streamError)
           onError(streamError)
@@ -156,6 +158,7 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
           onError(err)
         }
       } catch (err) {
+        if (controller.signal.aborted) return
         if (err instanceof DOMException && err.name === "AbortError") return
         if (isHttpError(err) && err.status === 404) {
           reportRequestError(chatRequest.endpointLabel, err)

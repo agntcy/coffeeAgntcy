@@ -4,7 +4,7 @@
  **/
 
 import { ThemeProvider } from "@open-ui-kit/core"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import type { Node } from "@xyflow/react"
 import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -163,5 +163,50 @@ describe("GroupCommunicationFeed with supply chain events", () => {
 
     expect(screen.getByTestId("supply-chain-silent-badge")).toBeInTheDocument()
     expect(screen.getByText("Collapse details")).toBeInTheDocument()
+  })
+
+  it("expands again when the prompt changes", () => {
+    const { addNegotiationEvent } = useGroupStreamingStore.getState()
+    useGroupStreamingStore.setState({
+      status: NDJSON_STREAMING_STATUS.COMPLETED,
+    })
+    addNegotiationEvent({
+      type: "message",
+      seq: 2,
+      from: "supplier_b",
+      to: ["buyer"],
+      kind: "negotiation",
+      phase: "round_1",
+      plan_version: 0,
+      reply_to: 1,
+      body: "Supplier B can offer 350 tonnes.",
+    })
+
+    const { rerender } = render(
+      <ThemeProvider>
+        <GroupCommunicationFeed
+          isVisible
+          prompt="first shipment"
+          apiError={false}
+          graphConfig={graphConfig}
+        />
+      </ThemeProvider>,
+    )
+    expect(screen.getByTestId("supply-chain-message")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText("Collapse details"))
+    expect(screen.queryByTestId("supply-chain-message")).not.toBeInTheDocument()
+
+    rerender(
+      <ThemeProvider>
+        <GroupCommunicationFeed
+          isVisible
+          prompt="second shipment"
+          apiError={false}
+          graphConfig={graphConfig}
+        />
+      </ThemeProvider>,
+    )
+    expect(screen.getByTestId("supply-chain-message")).toBeInTheDocument()
   })
 })

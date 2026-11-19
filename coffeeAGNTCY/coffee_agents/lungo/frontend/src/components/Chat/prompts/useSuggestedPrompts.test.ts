@@ -135,4 +135,44 @@ describe("useSuggestedPrompts", () => {
     expect(fetchJson).toHaveBeenCalledTimes(3)
     expect(reportRequestError).not.toHaveBeenCalled()
   })
+
+  it("clears the previous categories when the request goes away and comes back", async () => {
+    vi.mocked(fetchJson).mockResolvedValue({
+      General: [{ prompt: "Hello", description: "Say hi" }],
+    })
+
+    const initialProps: { request: typeof coffeePromptsRequest | null } = {
+      request: coffeePromptsRequest,
+    }
+    const { result, rerender } = renderHook(
+      ({ request }) => useSuggestedPrompts(request),
+      { initialProps },
+    )
+
+    await waitFor(() => {
+      expect(result.current.categories).toHaveLength(1)
+    })
+
+    rerender({ request: null })
+    expect(result.current.categories).toEqual([])
+    expect(result.current.isLoading).toBe(false)
+
+    vi.mocked(fetchJson).mockImplementation(() => new Promise(() => {}))
+    rerender({ request: logisticsPromptsRequest })
+    expect(result.current.categories).toEqual([])
+    expect(result.current.isLoading).toBe(true)
+  })
+
+  it("treats an empty url as no request", () => {
+    const { result } = renderHook(() =>
+      useSuggestedPrompts({
+        url: "",
+        endpointLabel: coffeePromptsRequest.endpointLabel,
+      }),
+    )
+
+    expect(result.current.categories).toEqual([])
+    expect(result.current.isLoading).toBe(false)
+    expect(fetchJson).not.toHaveBeenCalled()
+  })
 })

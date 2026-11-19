@@ -26,6 +26,20 @@ export function useAppPatternReference() {
     errorMessage: null,
   })
 
+  const [loadedReferencePattern, setLoadedReferencePattern] = useState(
+    selectedReferencePattern,
+  )
+  if (selectedReferencePattern !== loadedReferencePattern) {
+    setLoadedReferencePattern(selectedReferencePattern)
+    if (selectedReferencePattern !== null) {
+      setPatternDocState({
+        status: "loading",
+        documentation: null,
+        errorMessage: null,
+      })
+    }
+  }
+
   const canvasMode: CanvasMode = useMemo(
     () =>
       selectedReferencePattern !== null
@@ -51,11 +65,6 @@ export function useAppPatternReference() {
   useEffect(() => {
     if (selectedReferencePattern === null) return
     const controller = new AbortController()
-    setPatternDocState({
-      status: "loading",
-      documentation: null,
-      errorMessage: null,
-    })
     fetchWorkflowDocumentation(selectedReferencePattern, controller.signal)
       .then((doc) => {
         if (controller.signal.aborted) return
