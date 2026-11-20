@@ -15,11 +15,11 @@ BATS_VERSION="1.14.0" # bats-core git tag, installed from its own source tarball
 # renovate: datasource=github-releases depName=helm/helm
 HELM_VERSION="v4.3.0"
 # renovate: datasource=node-version depName=node
-NODE_VERSION="24.21.0"
+NODE_VERSION="26.13.1"
 # renovate: datasource=npm depName=@fission-ai/openspec
 OPENSPEC_VERSION="1.13.2"
 # renovate: datasource=npm depName=renovate
-RENOVATE_VERSION="44.127.1"
+RENOVATE_VERSION="44.219.0"
 # renovate: datasource=github-releases depName=koalaman/shellcheck extractVersion=^v(?<version>.*)$
 SHELLCHECK_VERSION="0.11.0"
 # renovate: datasource=github-releases depName=mvdan/sh extractVersion=^v(?<version>.*)$
