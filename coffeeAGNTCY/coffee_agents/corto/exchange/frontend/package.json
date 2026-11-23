@@ -25,22 +25,22 @@
     "@mui/icons-material": "7.3.11",
     "@mui/material": "7.3.11",
     "@mui/system": "7.3.11",
-    "@open-ui-kit/core": "3.2.0",
-    "@xyflow/react": "12.12.0",
-    "axios": "1.20.0",
+    "@open-ui-kit/core": "3.2.1",
+    "@xyflow/react": "12.12.1",
+    "axios": "1.21.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-resizable-panels": "4.15.0",
+    "react-resizable-panels": "4.21.0",
     "uuid": "14.0.3"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@typescript-eslint/eslint-plugin": "8.72.0",
-    "@typescript-eslint/parser": "8.72.0",
+    "@typescript-eslint/eslint-plugin": "8.72.1",
+    "@typescript-eslint/parser": "8.72.1",
     "@vitejs/plugin-react": "6.2.1",
     "eslint": "10.14.0",
     "eslint-config-prettier": "10.1.8",
@@ -50,7 +50,7 @@
     "globals": "17.14.0",
     "prettier": "3.9.10",
     "typescript": "5.9.3",
-    "vite": "8.3.5"
+    "vite": "8.3.6"
   },
   "overrides": {
     "minimatch@10": {
