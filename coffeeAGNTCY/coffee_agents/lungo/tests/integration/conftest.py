@@ -495,6 +495,9 @@ def agents_up(request, transport_config):
         except TimeoutError:
             print(f"--- {name} logs: {runner.log_path}")
             runner.stop()
+            for started in runners:
+                print(f"--- Stopping {started.name} ---")
+                started.stop()
             raise
 
         print(f"--- {name} ready (logs: {runner.log_path}) ---")

@@ -5,10 +5,13 @@
 # No external deps; perfect for pytest fixtures.
 
 from __future__ import annotations
+import os
+import signal
 import subprocess
 import threading
 import sys
 import re
+import time
 from pathlib import Path
 from datetime import datetime
 from itertools import islice
@@ -69,29 +72,45 @@ class ProcessRunner:
         return self
 
     def wait_ready(self):
-        """Block until the ready pattern appears, or timeout."""
+        """Block until the ready pattern appears, the process exits, or timeout."""
         if not self.ready_re:
             return
-        if not self._ready.wait(timeout=self.timeout_s):
-            # surface the last lines for easier debugging
-            sys.stdout.write(f"\n==== {self.name} (last 200 lines) ====\n")
-            sys.stdout.write(self.tail(200) + "\n")
-            raise TimeoutError(
-                f"{self.name} did not become ready within {self.timeout_s}s "
-                f"(pattern: {self.ready_re.pattern!r})"
-            )
+        deadline = time.monotonic() + self.timeout_s
+        while not self._ready.is_set():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self._fail_not_ready(
+                    f"{self.name} did not become ready within {self.timeout_s}s "
+                    f"(pattern: {self.ready_re.pattern!r})"
+                )
+            if self._ready.wait(timeout=min(0.2, remaining)):
+                return
+            returncode = self._proc.poll() if self._proc is not None else None
+            if returncode is not None:
+                # The exit can land in the pipe before the pump thread marks ready.
+                if self._thread is not None:
+                    self._thread.join(timeout=1)
+                if self._ready.is_set():
+                    return
+                self._fail_not_ready(
+                    f"{self.name} exited with status {returncode} "
+                    f"before becoming ready (pattern: {self.ready_re.pattern!r})"
+                )
 
     def stop(self):
-        """Request stop and wait briefly for the process to exit."""
+        """Stop the process and every child it spawned, then wait until they exit."""
         self._stop.set()
-        if self._proc and self._proc.poll() is None:
+        proc = self._proc
+        if proc is not None and proc.poll() is None:
+            self._signal_group(signal.SIGTERM)
             try:
-                self._proc.terminate()
-                self._proc.wait(timeout=5)
+                proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                self._proc.kill()
-            except Exception:
-                pass
+                self._signal_group(signal.SIGKILL)
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         # Avoid ResourceWarning: unclosed file from PIPE after the pump thread stops.
@@ -112,6 +131,26 @@ class ProcessRunner:
             return f"<could not read {self.log_path}: {e}>"
 
     # --- internals ----------------------------------------------------------
+
+    def _fail_not_ready(self, message: str) -> None:
+        sys.stdout.write(f"\n==== {self.name} (last 200 lines) ====\n")
+        sys.stdout.write(self.tail(200) + "\n")
+        raise TimeoutError(message)
+
+    def _signal_group(self, sig: int) -> None:
+        """Signal the child's session. ``start_new_session`` makes its pid the group id."""
+        proc = self._proc
+        if proc is None:
+            return
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            return
+        except OSError:
+            try:
+                proc.send_signal(sig)
+            except OSError:
+                pass
 
     def _pump(self):
         assert self._proc is not None

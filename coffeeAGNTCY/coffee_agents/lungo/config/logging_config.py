@@ -54,3 +54,11 @@ def setup_logging():
 
 
 setup_logging()
+
+# Imported after logging is configured. Agent servers import this module
+# before AgntcyFactory, which is what runs Observe.init.
+from config.sagemaker_instrumentor_compat import (  # noqa: E402
+    accept_removed_sagemaker_enrich_kwarg,
+)
+
+accept_removed_sagemaker_enrich_kwarg()
