@@ -236,6 +236,7 @@ services:
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
         NPM_CACHE_ID: lungo
+        NODE_VERSION: "${NODE_VERSION:?source scripts/env.sh so NODE_VERSION is set}"
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:

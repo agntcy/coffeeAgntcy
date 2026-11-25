@@ -86,6 +86,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Node build-arg for the UI image
+        id: node-build-arg
+        env:
+          DOCKERFILE: ${{ inputs.dockerfile }}
+        run: |
+          # shellcheck source=scripts/lib/versions.sh
+          . scripts/lib/versions.sh
+          if [ "$DOCKERFILE" = "docker/Dockerfile.ui" ]; then
+            echo "arg=NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "arg=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and conditional push Docker image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -96,6 +109,7 @@ jobs:
           platforms: ${{ inputs.platforms }}
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}:${{ inputs.image_tag }}
           build-args: |
+            ${{ steps.node-build-arg.outputs.arg }}
             BUILD_VERSION=${{ inputs.image_tag }}
             BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
             BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}

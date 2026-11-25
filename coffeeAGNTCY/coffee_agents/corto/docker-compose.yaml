@@ -87,6 +87,7 @@ services:
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto/exchange/frontend
         NPM_CACHE_ID: corto
+        NODE_VERSION: "${NODE_VERSION:?source scripts/env.sh so NODE_VERSION is set}"
     image: ghcr.io/agntcy/coffee-agntcy/corto-ui:latest
     container_name: ui-corto
     environment:

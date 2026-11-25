@@ -151,12 +151,14 @@ docker build \
 ### UI (`Dockerfile.ui`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend \
   --build-arg NPM_CACHE_ID=lungo \
+  --build-arg NODE_VERSION="$NODE_VERSION" \
   -f docker/Dockerfile.ui -t lungo-ui .
 ```
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` - the `docker-compose.yaml` already passes all required build args.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` after `source scripts/env.sh`. The `docker-compose.yaml` passes `NODE_VERSION` through, and the build fails when that variable is unset.

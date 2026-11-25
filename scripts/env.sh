@@ -14,5 +14,14 @@ _coffeeagntcy_repo_root() {
 
 _repo_root="$(_coffeeagntcy_repo_root)"
 export PATH="$_repo_root/.tools/bin:$_repo_root/.tools/node/bin:$_repo_root/.tools/bats/bin:$PATH"
+# Export only NODE_VERSION. The other pins stay inside this subshell so a
+# UI image build can read the one Node pin without taking the rest of the
+# toolchain versions into the environment.
+NODE_VERSION="$(
+    # shellcheck source=scripts/lib/versions.sh
+    . "$_repo_root/scripts/lib/versions.sh"
+    printf '%s' "$NODE_VERSION"
+)"
+export NODE_VERSION
 unset -f _coffeeagntcy_repo_root
 unset _repo_root
