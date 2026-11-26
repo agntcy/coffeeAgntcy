@@ -288,6 +288,23 @@ tasks:
     cmds:
       - scripts/tools/update_npm_lock.bash
 
+  tools:sync-node:
+    desc: >-
+      Rewrite Node consumers that cannot read NODE_VERSION (UI image digest,
+      frontend engines.node floors, and the docs that state the Node version)
+      so they match scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-node
+      Example: task tools:sync-node
+      Run after bumping NODE_VERSION. Fetches the node:<version>-alpine
+      manifest-list digest when scripts/lib/node-image.txt is for a
+      different version, and rewrites that record, docker/Dockerfile.ui,
+      both frontend engine floors, and the five Node install sentences.
+      No network when the record already matches. See
+      scripts/tools/update_node_version.bash.
+    cmds:
+      - scripts/tools/update_node_version.bash
+
   tools:versions:
     desc: >-
       Print the version and pinned hash of every tool this repo pins (the
@@ -302,6 +319,22 @@ tasks:
       manage-repo-tooling skill. See scripts/tools/print_versions.bash.
     cmds:
       - scripts/tools/print_versions.bash
+
+  versions:check:
+    desc: >-
+      Verify every Node install reads NODE_VERSION from
+      scripts/lib/versions.sh, and that the UI image digest, frontend
+      engines.node floors, and the docs that state the Node version match it
+      (see .agents/rules/quality/version-sync.md).
+    summary: |
+      Usage:   task versions:check
+      Example: task versions:check
+      Fails when frontend CI or the UI image hardcodes a Node version,
+      or when engines.node, the committed UI digest, or a Node install
+      sentence disagrees with NODE_VERSION. Other pins in versions.sh
+      are not checked. See scripts/checks/check_versions.bash.
+    cmds:
+      - scripts/checks/check_versions.bash
 
   workflows:check-permissions:
     desc: >-
