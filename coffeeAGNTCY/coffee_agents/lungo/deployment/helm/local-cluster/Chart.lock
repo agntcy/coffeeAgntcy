@@ -4,13 +4,13 @@ dependencies:
   version: v2.9.2
 - name: nats
   repository: https://nats-io.github.io/k8s/helm/charts
-  version: 2.15.0
+  version: 2.15.2
 - name: clickhouse
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 9.4.4
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  version: 0.174.0
+  version: 0.178.3
 - name: grafana
   repository: oci://ghcr.io/grafana/helm-charts
   version: 10.1.2
@@ -74,5 +74,5 @@ dependencies:
 - name: supply-chain-logistics
   repository: file://../supply-chain-logistics
   version: 0.1.1
-digest: sha256:f07114d5960fbd22ca56013b1e901c5647193cffcfc45ecc0e33cb57c6b4965b
-generated: "2026-11-13T14:43:37.144029+01:00"
+digest: sha256:f95e1a1540f34be8169166f1f6af05b7b4aebf12bb8c04f52e0028bef1009586
+generated: "2026-11-26T12:07:33.267534878Z"
