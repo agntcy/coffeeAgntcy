@@ -61,10 +61,11 @@ Renovate bumps versions but cannot compute hashes - a Renovate PR that
 bumps a version fails `setup.sh` (and the `assets.bats` test) until
 `task tools:checksums` is run on that branch and its output reviewed.
 Renovate does this itself: a `postUpgradeTasks` entry in `renovate.json`
-reruns `scripts/tools/update_checksums.bash` and
-`scripts/tools/update_npm_lock.bash` on every `versions.sh` bump (the
-self-hosted workflow allows exactly those two commands via
-`RENOVATE_ALLOWED_COMMANDS`). Hashes computed that way are
+reruns `scripts/tools/update_checksums.bash`,
+`scripts/tools/update_npm_lock.bash`, and
+`scripts/tools/update_node_version.bash` on every `versions.sh` bump (the
+self-hosted workflow allows exactly those commands, plus the frontend
+lint autofix, via `RENOVATE_ALLOWED_COMMANDS`). Hashes computed that way are
 trust-on-first-use at bump time, so the PR diff is where a reviewer
 cross-checks them.
 
@@ -82,9 +83,15 @@ cross-checks them.
   checksums where it has any), and commit `checksums.txt` with the bump.
 - After bumping a pin, actually run `task setup` (not just edit the file)
   and confirm the tool's `--version`/`-version` output changed.
+- After bumping `NODE_VERSION`, also run `task tools:sync-node` and
+  `task versions:check`. The sync rewrites the UI image digest, the
+  frontend `engines.node` floors, and the docs that state the Node
+  version. See
+  [`version-sync`](../quality/version-sync.md).
 - None of "update a pin" / "add a tool" / "remove a tool" gets a dedicated
-  CI check - they're one-shot maintenance actions, not standing
-  invariants, matching the "purely generative, one-shot actions" exception
+  CI check of the bump procedure itself - they're one-shot maintenance
+  actions, not standing invariants, matching the "purely generative,
+  one-shot actions" exception
   in
   [`.agents/rules/meta/repo-operation-pipeline.md`](repo-operation-pipeline.md).
   Running `task check:all` after any tooling change is what stands in for

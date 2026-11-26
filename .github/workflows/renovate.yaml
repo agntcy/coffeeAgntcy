@@ -50,10 +50,10 @@ jobs:
           ## Discovery
           RENOVATE_AUTODISCOVER: "true"
           RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
-          ## Post-upgrade tasks: allow exactly the checksum and lockfile
-          ## regeneration and the frontend lint autofix (see postUpgradeTasks
-          ## in renovate.json), nothing else.
-          RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock)\\.bash$", "^scripts/renovate/fix_frontend_lint\\.bash$"]'
+          ## Post-upgrade tasks: allow exactly the checksum, lockfile, and
+          ## Node-consumer regeneration and the frontend lint autofix (see
+          ## postUpgradeTasks in renovate.json), nothing else.
+          RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock|node_version)\\.bash$", "^scripts/renovate/fix_frontend_lint\\.bash$"]'
           ## Project sync
           RENOVATE_PLATFORM_COMMIT: "enabled"
           RENOVATE_TOKEN: ${{ steps.app-token.outputs.token }}

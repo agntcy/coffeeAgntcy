@@ -157,6 +157,17 @@ or removing any file. See
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
 
+#### Node version
+
+Every Node install reads `NODE_VERSION` from `scripts/lib/versions.sh`
+(`task versions:check`). Frontend CI and the UI image build source that
+variable. The UI image digest, the frontend `engines.node` floors, and
+the docs that state the Node version are rewritten by
+`task tools:sync-node` after a bump. See
+[`.agents/rules/quality/version-sync.md`](/.agents/rules/quality/version-sync.md)
+for the full rule. Runs as part of `task check:all` and the `Checks`
+workflow.
+
 #### uv lockfiles
 
 Every `pyproject.toml` must have a sibling `uv.lock` that is in sync with it
