@@ -305,6 +305,22 @@ tasks:
     cmds:
       - scripts/tools/update_node_version.bash
 
+  tools:sync-uv:
+    desc: >-
+      Rewrite the Python agent uv image digest so it matches UV_VERSION
+      in scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-uv
+      Example: task tools:sync-uv
+      Run after bumping UV_VERSION. Fetches the
+      astral/uv:<version>-python3.13-trixie-slim manifest-list digest
+      when scripts/lib/uv-image.txt is for a different version, and
+      rewrites that record and the @sha256: in
+      docker/Dockerfile.python-agent. No network when the record already
+      matches. See scripts/tools/update_uv_image.bash.
+    cmds:
+      - scripts/tools/update_uv_image.bash
+
   tools:versions:
     desc: >-
       Print the version and pinned hash of every tool this repo pins (the
@@ -322,17 +338,15 @@ tasks:
 
   versions:check:
     desc: >-
-      Verify every Node install reads NODE_VERSION from
-      scripts/lib/versions.sh, and that the UI image digest, frontend
-      engines.node floors, and the docs that state the Node version match it
-      (see .agents/rules/quality/version-sync.md).
+      Verify every pin in scripts/lib/versions.sh is the only copy of
+      that tool (see .agents/rules/quality/version-sync.md).
     summary: |
       Usage:   task versions:check
       Example: task versions:check
-      Fails when frontend CI or the UI image hardcodes a Node version,
-      or when engines.node, the committed UI digest, or a Node install
-      sentence disagrees with NODE_VERSION. Other pins in versions.sh
-      are not checked. See scripts/checks/check_versions.bash.
+      Fails when a Node, uv, or Helm install hardcodes a version, or
+      when an image digest, engines.node floor, npm tool pin, OpenSpec
+      skill stamp, or Node install sentence disagrees with versions.sh.
+      See scripts/checks/check_versions.bash.
     cmds:
       - scripts/checks/check_versions.bash
 

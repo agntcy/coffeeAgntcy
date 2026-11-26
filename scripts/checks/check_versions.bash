@@ -4,9 +4,8 @@
 # variable (UI image digest, frontend engines.node, the docs that state
 # the Node version) disagrees with it.
 #
-# One function per versions.sh pin. Today that is check_node only.
-# Other pins are not checked. uv is a known gap: docker/Dockerfile.python-agent
-# can name a different uv than UV_VERSION until a later change adds check_uv.
+# One function per versions.sh pin. Node, uv, Helm, the npm tools, the
+# OpenSpec skill stamps, and the tools that are installed only by setup.sh.
 #
 # Usage: scripts/checks/check_versions.bash
 set -euo pipefail
@@ -19,6 +18,9 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/versions.sh"
 
 NODE_IMAGE_FILE="scripts/lib/node-image.txt"
+UV_IMAGE_FILE="scripts/lib/uv-image.txt"
+HELM_WORKFLOW=".github/workflows/helm-package-reusable.yaml"
+NPM_LOCK="scripts/lib/npm-tools/package-lock.json"
 # Literal markdown backticks, and the ${NODE_VERSION} text callers write.
 # Neither is a shell expansion. shellcheck disable applies to the next command.
 # shellcheck disable=SC2016
@@ -254,7 +256,191 @@ check_node() {
     check_docs
 }
 
+# shellcheck disable=SC2016
+UV_EXPANSION='${UV_VERSION}'
+# shellcheck disable=SC2016
+UV_EXPANSION_OPEN='${UV_VERSION'
+
+check_uv_record() {
+    UV_RECORD_VERSION=""
+    UV_RECORD_DIGEST=""
+    [[ -f "$UV_IMAGE_FILE" ]] || {
+        report "$UV_IMAGE_FILE is missing"
+        return 1
+    }
+    local line count=0 version digest
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^# ]] && continue
+        [[ -z "$line" ]] && continue
+        if [[ "$line" =~ ^([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]+(sha256:[0-9a-f]{64})$ ]]; then
+            version="${BASH_REMATCH[1]}"
+            digest="${BASH_REMATCH[2]}"
+            count=$((count + 1))
+        else
+            report "$UV_IMAGE_FILE has a line that is not '<version> sha256:<64-hex>': $line"
+            return 1
+        fi
+    done <"$UV_IMAGE_FILE"
+    if [[ "$count" -ne 1 ]]; then
+        report "$UV_IMAGE_FILE must contain exactly one digest line"
+        return 1
+    fi
+    UV_RECORD_VERSION="$version"
+    UV_RECORD_DIGEST="$digest"
+}
+
+check_uv() {
+    if ! check_uv_record; then
+        return 0
+    fi
+    if [[ "$UV_RECORD_VERSION" != "$UV_VERSION" ]]; then
+        report "$UV_IMAGE_FILE records $UV_RECORD_VERSION, UV_VERSION is $UV_VERSION"
+    fi
+    local file="docker/Dockerfile.python-agent" line found=0
+    if [[ ! -f "$file" ]]; then
+        report "$file is missing"
+        return 0
+    fi
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*FROM[[:space:]]+astral/uv: ]] || continue
+        found=1
+        if [[ "$line" =~ uv:[0-9] ]]; then
+            report "$file pins a numeric uv image tag. Use ${UV_EXPANSION} from scripts/lib/versions.sh."
+        elif [[ "$line" != *"$UV_EXPANSION"* ]]; then
+            report "$file has a uv image that does not use ${UV_EXPANSION}"
+        fi
+        if [[ "$line" =~ @(sha256:[0-9a-f]{64}) ]]; then
+            if [[ "${BASH_REMATCH[1]}" != "$UV_RECORD_DIGEST" ]]; then
+                report "$file digest ${BASH_REMATCH[1]} does not match $UV_IMAGE_FILE ($UV_RECORD_DIGEST)"
+            fi
+        else
+            report "$file uv image has no @sha256 digest"
+        fi
+    done <"$file"
+    if [[ "$found" -eq 0 ]]; then
+        report "$file does not install uv from UV_VERSION"
+    fi
+
+    while IFS= read -r file; do
+        [[ -n "$file" ]] || continue
+        grep -Fq 'docker/Dockerfile.python-agent' "$file" || continue
+        if ! grep -Fq 'UV_VERSION' "$file"; then
+            report "$file builds docker/Dockerfile.python-agent without passing UV_VERSION"
+            continue
+        fi
+        if grep -Eq 'UV_VERSION:[[:space:]]*["'\'']?[0-9]+\.[0-9]+\.[0-9]+' "$file"; then
+            report "$file assigns UV_VERSION a literal. Pass the variable."
+        fi
+        if ! grep -Fq "$UV_EXPANSION_OPEN" "$file"; then
+            report "$file mentions UV_VERSION but does not expand ${UV_EXPANSION}"
+        fi
+    done < <(find . -type f \( -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/.tools/*' | sort)
+
+    local reusable=".github/workflows/docker-build-reusable.yaml"
+    if [[ ! -f "$reusable" ]]; then
+        report "$reusable is missing; CI Python image builds must inject UV_VERSION"
+        return 0
+    fi
+    if ! grep -Fq 'docker/Dockerfile.python-agent' "$reusable"; then
+        report "$reusable does not limit the uv build-arg to docker/Dockerfile.python-agent"
+    fi
+    if ! grep -Fq "UV_VERSION=$UV_EXPANSION" "$reusable"; then
+        report "$reusable does not pass UV_VERSION from scripts/lib/versions.sh"
+    fi
+    if grep -Eq 'UV_VERSION=[0-9]' "$reusable"; then
+        report "$reusable assigns UV_VERSION a literal"
+    fi
+}
+
+check_helm() {
+    if [[ ! -f "$HELM_WORKFLOW" ]]; then
+        report "$HELM_WORKFLOW is missing"
+        return 0
+    fi
+    if ! grep -Fq 'scripts/lib/versions.sh' "$HELM_WORKFLOW"; then
+        report "$HELM_WORKFLOW does not source scripts/lib/versions.sh"
+    fi
+    if ! grep -Fq 'HELM_VERSION' "$HELM_WORKFLOW"; then
+        report "$HELM_WORKFLOW does not read HELM_VERSION"
+    fi
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        if [[ "$line" =~ version:[[:space:]]*[\"\']?v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            report "$HELM_WORKFLOW sets Helm version to a literal. Source scripts/lib/versions.sh and pass HELM_VERSION."
+        fi
+    done <"$HELM_WORKFLOW"
+}
+
+check_npm_pins() {
+    if [[ ! -f "$NPM_LOCK" ]]; then
+        report "$NPM_LOCK is missing"
+        return 0
+    fi
+    local line openspec_got="" renovate_got=""
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" == *'"node_modules/'* ]] && break
+        if [[ "$line" =~ \"@fission-ai/openspec\":\ \"([^\"]+)\" ]]; then
+            openspec_got="${BASH_REMATCH[1]}"
+        fi
+        if [[ "$line" =~ \"renovate\":\ \"([^\"]+)\" ]]; then
+            renovate_got="${BASH_REMATCH[1]}"
+        fi
+    done <"$NPM_LOCK"
+    if [[ -z "$openspec_got" ]]; then
+        report "$NPM_LOCK has no root @fission-ai/openspec version"
+    elif [[ "$openspec_got" != "$OPENSPEC_VERSION" ]]; then
+        report "$NPM_LOCK openspec is $openspec_got, OPENSPEC_VERSION is $OPENSPEC_VERSION"
+    fi
+    if [[ -z "$renovate_got" ]]; then
+        report "$NPM_LOCK has no root renovate version"
+    elif [[ "$renovate_got" != "$RENOVATE_VERSION" ]]; then
+        report "$NPM_LOCK renovate is $renovate_got, RENOVATE_VERSION is $RENOVATE_VERSION"
+    fi
+}
+
+check_openspec_stamps() {
+    [[ -d .agents/skills ]] || return 0
+    local file line
+    while IFS= read -r file; do
+        [[ -n "$file" ]] || continue
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ "$line" =~ generatedBy:\ \"([^\"]+)\" ]]; then
+                if [[ "${BASH_REMATCH[1]}" != "$OPENSPEC_VERSION" ]]; then
+                    report "$file generatedBy is ${BASH_REMATCH[1]}, OPENSPEC_VERSION is $OPENSPEC_VERSION"
+                fi
+            fi
+        done <"$file"
+    done < <(find .agents/skills -type f -path '*/openspec-*/SKILL.md' | sort)
+}
+
+check_single_installs() {
+    local setup="scripts/setup.sh" assets="scripts/lib/assets.sh" var file line
+    for var in ACTIONLINT_VERSION BATS_VERSION SHELLCHECK_VERSION SHFMT_VERSION TASK_VERSION; do
+        if [[ ! -f "$setup" ]] || ! grep -Fq "$var" "$setup"; then
+            report "$setup does not install from $var"
+        fi
+        if [[ ! -f "$assets" ]] || ! grep -Fq "$var" "$assets"; then
+            report "$assets does not install from $var"
+        fi
+    done
+    while IFS= read -r file; do
+        [[ -n "$file" ]] || continue
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || continue
+            if [[ "$line" == *"shellcheck"* || "$line" == *"actionlint"* || "$line" == *"shfmt"* || "$line" == *"bats-core"* || "$line" == *"go-task/task"* ]]; then
+                report "$file installs a toolchain tool at a numeric version. Read scripts/lib/versions.sh."
+            fi
+        done <"$file"
+    done < <(find .github/workflows docker -type f \( -name '*.yml' -o -name '*.yaml' -o -name 'Dockerfile' -o -name 'Dockerfile.*' \) -not -path '*/node_modules/*' 2>/dev/null | sort)
+}
+
 check_node
+check_uv
+check_helm
+check_npm_pins
+check_openspec_stamps
+check_single_installs
 
 if [[ "$failed" -ne 0 ]]; then
     exit 1
