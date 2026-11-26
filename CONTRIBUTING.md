@@ -157,13 +157,14 @@ or removing any file. See
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
 
-#### Node version
+#### Tool versions
 
-Every Node install reads `NODE_VERSION` from `scripts/lib/versions.sh`
-(`task versions:check`). Frontend CI and the UI image build source that
-variable. The UI image digest, the frontend `engines.node` floors, and
-the docs that state the Node version are rewritten by
-`task tools:sync-node` after a bump. See
+Every tool install reads its pin from `scripts/lib/versions.sh`
+(`task versions:check`). Node and uv image builds take `NODE_VERSION`
+and `UV_VERSION` as build arguments. Helm CI reads `HELM_VERSION`.
+`task tools:sync-node` and `task tools:sync-uv` rewrite the digests
+those images cannot read from the shell. The map of every pin is
+[`docs/tool-versions.md`](/docs/tool-versions.md). See
 [`.agents/rules/quality/version-sync.md`](/.agents/rules/quality/version-sync.md)
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.

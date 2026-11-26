@@ -26,7 +26,7 @@ pinned hash for this machine).
 
 ```
 - [ ] 1. Edit the <TOOL>_VERSION in scripts/lib/versions.sh - the single source of truth, for every tool including openspec and renovate.
-- [ ] 2. For a downloaded tool: run task tools:checksums; for openspec/renovate: run task tools:npm-lock; for NODE_VERSION: also run task tools:sync-node and review the UI image digest against docker buildx imagetools inspect node:<version>-alpine. Then review the scripts/lib/checksums.txt diff (cross-check against the upstream project's published checksums where it has any). setup.sh rejects any archive whose URL has no pinned SHA-256, so skipping this makes step 3 fail.
+- [ ] 2. For a downloaded tool: run task tools:checksums; for openspec/renovate: run task tools:npm-lock; for NODE_VERSION: also run task tools:sync-node and review the UI image digest against docker buildx imagetools inspect node:<version>-alpine; for UV_VERSION: also run task tools:sync-uv and review the digest against docker buildx imagetools inspect astral/uv:<version>-python3.13-trixie-slim. Then review the scripts/lib/checksums.txt diff (cross-check against the upstream project's published checksums where it has any). setup.sh rejects any archive whose URL has no pinned SHA-256, so skipping this makes step 3 fail.
 - [ ] 3. Run: task setup (or ./scripts/setup.sh). It compares the installed version against the pin and reinstalls on any mismatch, so this actually picks up the bump - it isn't a no-op just because a binary already exists.
 - [ ] 4. Confirm: <tool> --version (or -version) matches the new pin.
 - [ ] 5. Run: task check:all - a version bump can change lint/format output (shellcheck/shfmt/actionlint findings can shift between versions).

@@ -1,6 +1,6 @@
 # Node version
 
-`NODE_VERSION` in `scripts/lib/versions.sh` is the only pin. Edit that file, then let the steps below copy it. Do not write the version anywhere else.
+`NODE_VERSION` in `scripts/lib/versions.sh` is the only pin. Edit that file, then let the steps below copy it. Do not write the version anywhere else. The map of every pin is [tool-versions.md](tool-versions.md).
 
 ```mermaid
 flowchart TD
@@ -58,7 +58,7 @@ flowchart TD
 
 ## 2. Export it for local builds
 
-`scripts/env.sh` sources `scripts/lib/versions.sh`, exports only `NODE_VERSION`, and puts `.tools/node/bin` on `PATH`. Local UI builds start here: `source scripts/env.sh`.
+`scripts/env.sh` sources `scripts/lib/versions.sh` and exports `NODE_VERSION` and `UV_VERSION`. It puts `.tools/node/bin` on `PATH`. Local UI builds start here: `source scripts/env.sh`. The uv image path is in [tool-versions.md](tool-versions.md).
 
 ## 3. Frontend CI
 
@@ -96,6 +96,6 @@ If `scripts/lib/node-image.txt` already records this `NODE_VERSION` and those fi
 
 ## 7. Check
 
-`scripts/checks/check_versions.bash` (`task versions:check` in `Taskfile.yaml`) reads `scripts/lib/versions.sh` and fails when any install in steps 1 to 4 uses a literal, or when `scripts/lib/node-image.txt`, the digest, the engine floors, or the doc sentences disagree with `NODE_VERSION`.
+`scripts/checks/check_versions.bash` (`task versions:check` in `Taskfile.yaml`) reads `scripts/lib/versions.sh` and fails when any install in steps 1 to 4 uses a literal, or when `scripts/lib/node-image.txt`, the digest, the engine floors, or the doc sentences disagree with `NODE_VERSION`. The same script also checks the other pins in `versions.sh`.
 
 `scripts/checks/check_all.bash` runs that check. `.github/workflows/checks.yaml` runs `task check:all`.

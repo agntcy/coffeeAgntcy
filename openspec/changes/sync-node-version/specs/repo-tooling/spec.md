@@ -63,20 +63,13 @@ pin that digest.
 
 ### Requirement: One standing check enforces the Node pin
 `task versions:check` SHALL read `NODE_VERSION` and enforce the two
-requirements above. It SHALL be one script, with one function for Node
-and no function for any other pin in `scripts/lib/versions.sh`. It SHALL
-run as part of `task check:all`. It SHALL NOT fail because another pin
-in that file differs from a copy of that other pin elsewhere in the repo.
+requirements above. It SHALL be one script, with one function for Node.
+It SHALL run as part of `task check:all`.
 
 #### Scenario: Node agrees everywhere it is installed
 - **WHEN** `task versions:check` runs and every Node install reads
   `NODE_VERSION`, and every literal consumer matches it
 - **THEN** the command exits zero
-
-#### Scenario: Another tool pin has drifted
-- **WHEN** `task versions:check` runs while a non-Node pin in
-  `scripts/lib/versions.sh` differs from a hardcoded copy of that tool
-- **THEN** the command still exits zero
 
 ## MODIFIED Requirements
 

@@ -18,7 +18,7 @@ or opening a PR - run whichever of these apply to what changed:
 | `scripts/**` (including `scripts/lib/`) | `task shell:lint`, `task tests:bash`, and `task tests:coverage` |
 | `.github/workflows/**` | `task workflows:lint` and `task workflows:check-permissions` |
 | A `uses:`/`FROM`/`image:` reference (workflow, Dockerfile, compose file) | `task pins:check` |
-| `NODE_VERSION`, a Node install, `docker/Dockerfile.ui`, a frontend `engines.node`, or a doc that states the Node version | `task versions:check` |
+| `NODE_VERSION`, `UV_VERSION`, `HELM_VERSION`, another `versions.sh` pin, `docker/Dockerfile.ui`, `docker/Dockerfile.python-agent`, a frontend `engines.node`, or a doc that states the Node version | `task versions:check` |
 | A file inside a Helm chart directory (`deployment/helm/<chart>/`) | `task helm:check-versions` - see `.agents/rules/quality/helm-chart-version-bump.md` |
 | A Helm chart's `Chart.yaml` dependencies, a sibling chart's version, or a `Chart.lock` | `task helm:check-locks` - see `.agents/rules/quality/helm-chart-lock-sync.md` |
 | Any prose you wrote (docs, comments, this list included) | `task dashes:check` - see `.agents/rules/always-apply/no-em-en-dashes.md` |

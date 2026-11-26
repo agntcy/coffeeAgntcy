@@ -1,11 +1,12 @@
 ---
 name: version-sync
 description: >-
-  NODE_VERSION in scripts/lib/versions.sh is the only Node.js pin. Installs
-  read it. The UI image digest, frontend engines.node floors, and the docs
-  that state the Node version are rewritten from it by task tools:sync-node
-  and checked by task versions:check. Apply when changing a Node install,
-  NODE_VERSION, docker/Dockerfile.ui, a frontend engines field, or those docs.
+  Every pin in scripts/lib/versions.sh is the only copy of that tool.
+  Installs read it. Image digests and other literals that cannot read the
+  variable are rewritten from it and checked by task versions:check. Apply
+  when changing a pin, a Node or uv install, docker/Dockerfile.ui,
+  docker/Dockerfile.python-agent, a frontend engines field, or a doc that
+  states the Node version.
 ---
 
 # Node version sync
@@ -41,9 +42,32 @@ Consumers that cannot read a shell variable match the same pin.
 
 `task versions:check`
 ([`scripts/checks/check_versions.bash`](../../../scripts/checks/check_versions.bash))
-fails when any of those drift. The script has one function, `check_node`.
-Other pins in `versions.sh` are not checked. The check runs inside
-`task check:all`.
+fails when any of those drift. It has one function per pin in
+`versions.sh`, and it runs inside `task check:all`.
+
+The same check covers the other pins. The map of every pin is [docs/tool-versions.md](../../../docs/tool-versions.md), and the Node procedure is [docs/node-version.md](../../../docs/node-version.md).
+
+- `docker/Dockerfile.python-agent` takes `ARG UV_VERSION` with no default.
+  `scripts/lib/uv-image.txt` and the `@sha256:` on that `FROM` line are
+  the manifest-list digest of
+  `astral/uv:<UV_VERSION>-python3.13-trixie-slim`. `task tools:sync-uv`
+  rewrites them. `python3.13-trixie-slim` stays a literal.
+- Helm CI
+  ([`.github/workflows/helm-package-reusable.yaml`](../../../.github/workflows/helm-package-reusable.yaml))
+  sources `HELM_VERSION` and passes it without the leading `v`.
+- The npm tools lockfile records `OPENSPEC_VERSION` and
+  `RENOVATE_VERSION`. Each OpenSpec skill `generatedBy` stamp equals
+  `OPENSPEC_VERSION`.
+- actionlint, bats, shellcheck, shfmt, and task are installed only by
+  `scripts/setup.sh` and `scripts/lib/assets.sh`, which read the
+  variables. A numeric install of one of them in a workflow or
+  Dockerfile fails the check.
+
+Renovate's dockerfile manager is disabled for the `astral/uv` package in
+`docker/Dockerfile.python-agent` only. The dir-ctl and dir-mcp `FROM`
+lines in that file stay managed. A `UV_VERSION` bump still refreshes the
+digest: the toolchain post-upgrade tasks run
+`scripts/tools/update_uv_image.bash`.
 
 Renovate's dockerfile manager substitutes an empty `ARG NODE_VERSION` and
 would rewrite the `FROM` line, so `docker/Dockerfile.ui` is disabled for
@@ -72,6 +96,10 @@ copies that can read it. The check keeps the copies that cannot.
   `task versions:check`.
 - Do not put a Node version literal in a workflow `node-version:`, a
   `FROM node:` tag, or a compose `NODE_VERSION` value.
-- `source scripts/env.sh` before a local UI image build. It exports
-  `NODE_VERSION` and no other pin.
+- After bumping `UV_VERSION`, run `task tools:sync-uv`, and review the
+  digest against
+  `docker buildx imagetools inspect astral/uv:<version>-python3.13-trixie-slim`.
+  Then run `task versions:check`.
+- `source scripts/env.sh` before a local UI or Python agent image build.
+  It exports `NODE_VERSION` and `UV_VERSION`, and no other pin.
 - See the `checking-version-sync` skill for the check workflow.

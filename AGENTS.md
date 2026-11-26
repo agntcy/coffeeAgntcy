@@ -42,7 +42,7 @@ new one (see `.agents/rules/formatting/organize-large-collections.md`).
 | Checking markdown links | [.agents/skills/quality-checks/checking-markdown-links/SKILL.md](.agents/skills/quality-checks/checking-markdown-links/SKILL.md) |
 | Checking pinned references | [.agents/skills/quality-checks/checking-pinned-references/SKILL.md](.agents/skills/quality-checks/checking-pinned-references/SKILL.md) |
 | Checking uv locks | [.agents/skills/quality-checks/checking-uv-locks/SKILL.md](.agents/skills/quality-checks/checking-uv-locks/SKILL.md) |
-| Checking version sync | [.agents/skills/quality-checks/checking-version-sync/SKILL.md](.agents/skills/quality-checks/checking-version-sync/SKILL.md) - `task versions:check`; fix Node literals with `task tools:sync-node` |
+| Checking version sync | [.agents/skills/quality-checks/checking-version-sync/SKILL.md](.agents/skills/quality-checks/checking-version-sync/SKILL.md) - `task versions:check`; fix Node literals with `task tools:sync-node`, the uv digest with `task tools:sync-uv` |
 | Checking workflow permissions | [.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md](.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md) |
 | Linting GitHub workflows | [.agents/skills/quality-checks/linting-github-workflows/SKILL.md](.agents/skills/quality-checks/linting-github-workflows/SKILL.md) |
 | Linting shell scripts | [.agents/skills/quality-checks/linting-shell-scripts/SKILL.md](.agents/skills/quality-checks/linting-shell-scripts/SKILL.md) |
@@ -128,4 +128,6 @@ CI; the rest rely on being applied by judgment.
 | Topic | File |
 |-------|------|
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Node version | [docs/node-version.md](docs/node-version.md) |
 | README (Built With format) | [README.md](README.md) |
+| Tool versions | [docs/tool-versions.md](docs/tool-versions.md) |

@@ -50,8 +50,8 @@ bumping `scripts/lib/versions.sh` would silently do nothing on any machine
 that already has the old binary at `.tools/bin/`, since presence alone
 would satisfy the old check. `version_matches` strips a leading `v` from
 both sides before comparing, because tools are inconsistent about printing
-one (`shfmt --version` prints `v3.14.1`; `task --version` prints `3.53.1`
-for a pin of `v3.53.1`).
+one (`shfmt --version` prints a leading `v`; `task --version` does not,
+for a pin that includes the `v`).
 
 A version pin alone trusts whatever the download URL serves on the day of
 install: a re-tagged release, a compromised release asset, or a tampered
@@ -62,8 +62,9 @@ bumps a version fails `setup.sh` (and the `assets.bats` test) until
 `task tools:checksums` is run on that branch and its output reviewed.
 Renovate does this itself: a `postUpgradeTasks` entry in `renovate.json`
 reruns `scripts/tools/update_checksums.bash`,
-`scripts/tools/update_npm_lock.bash`, and
-`scripts/tools/update_node_version.bash` on every `versions.sh` bump (the
+`scripts/tools/update_npm_lock.bash`,
+`scripts/tools/update_node_version.bash`, and
+`scripts/tools/update_uv_image.bash` on every `versions.sh` bump (the
 self-hosted workflow allows exactly those commands, plus the frontend
 lint autofix, via `RENOVATE_ALLOWED_COMMANDS`). Hashes computed that way are
 trust-on-first-use at bump time, so the PR diff is where a reviewer
@@ -86,7 +87,8 @@ cross-checks them.
 - After bumping `NODE_VERSION`, also run `task tools:sync-node` and
   `task versions:check`. The sync rewrites the UI image digest, the
   frontend `engines.node` floors, and the docs that state the Node
-  version. See
+  version. After bumping `UV_VERSION`, run `task tools:sync-uv` and
+  `task versions:check`. See
   [`version-sync`](../quality/version-sync.md).
 - None of "update a pin" / "add a tool" / "remove a tool" gets a dedicated
   CI check of the bump procedure itself - they're one-shot maintenance

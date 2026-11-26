@@ -139,7 +139,7 @@
     {
       "description": [
         "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR.",
-        "Regenerate the pinned archive checksums (scripts/lib/checksums.txt), the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json), and, when NODE_VERSION changes, the UI image digest plus the Node literals task versions:check compares, once per branch. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
+        "Regenerate the pinned archive checksums (scripts/lib/checksums.txt), the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json), and, when NODE_VERSION or UV_VERSION changes, the image digests plus the Node literals task versions:check compares, once per branch. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
       ],
       "groupName": "Toolchain",
       "groupSlug": "toolchain",
@@ -150,7 +150,8 @@
         "commands": [
           "scripts/tools/update_checksums.bash",
           "scripts/tools/update_npm_lock.bash",
-          "scripts/tools/update_node_version.bash"
+          "scripts/tools/update_node_version.bash",
+          "scripts/tools/update_uv_image.bash"
         ],
         "executionMode": "branch",
         "fileFilters": [
@@ -166,7 +167,9 @@
           "coffeeAGNTCY/coffee_agents/corto/README.md",
           "coffeeAGNTCY/coffee_agents/lungo/README.md",
           "coffeeAGNTCY/coffee_agents/corto/exchange/frontend/README.md",
-          "coffeeAGNTCY/coffee_agents/lungo/frontend/README.md"
+          "coffeeAGNTCY/coffee_agents/lungo/frontend/README.md",
+          "scripts/lib/uv-image.txt",
+          "docker/Dockerfile.python-agent"
         ]
       }
     },
@@ -196,6 +199,21 @@
       "enabled": false,
       "matchFileNames": [
         "docker/Dockerfile.ui"
+      ],
+      "matchManagers": [
+        "dockerfile"
+      ]
+    },
+    {
+      "description": [
+        "docker/Dockerfile.python-agent takes its uv tag from ARG UV_VERSION (scripts/lib/versions.sh). The dockerfile manager substitutes an empty ARG and would rewrite that FROM line into a numeric tag. The digest is refreshed by scripts/tools/update_uv_image.bash when UV_VERSION changes. This rule matches the astral/uv package only, so the dir-ctl and dir-mcp FROM lines in the same file stay managed. This rule is last so a vulnerability alert does not re-enable that rewrite."
+      ],
+      "enabled": false,
+      "matchFileNames": [
+        "docker/Dockerfile.python-agent"
+      ],
+      "matchPackageNames": [
+        "astral/uv"
       ],
       "matchManagers": [
         "dockerfile"

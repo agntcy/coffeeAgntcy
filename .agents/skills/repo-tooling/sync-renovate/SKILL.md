@@ -33,8 +33,9 @@ A version bump in `scripts/lib/versions.sh` also needs a fresh
 `scripts/lib/checksums.txt` and npm lockfile, which `setup.sh` verifies
 against. `renovate.json` handles that with a `postUpgradeTasks` entry
 running `scripts/tools/update_checksums.bash`,
-`scripts/tools/update_npm_lock.bash`, and
-`scripts/tools/update_node_version.bash` (once per branch), plus the
+`scripts/tools/update_npm_lock.bash`,
+`scripts/tools/update_node_version.bash`, and
+`scripts/tools/update_uv_image.bash` (once per branch), plus the
 frontend lint autofix. The workflow sets `RENOVATE_ALLOWED_COMMANDS` to
 allow only those commands. Adding another post-upgrade command means
 widening that allowlist in `.github/workflows/renovate.yaml` too.
