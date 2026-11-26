@@ -86,7 +86,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Node build-arg for the UI image
+      - name: Version build-arg for the image
         id: node-build-arg
         env:
           DOCKERFILE: ${{ inputs.dockerfile }}
@@ -95,6 +95,8 @@ jobs:
           . scripts/lib/versions.sh
           if [ "$DOCKERFILE" = "docker/Dockerfile.ui" ]; then
             echo "arg=NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_OUTPUT"
+          elif [ "$DOCKERFILE" = "docker/Dockerfile.python-agent" ]; then
+            echo "arg=UV_VERSION=${UV_VERSION}" >> "$GITHUB_OUTPUT"
           else
             echo "arg=" >> "$GITHUB_OUTPUT"
           fi

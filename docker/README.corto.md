@@ -15,11 +15,13 @@ Build arguments specify the project path and entrypoint for each service.
 ### Farm Server (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto \
   --build-arg UV_CACHE_ID=corto \
   --build-arg APP_NAME=corto-farm \
   --build-arg AGENT_SCRIPT=farm/farm_server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent \
   -t corto-farm .
 ```
@@ -27,11 +29,13 @@ docker build \
 ### Exchange Server (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto \
   --build-arg UV_CACHE_ID=corto \
   --build-arg APP_NAME=corto-exchange \
   --build-arg AGENT_SCRIPT=exchange/main.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent \
   -t corto-exchange .
 ```
@@ -50,4 +54,4 @@ docker build \
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/corto/` after `source scripts/env.sh`. The `docker-compose.yaml` passes `NODE_VERSION` through, and the build fails when that variable is unset.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/corto/` after `source scripts/env.sh`. The `docker-compose.yaml` passes `NODE_VERSION` and `UV_VERSION` through, and the build fails when either variable is unset.

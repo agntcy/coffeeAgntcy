@@ -14,16 +14,18 @@ The recruiter image is built from the shared `Dockerfile.python-agent` using the
 ### Recruiter Agent (`Dockerfile.python-agent`, target `agent-with-dirctl`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --target agent-with-dirctl \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/recruiter \
   --build-arg UV_CACHE_ID=recruiter \
   --build-arg AGENT_SCRIPT=src/agent_recruiter/server/server.py \
   --build-arg APP_NAME=recruiter \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent \
   -t recruiter .
 ```
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/recruiter/docker/` or `coffeeAGNTCY/coffee_agents/lungo/` - the `docker-compose.yaml` files already pass all required build args and set the correct target.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/recruiter/docker/` or `coffeeAGNTCY/coffee_agents/lungo/` after `source scripts/env.sh`. The compose files pass `UV_VERSION` through and set the correct target, and the build fails when that variable is unset.

@@ -4,6 +4,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: "${UV_VERSION:?source scripts/env.sh so UV_VERSION is set}"
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
         APP_NAME: corto-farm
@@ -53,6 +54,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: "${UV_VERSION:?source scripts/env.sh so UV_VERSION is set}"
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
         APP_NAME: corto-exchange
