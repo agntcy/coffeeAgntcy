@@ -53,10 +53,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Read pinned Helm version
+        id: helm-version
+        run: |
+          # shellcheck source=scripts/lib/versions.sh
+          . scripts/lib/versions.sh
+          version="${HELM_VERSION#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
-          version: "4.3.0"
+          version: ${{ steps.helm-version.outputs.version }}
 
       - name: Helm lint
         # The --strict flag promotes lint warnings to failures.
