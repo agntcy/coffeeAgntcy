@@ -433,6 +433,175 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "passes when a tool name and an unrelated semver only share a line" {
+    printf '%s\n' \
+        'steps:' \
+        '  - name: Lint with shellcheck, python 3.12.1' \
+        '    run: echo hi' \
+        >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when a tool name is directly followed by a version" {
+    printf '%s\n' 'steps:' '  - run: echo "bats-core 1.11.0 is required"' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "fails when shellcheck is installed through pip at a version" {
+    printf '%s\n' 'steps:' '  - run: pip install shellcheck-py==0.10.0.1' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "fails when a tool and its version are separate words or a path" {
+    printf '%s\n' 'steps:' '  - run: ./install-tools.sh shellcheck 0.10.0' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+    printf '%s\n' 'steps:' '  - run: curl -sSL https://example.com/shellcheck/0.10.0/sc.tgz | tar xz' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "passes when only a trailing comment names a tool and a version" {
+    printf '%s\n' \
+        'steps:' \
+        '  - run: task shell:lint # shellcheck 0.10.0 is pinned in setup.sh' \
+        '  - run: task shell:lint # apt-get install shellcheck' \
+        '  - uses: ./.github/actions/shellcheck-wrapper # v1.2.3' \
+        >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when a tool image is pinned with a colon version" {
+    printf '%s\n' 'steps:' '  - run: docker run koalaman/shellcheck:v0.10.0 .' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "fails when a tool is pinned with an at version" {
+    printf '%s\n' 'steps:' '  - run: some-installer actionlint@1.7.7' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "still fails when a pin is followed by a trailing comment" {
+    printf '%s\n' 'steps:' '  - run: curl -O shellcheck-v1.2.3.linux.tar.gz # fetch it' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"numeric version"* ]]
+}
+
+@test "fails when a package manager flag sits between the manager and the verb" {
+    printf '%s\n' 'steps:' '  - run: sudo apt-get -y install shellcheck' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lint.yaml installs shellcheck outside scripts/setup.sh"* ]]
+    printf '%s\n' 'FROM scratch' 'RUN apk --no-cache add shfmt' >"$REPO/docker/Dockerfile.extra"
+    rm "$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Dockerfile.extra installs shfmt outside scripts/setup.sh"* ]]
+}
+
+@test "fails when a package name sits on a continuation line" {
+    printf '%s\n' 'steps:' '  - run: |' '      sudo apt-get install -y \' '        git \' '        shellcheck' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lint.yaml installs shellcheck outside scripts/setup.sh"* ]]
+}
+
+@test "a comment ending in a backslash does not hide the next line" {
+    printf '%s\n' 'steps:' '  # note \' '  - run: sudo apt-get install -y shellcheck' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"installs shellcheck outside scripts/setup.sh"* ]]
+}
+
+@test "fails when another package manager installs a tool" {
+    printf '%s\n' 'steps:' '  - run: sudo snap install shellcheck' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"installs shellcheck outside scripts/setup.sh"* ]]
+    printf '%s\n' 'steps:' '  - run: asdf install shfmt latest' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"installs shfmt outside scripts/setup.sh"* ]]
+}
+
+@test "fails when a workflow assigns a tool pin a literal" {
+    printf '%s\n' 'env:' '  SHELLCHECK_VERSION: "0.10.0"' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lint.yaml assigns SHELLCHECK_VERSION a literal"* ]]
+}
+
+@test "fails when a Dockerfile gives a tool pin a literal default" {
+    printf '%s\n' 'FROM scratch' 'ARG TASK_VERSION=v3.40.0' >"$REPO/docker/Dockerfile.extra"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Dockerfile.extra assigns TASK_VERSION a literal"* ]]
+}
+
+@test "passes when a tool pin is read, not assigned a literal" {
+    printf '%s\n' 'steps:' '  - run: |' '      . scripts/lib/versions.sh' '      echo "SHELLCHECK_VERSION=${SHELLCHECK_VERSION}" >> "$GITHUB_ENV"' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when Taskfile.yaml installs a tool outside setup.sh" {
+    printf '%s\n' 'tasks:' '  tools:' '    cmds:' '      - apt-get install shellcheck' >"$REPO/Taskfile.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Taskfile.yaml installs shellcheck outside scripts/setup.sh"* ]]
+}
+
+@test "fails when another script installs a tool, but setup.sh may" {
+    printf '%s\n' '#!/usr/bin/env bash' 'apt-get install -y shellcheck' >"$REPO/scripts/other.sh"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/other.sh installs shellcheck outside scripts/setup.sh"* ]]
+    rm "$REPO/scripts/other.sh"
+    printf '%s\n' 'apt-get install -y shellcheck' >>"$REPO/scripts/setup.sh"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when a compose service runs a tool image at a version" {
+    printf '%s\n' 'services:' '  sc:' '    image: koalaman/shellcheck:v0.10.0' >"$REPO/docker-compose.extra.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docker-compose.extra.yaml installs a toolchain tool at a numeric version"* ]]
+}
+
+@test "fails when a pre-commit repo ships a tool" {
+    printf '%s\n' 'repos:' '  - repo: https://github.com/shellcheck-py/shellcheck-py' '    rev: v0.10.0.1' >"$REPO/.pre-commit-config.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses a pre-commit repo that installs shellcheck"* ]]
+}
+
+@test "passes when a pre-commit repo is unrelated to the tools" {
+    printf '%s\n' 'repos:' '  - repo: https://github.com/pre-commit/pre-commit-hooks' '    rev: v4.6.0' >"$REPO/.pre-commit-config.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "ignores scripts under scripts/checks" {
+    mkdir -p "$REPO/scripts/checks"
+    printf '%s\n' 'apt-get install shellcheck' >"$REPO/scripts/checks/example.sh"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
 @test "ignores a commented-out tool action" {
     printf '%s\n' 'steps:' '  # - uses: ludeeus/action-shellcheck@sha' >"$REPO/.github/workflows/lint.yaml"
     run_check

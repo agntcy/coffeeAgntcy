@@ -76,11 +76,28 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
   `scripts/setup.sh` and `scripts/lib/assets.sh`, which read the
   variables. Any other install of one of them in a workflow or
   Dockerfile fails the check, at any version: a package manager line
-  (`apt-get`, `apk`, `brew`, `pip`, `npm`, `go install`, ...) that names
-  it, the taskfile.dev install script, or a release download. So does a
-  `uses:` of an action that installs one of them (for example
+  (`apt-get`, `apk`, `brew`, `pip`, `npm`, `go install`, `snap`, `asdf`,
+  ..., with flags before the verb allowed) that names it, the
+  taskfile.dev install script, or a release download. So does a `uses:`
+  of an action that installs one of them (for example
   `ludeeus/action-shellcheck`), whatever its tag, because it brings a
-  second copy. Comment lines are skipped.
+  second copy, and a pre-commit `repo:` that ships one. So does a tool
+  name directly followed by a version (`shellcheck-v0.10.0`,
+  `koalaman/shellcheck:v0.10.0`, `shellcheck 0.10.0`), and a literal
+  assigned to a tool pin (`SHELLCHECK_VERSION: 0.10.0`). A tool name and
+  an unrelated version that only share a line do not fail.
+  Lines ending in `\` are joined first, so a package name on a
+  continuation line is seen. Full-line and trailing `# ...` comments
+  are skipped.
+- That install check scans workflows, composite actions, Dockerfiles,
+  `Taskfile*.y(a)ml`, compose files, `.pre-commit-config.yaml`, and
+  shell scripts under `scripts/`. `scripts/setup.sh`,
+  `scripts/lib/assets.sh`, `scripts/lib/versions.sh`, and
+  `scripts/checks/` are exempt. It matches known shapes, not every way
+  to install a tool: an unversioned tool image (`koalaman/shellcheck:stable`),
+  a download from a mirror with no version, and a Node, uv, or Helm
+  install that is not an action, an image, an `ARG`, or a version
+  manager are not caught. Review those by hand.
 - The check compares versions. It does not notice a registry tag that
   moves under the same version, so a digest file stays as written until
   its version changes.

@@ -595,6 +595,22 @@ check_openspec_stamps() {
     done < <(find .agents/skills -type f -path '*/openspec-*/SKILL.md' | sort)
 }
 
+# join_continuations <file>: prints the file with every line that ends in a
+# backslash joined to the next one, so "apt-get install -y \" followed by
+# "shellcheck" is read as one command. A full-line comment is never joined,
+# so a comment that ends in a backslash cannot swallow the line after it.
+join_continuations() {
+    awk '
+        {
+            if (buf == "" && $0 ~ /^[[:space:]]*#/) { print; next }
+            if (sub(/[[:space:]]*\\[[:space:]]*$/, " ")) { buf = buf $0; next }
+            print buf $0
+            buf = ""
+        }
+        END { if (buf != "") print buf }
+    ' "$1"
+}
+
 check_single_installs() {
     local setup="scripts/setup.sh" assets="scripts/lib/assets.sh" var file line action tool
     for var in ACTIONLINT_VERSION BATS_VERSION SHELLCHECK_VERSION SHFMT_VERSION TASK_VERSION; do
@@ -609,13 +625,29 @@ check_single_installs() {
     # at any version: a package manager line naming the tool, or a download
     # of its installer or release.
     local tools='shellcheck|actionlint|shfmt|bats-core|bats|go-task|task'
-    local pm_re="(apt-get|apt|apk|brew|dnf|yum|pip3?|pipx|npm|npx|go|cargo)[[:space:]]+(install|add|i)[[:space:]]+(.*[[:space:]/@=])?($tools)([[:space:]@=:]|\$)"
+    # Flags may sit between the manager and the verb (apt-get -y install,
+    # apk --no-cache add).
+    local pm_re="(apt-get|apt|apk|brew|dnf|yum|pip3?|pipx|npm|npx|go|cargo|snap|conda|mamba|gem|asdf|mise|choco|winget|scoop)[[:space:]]+(-[^[:space:]]+[[:space:]]+)*(install|add|i)[[:space:]]+(.*[[:space:]/@=])?($tools)([[:space:]@=:]|\$)"
+    # A literal version assigned to any tool pin outside versions.sh.
+    local literal_re='(^|[^A-Za-z0-9_])(ACTIONLINT|BATS|OPENSPEC|RENOVATE|SHELLCHECK|SHFMT|TASK|UV)_VERSION[[:space:]]*[:=][[:space:]]*["'\'']?v?[0-9]+\.[0-9]+'
+    # A pre-commit repo that ships one of the tools brings its own copy.
+    local hook_re='(^|[[:space:]-])repo:[[:space:]]*[^[:space:]]*(shellcheck|actionlint|shfmt|bats)'
     local download_re='taskfile\.dev/install\.sh|github\.com/(koalaman/shellcheck|rhysd/actionlint|mvdan/sh|bats-core/bats-core|go-task/task)/(releases|archive)'
+    # A tool name directly followed by a version: joined by - _ @ : = / or
+    # whitespace, with an optional -py suffix (shellcheck-py==0.10.0.1).
+    # That covers release file names, image tags, tool@version, and
+    # "shellcheck 0.10.0". A tool name and a semver that only share a line
+    # (a step name that lists other versions, another tool's version) are
+    # not a pin.
+    local pinned_re='(shellcheck|actionlint|shfmt|bats-core|go-task/task)(-py)?[-_@:=/[:space:]]+[vV]?[0-9]+\.[0-9]+\.[0-9]+'
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         while IFS= read -r line || [[ -n "$line" ]]; do
             # A comment that mentions an install is not an install.
             [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            # Nor is a trailing comment: "run: task lint # shellcheck 0.10.0"
+            # and "uses: ./local-action # v1.2.3" are not installs either.
+            line="${line%%[[:space:]]#*}"
             # An action for one of these tools brings its own copy, whatever
             # its tag or the case of its name. CI runs them through task
             # from scripts/setup.sh. A local ./ action is the repo's own.
@@ -629,22 +661,37 @@ check_single_installs() {
                 fi
             fi
             if [[ "$line" =~ $pm_re ]]; then
-                report "$file installs ${BASH_REMATCH[4]} outside scripts/setup.sh. Run it through task from scripts/setup.sh."
+                report "$file installs ${BASH_REMATCH[5]} outside scripts/setup.sh. Run it through task from scripts/setup.sh."
+                continue
+            fi
+            if [[ "$line" =~ $literal_re ]]; then
+                report "$file assigns ${BASH_REMATCH[2]}_VERSION a literal. Read scripts/lib/versions.sh."
+                continue
+            fi
+            if [[ "$line" =~ $hook_re ]]; then
+                report "$file uses a pre-commit repo that installs ${BASH_REMATCH[2]}. Run it through task from scripts/setup.sh."
                 continue
             fi
             if [[ "$line" =~ $download_re ]]; then
                 report "$file downloads a toolchain tool outside scripts/setup.sh. Run it through task from scripts/setup.sh."
                 continue
             fi
-            [[ "$line" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || continue
-            if [[ "$line" == *"shellcheck"* || "$line" == *"actionlint"* || "$line" == *"shfmt"* || "$line" == *"bats-core"* || "$line" == *"go-task/task"* ]]; then
+            if [[ "$line" =~ $pinned_re ]]; then
                 report "$file installs a toolchain tool at a numeric version. Read scripts/lib/versions.sh."
             fi
-        done <"$file"
-    done < <(find . \( -name .git -o -name node_modules -o -name .tools -o -name .venv \) -prune -o -type f \
+        done < <(join_continuations "$file")
+    done < <(find . \( -name .git -o -name node_modules -o -name .tools -o -name .venv \
+        -o -path ./scripts/checks \) -prune -o -type f \
         \( -path './.github/workflows/*.yml' -o -path './.github/workflows/*.yaml' \
         -o -path './.github/actions/*.yml' -o -path './.github/actions/*.yaml' \
-        -o -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) -print 2>/dev/null | sort)
+        -o -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \
+        -o -name 'Taskfile*.yml' -o -name 'Taskfile*.yaml' \
+        -o -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' \
+        -o -name 'compose*.yml' -o -name 'compose*.yaml' \
+        -o -name '.pre-commit-config.yaml' -o -name '.pre-commit-config.yml' \
+        -o -path './scripts/*.sh' -o -path './scripts/*.bash' \) \
+        -not -path ./scripts/setup.sh -not -path ./scripts/lib/assets.sh \
+        -not -path ./scripts/lib/versions.sh -print 2>/dev/null | sort)
 }
 
 check_node
