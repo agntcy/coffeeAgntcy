@@ -3,6 +3,7 @@ x-supply-chain-supplier: &supply-chain-supplier
     context: ../../..
     dockerfile: docker/Dockerfile.python-agent
     args:
+      UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
       PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
       UV_CACHE_ID: lungo
       APP_NAME: supply-chain-supplier
@@ -23,6 +24,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: brazil-farm
@@ -57,6 +59,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: colombia-farm
@@ -93,6 +96,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: vietnam-farm
@@ -168,6 +172,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: lungo-auction-supervisor
@@ -210,6 +215,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: agentic-workflows-api
@@ -236,6 +242,7 @@ services:
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
         NPM_CACHE_ID: lungo
+        NODE_VERSION: '${NODE_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:
@@ -255,6 +262,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: weather-mcp-server
@@ -281,6 +289,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: payment-mcp-server
@@ -378,6 +387,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: logistics-shipper
@@ -409,6 +419,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: logistics-accountant
@@ -440,6 +451,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: logistics-farm
@@ -471,6 +483,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: logistics-helpdesk
@@ -502,6 +515,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: logistics-supervisor
@@ -595,6 +609,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: supply-chain-logistics
@@ -629,6 +644,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: supply-chain-buyer
@@ -794,6 +810,7 @@ services:
       dockerfile: docker/Dockerfile.python-agent
       target: agent-with-dirctl
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
         UV_CACHE_ID: recruiter
         AGENT_SCRIPT: src/agent_recruiter/server/server.py
@@ -832,6 +849,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
         APP_NAME: lungo-recruiter-supervisor

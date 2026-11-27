@@ -90,6 +90,12 @@ DIRECTORY_CLIENT_TLS_SKIP_VERIFY="true"
 
 Directory stack uses **AGNTCY Directory v1.8.0** (`ghcr.io/agntcy/dir-apiserver:v1.8.0`), **PostgreSQL** (`postgres:16.6-bookworm`), **Zot** `v2.1.15`, and optional **`dir-mcp-server`** (`ghcr.io/agntcy/dir-mcp:1.3.8-mcp.1`) for `MCP_CONNECTION_MODE=docker`.
 
+Every `docker compose` command (including `down` and infra-only `up`) needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+
+```bash
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
+
 ```bash
 # Minimal: Postgres + Zot + API (and optionally MCP for docker-mode MCP)
 docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server

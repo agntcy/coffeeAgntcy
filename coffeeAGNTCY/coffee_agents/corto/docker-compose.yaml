@@ -4,6 +4,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
         APP_NAME: corto-farm
@@ -53,6 +54,7 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile.python-agent
       args:
+        UV_VERSION: '${UV_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
         APP_NAME: corto-exchange
@@ -87,6 +89,7 @@ services:
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto/exchange/frontend
         NPM_CACHE_ID: corto
+        NODE_VERSION: '${NODE_VERSION:?run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"}'
     image: ghcr.io/agntcy/coffee-agntcy/corto-ui:latest
     container_name: ui-corto
     environment:

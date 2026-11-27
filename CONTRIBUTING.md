@@ -157,6 +157,20 @@ or removing any file. See
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
 
+#### Tool versions
+
+Every tool install reads its pin from `scripts/lib/versions.sh`
+(`task versions:check`). Node and uv image builds take `NODE_VERSION`
+and `UV_VERSION` as build arguments. The Python test workflow exports
+both pins before pytest, so Compose interpolation in the integration
+tests succeeds. Helm CI reads `HELM_VERSION`.
+`task tools:sync-node` and `task tools:sync-uv` rewrite the digests
+those images cannot read from the shell. The map of every pin is
+[`docs/tool-versions.md`](/docs/tool-versions.md). See
+[`.agents/rules/quality/version-sync.md`](/.agents/rules/quality/version-sync.md)
+for the full rule. Runs as part of `task check:all` and the `Checks`
+workflow.
+
 #### uv lockfiles
 
 Every `pyproject.toml` must have a sibling `uv.lock` that is in sync with it

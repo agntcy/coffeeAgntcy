@@ -252,7 +252,7 @@ Before you begin, ensure the following tools are installed:
   brew install uv
   ```
 
-- **Node.js** 26.13.1 or higher with **npm** 11.20.0 or higher
+- **Node.js** 26.13.1 (`NODE_VERSION` in `scripts/lib/versions.sh`) or higher with **npm** 11.20.0 or higher
   Check your versions:
   ```sh
   node -v
@@ -477,7 +477,13 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-From **`lungo/`**, run:
+Every `docker compose` command (including `down` and infra-only `up`) needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+
+```sh
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
+
+Then, from **`lungo/`**, run:
 
 ```sh
 docker compose up --build

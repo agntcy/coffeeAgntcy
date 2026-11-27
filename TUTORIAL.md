@@ -13,7 +13,7 @@ You will:
 ## Prerequisites
 
 - **Docker** + **Docker Compose**
-- **Node.js** 26.13.1 or higher with **npm** 11.20.0 or higher (if you run any UI locally outside of Docker)
+- **Node.js** 26.13.1 (`NODE_VERSION` in `scripts/lib/versions.sh`) or higher with **npm** 11.20.0 or higher (if you run any UI locally outside of Docker)
 - **uv** (Python environment manager)
 
 **IDE setup for CI (lint/format):** To run ESLint and Prettier on save or before commit, **Cursor is recommended**. In Cursor: enable **Format on Save** (Settings → search “format on save”) and ensure the ESLint extension is enabled; set the workspace root or open the `coffeeAGNTCY/coffee_agents/lungo/frontend` folder so that `npm run lint:check` and `npm run format:check` apply to the Lungo frontend. You can also run these scripts from the terminal in that directory. The same checks run in CI (see `.github/workflows/fe-ci.yaml`, job `frontend-build`).
@@ -121,7 +121,13 @@ NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
 
 ---
 ### 2. Launch the Demo Stack
-All workshop services are containerized - start everything with one command:
+All workshop services are containerized. Every `docker compose` command (including `down` and infra-only `up`) needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+
+```bash
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
+
+Then start everything with one command:
 
 ```bash
 docker compose up --build

@@ -43,6 +43,37 @@ teardown() {
     [[ "$PATH" == "$work_dir/.tools/bin:$work_dir/.tools/node/bin:$work_dir/.tools/bats/bin:"* ]]
 }
 
+@test "env.sh: exports NODE_VERSION and UV_VERSION from versions.sh and no other pin" {
+    local repo_root want
+    repo_root="$(git rev-parse --show-toplevel)"
+    want="$(
+        . "$repo_root/scripts/lib/versions.sh"
+        printf '%s %s' "$NODE_VERSION" "$UV_VERSION"
+    )"
+    unset NODE_VERSION UV_VERSION HELM_VERSION
+
+    source "$ENV_SH"
+
+    [ "$NODE_VERSION $UV_VERSION" = "$want" ]
+    [ -n "$NODE_VERSION" ]
+    [ -n "$UV_VERSION" ]
+    run bash -c 'printenv HELM_VERSION'
+    [ "$status" -ne 0 ]
+}
+
+@test "env.sh: sourcing outside the repo without versions.sh neither aborts a set -e shell nor exports empty pins" {
+    mock_command git 'exit 1'
+    local work_dir="$BATS_TEST_TMPDIR/no-versions"
+    mkdir -p "$work_dir"
+    cd "$work_dir" || return 1
+    unset NODE_VERSION UV_VERSION
+
+    run bash -c 'set -eu; source "$1"; echo reached; printenv NODE_VERSION UV_VERSION || true' _ "$ENV_SH"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == "reached" ]]
+}
+
 @test "env.sh: unsets its own helper function and variable after sourcing" {
     source "$ENV_SH"
 

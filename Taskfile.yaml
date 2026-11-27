@@ -288,6 +288,54 @@ tasks:
     cmds:
       - scripts/tools/update_npm_lock.bash
 
+  tools:sync-node:
+    desc: >-
+      Rewrite Node consumers that cannot read NODE_VERSION (UI image digest,
+      frontend engines.node floors, and the docs that state the Node version)
+      so they match scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-node
+      Example: task tools:sync-node
+      Run after bumping NODE_VERSION. Fetches the node:<version>-alpine
+      manifest-list digest when scripts/lib/node-image.txt is for a
+      different version, and rewrites that record, docker/Dockerfile.ui,
+      both frontend engine floors, and the five Node install sentences.
+      No network when the record already matches. See
+      scripts/tools/update_node_version.bash.
+    cmds:
+      - scripts/tools/update_node_version.bash
+
+  tools:sync-openspec:
+    desc: >-
+      Regenerate the OpenSpec skills so every generatedBy stamp matches
+      OPENSPEC_VERSION in scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-openspec
+      Example: task tools:sync-openspec
+      Run after bumping OPENSPEC_VERSION and refreshing the lockfile with
+      task tools:npm-lock. Installs the pinned openspec from the committed
+      lockfile into a temp dir (npm ci --ignore-scripts) and runs
+      openspec update. No network when every stamp already matches. Review
+      the skill diff. See scripts/tools/update_openspec_skills.bash.
+    cmds:
+      - scripts/tools/update_openspec_skills.bash
+
+  tools:sync-uv:
+    desc: >-
+      Rewrite the Python agent uv image digest so it matches UV_VERSION
+      in scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-uv
+      Example: task tools:sync-uv
+      Run after bumping UV_VERSION. Fetches the
+      astral/uv:<version>-python3.13-trixie-slim manifest-list digest
+      when scripts/lib/uv-image.txt is for a different version, and
+      rewrites that record and the @sha256: in
+      docker/Dockerfile.python-agent. No network when the record already
+      matches. See scripts/tools/update_uv_image.bash.
+    cmds:
+      - scripts/tools/update_uv_image.bash
+
   tools:versions:
     desc: >-
       Print the version and pinned hash of every tool this repo pins (the
@@ -302,6 +350,20 @@ tasks:
       manage-repo-tooling skill. See scripts/tools/print_versions.bash.
     cmds:
       - scripts/tools/print_versions.bash
+
+  versions:check:
+    desc: >-
+      Verify every pin in scripts/lib/versions.sh is the only copy of
+      that tool (see .agents/rules/quality/version-sync.md).
+    summary: |
+      Usage:   task versions:check
+      Example: task versions:check
+      Fails when a Node, uv, or Helm install hardcodes a version, or
+      when an image digest, engines.node floor, npm tool pin, OpenSpec
+      skill stamp, or Node install sentence disagrees with versions.sh.
+      See scripts/checks/check_versions.bash.
+    cmds:
+      - scripts/checks/check_versions.bash
 
   workflows:check-permissions:
     desc: >-

@@ -57,7 +57,9 @@ from the committed lockfile in
 are symlinks resolved relative to a sibling `lib/node_modules/npm/` and
 can't be moved independently of that directory the way every other tool's
 single relocatable binary can - `scripts/env.sh` puts both `.tools/bin`
-and `.tools/node/bin` on PATH to cover it. `bats` likewise ships as a
+and `.tools/node/bin` on PATH to cover it, and exports `NODE_VERSION` and `UV_VERSION` (and no other pin) so a
+local UI or Python agent image build can pass that build-arg.
+`bats` likewise ships as a
 `bin/` + `libexec/` + `lib/` tree, so it lands in `.tools/bats/`, whose
 `bin/` `scripts/env.sh` also puts on PATH.
 

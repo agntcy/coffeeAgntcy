@@ -15,12 +15,14 @@ Build arguments specify the project path and entrypoint for each service.
 ### Farm Agents (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 # Brazil Farm
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=brazil-farm \
   --build-arg AGENT_SCRIPT=agents/farms/brazil/farm_server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t brazil-farm .
 
 # Colombia Farm
@@ -29,6 +31,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=colombia-farm \
   --build-arg AGENT_SCRIPT=agents/farms/colombia/farm_server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t colombia-farm .
 
 # Vietnam Farm
@@ -37,17 +40,20 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=vietnam-farm \
   --build-arg AGENT_SCRIPT=agents/farms/vietnam/farm_server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t vietnam-farm .
 ```
 
 ### Logistics Agents (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=logistics-shipper \
   --build-arg AGENT_SCRIPT=agents/logistics/shipper/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t logistics-shipper .
 
 docker build \
@@ -55,6 +61,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=logistics-accountant \
   --build-arg AGENT_SCRIPT=agents/logistics/accountant/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t logistics-accountant .
 
 docker build \
@@ -62,6 +69,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=logistics-farm \
   --build-arg AGENT_SCRIPT=agents/logistics/farm/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t logistics-farm .
 
 docker build \
@@ -69,6 +77,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=logistics-helpdesk \
   --build-arg AGENT_SCRIPT=agents/logistics/helpdesk/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t logistics-helpdesk .
 
 docker build \
@@ -76,17 +85,20 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=logistics-supervisor \
   --build-arg AGENT_SCRIPT=agents/supervisors/logistics/main.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t logistics-supervisor .
 ```
 
 ### Supply Chain Commitment (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=supply-chain-buyer \
   --build-arg AGENT_SCRIPT=agents/supervisors/supply_chain/main.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t supply-chain-buyer .
 
 # One image serves all three suppliers; SUPPLIER_ID (a, b or c) picks the role at run time.
@@ -95,6 +107,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=supply-chain-supplier \
   --build-arg AGENT_SCRIPT=agents/supply_chain/supplier/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t supply-chain-supplier .
 
 docker build \
@@ -102,17 +115,20 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=supply-chain-logistics \
   --build-arg AGENT_SCRIPT=agents/supply_chain/logistics/server.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t supply-chain-logistics .
 ```
 
 ### MCP Servers (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=weather-mcp-server \
   --build-arg AGENT_SCRIPT=agents/mcp_servers/weather_service.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t weather-mcp-server .
 
 docker build \
@@ -120,17 +136,20 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=payment-mcp-server \
   --build-arg AGENT_SCRIPT=agents/mcp_servers/payment_service.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t payment-mcp-server .
 ```
 
 ### Supervisors (`Dockerfile.python-agent`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=lungo-auction-supervisor \
   --build-arg AGENT_SCRIPT=agents/supervisors/auction/main.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t auction-supervisor .
 
 docker build \
@@ -138,6 +157,7 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=agentic-workflows-api \
   --build-arg AGENT_SCRIPT="-m api.agentic_workflows.server" \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t agentic-workflows-api .
 
 docker build \
@@ -145,18 +165,21 @@ docker build \
   --build-arg UV_CACHE_ID=lungo \
   --build-arg APP_NAME=lungo-recruiter-supervisor \
   --build-arg AGENT_SCRIPT=agents/supervisors/recruiter/main.py \
+  --build-arg UV_VERSION="$UV_VERSION" \
   -f docker/Dockerfile.python-agent -t recruiter-supervisor .
 ```
 
 ### UI (`Dockerfile.ui`)
 
 ```bash
+source scripts/env.sh
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend \
   --build-arg NPM_CACHE_ID=lungo \
+  --build-arg NODE_VERSION="$NODE_VERSION" \
   -f docker/Dockerfile.ui -t lungo-ui .
 ```
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` - the `docker-compose.yaml` already passes all required build args.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` after `source scripts/env.sh`. The `docker-compose.yaml` passes `NODE_VERSION` and `UV_VERSION` through, and the build fails when either variable is unset.
