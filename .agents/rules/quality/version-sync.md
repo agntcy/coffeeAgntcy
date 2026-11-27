@@ -98,6 +98,12 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
   a download from a mirror with no version, and a Node, uv, or Helm
   install that is not an action, an image, an `ARG`, or a version
   manager are not caught. Review those by hand.
+- [`scripts/lib/checksums.txt`](../../../scripts/lib/checksums.txt) holds
+  one SHA-256 for every archive URL that
+  [`scripts/lib/assets.sh`](../../../scripts/lib/assets.sh) builds from
+  the pins. The check lists those URLs from `assets.sh` and fails on a
+  URL with no 64-hex checksum, and on a line no pin produces. After any
+  bump of a downloaded tool, run `task tools:checksums`.
 - The check compares versions. It does not notice a registry tag that
   moves under the same version, so a digest file stays as written until
   its version changes.

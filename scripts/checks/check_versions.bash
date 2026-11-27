@@ -2,8 +2,9 @@
 # Fails when any pin in scripts/lib/versions.sh has a second copy: a
 # literal Node, uv, or Helm install, an image digest, an engines.node
 # floor, a doc sentence, an npm lockfile version, or an OpenSpec skill
-# stamp that disagrees, or an install of a setup.sh-only tool outside
-# scripts/setup.sh.
+# stamp that disagrees, an install of a setup.sh-only tool outside
+# scripts/setup.sh, or a scripts/lib/checksums.txt that does not hold
+# exactly one checksum per archive URL the pins produce.
 #
 # One function per versions.sh pin. Node, uv, Helm, the npm tools, the
 # OpenSpec skill stamps, and the tools that are installed only by setup.sh.
@@ -694,6 +695,51 @@ check_single_installs() {
         -not -path ./scripts/lib/versions.sh -print 2>/dev/null | sort)
 }
 
+# scripts/lib/checksums.txt holds one SHA-256 per tool archive URL that
+# scripts/lib/assets.sh builds from the pins. After a bump that skipped
+# task tools:checksums, a full setup refuses the new archive and the old
+# lines linger. The expected URLs come from assets.sh itself, so this
+# check and the generator cannot disagree on the list.
+check_checksums() {
+    local assets="scripts/lib/assets.sh" sums="scripts/lib/checksums.txt"
+    if [[ ! -f "$assets" ]]; then
+        report "$assets is missing"
+        return 0
+    fi
+    if [[ ! -f "$sums" ]]; then
+        report "$sums is missing. Run task tools:checksums."
+        return 0
+    fi
+    local expected recorded url
+    # The subshell keeps assets.sh's names out of this script.
+    expected="$(
+        # shellcheck source=scripts/lib/assets.sh
+        source "$assets"
+        for tool in "${ASSET_TOOLS[@]}"; do
+            for platform in "${SUPPORTED_PLATFORMS[@]}"; do
+                asset_url "$tool" "${platform%-*}" "${platform#*-}"
+            done
+        done | LC_ALL=C sort -u
+    )" || {
+        report "$assets could not list the archive URLs for the pins"
+        return 0
+    }
+    if [[ -z "$expected" ]]; then
+        report "$assets lists no archive URLs"
+        return 0
+    fi
+    # A line counts only with a 64-hex hash in front of the URL.
+    recorded="$(awk '$1 ~ /^[0-9a-f]{64}$/ && NF == 2 { print $2 }' "$sums" | LC_ALL=C sort -u)"
+    while IFS= read -r url; do
+        [[ -n "$url" ]] || continue
+        report "$sums has no checksum for $url. Run task tools:checksums."
+    done < <(comm -23 <(printf '%s\n' "$expected") <(printf '%s\n' "$recorded"))
+    while IFS= read -r url; do
+        [[ -n "$url" ]] || continue
+        report "$sums has a line for $url, which no pin in scripts/lib/versions.sh produces. Run task tools:checksums."
+    done < <(comm -13 <(printf '%s\n' "$expected") <(printf '%s\n' "$recorded"))
+}
+
 check_node
 check_uv
 check_setup_uv
@@ -702,6 +748,7 @@ check_helm
 check_npm_pins
 check_openspec_stamps
 check_single_installs
+check_checksums
 
 if [[ "$failed" -ne 0 ]]; then
     exit 1

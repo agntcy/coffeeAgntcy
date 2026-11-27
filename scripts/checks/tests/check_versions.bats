@@ -10,6 +10,7 @@ OTHER_UV="1.2.3"
 OPENSPEC_PIN="3.3.3"
 RENOVATE_PIN="4.4.4"
 DIGEST="sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+CHECKSUM="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 
 setup() {
     REPO="$BATS_TEST_TMPDIR/repo"
@@ -18,6 +19,22 @@ setup() {
     mkdir -p "$REPO/scripts/checks"
     cp "$SCRIPT" "$REPO/scripts/checks/check_versions.bash"
     chmod +x "$REPO/scripts/checks/check_versions.bash"
+}
+
+# Writes a checksums.txt that holds one line for every archive URL the
+# fixture's pins produce, the way task tools:checksums would.
+write_checksums() {
+    (
+        source "$REPO/scripts/lib/versions.sh"
+        source "$REPO/scripts/lib/assets.sh"
+        for tool in "${ASSET_TOOLS[@]}"; do
+            for platform in "${SUPPORTED_PLATFORMS[@]}"; do
+                asset_url "$tool" "${platform%-*}" "${platform#*-}"
+            done
+        done | LC_ALL=C sort -u | while IFS= read -r url; do
+            printf '%s  %s\n' "$CHECKSUM" "$url"
+        done
+    ) >"$REPO/scripts/lib/checksums.txt"
 }
 
 build_passing() {
@@ -36,6 +53,11 @@ UV_VERSION="8.8.8"
 HELM_VERSION="v4.3.0"
 OPENSPEC_VERSION="$OPENSPEC_PIN"
 RENOVATE_VERSION="$RENOVATE_PIN"
+ACTIONLINT_VERSION="1.7.7"
+BATS_VERSION="1.11.0"
+SHELLCHECK_VERSION="0.10.0"
+SHFMT_VERSION="3.8.0"
+TASK_VERSION="v3.40.0"
 EOF
     printf '%s %s\n' "$PIN" "$DIGEST" >"$REPO/scripts/lib/node-image.txt"
     printf '%s %s\n' "8.8.8" "$DIGEST" >"$REPO/scripts/lib/uv-image.txt"
@@ -48,7 +70,9 @@ ARG UV_VERSION
 FROM astral/uv:\${UV_VERSION}-python3.13-trixie-slim@$DIGEST
 EOF
     printf 'echo "$NODE_VERSION $ACTIONLINT_VERSION $BATS_VERSION $SHELLCHECK_VERSION $SHFMT_VERSION $TASK_VERSION"\n' >"$REPO/scripts/setup.sh"
-    printf 'echo "${ACTIONLINT_VERSION} ${BATS_VERSION} ${SHELLCHECK_VERSION} ${SHFMT_VERSION} ${TASK_VERSION}"\n' >"$REPO/scripts/lib/assets.sh"
+    # The real assets.sh: check_checksums reads the archive URLs from it.
+    cp "$BATS_TEST_DIRNAME/../../lib/assets.sh" "$REPO/scripts/lib/assets.sh"
+    write_checksums
     cat >"$REPO/scripts/lib/npm-tools/package-lock.json" <<EOF
 {
   "packages": {
@@ -600,6 +624,42 @@ EOF
     printf '%s\n' 'apt-get install shellcheck' >"$REPO/scripts/checks/example.sh"
     run_check
     [ "$status" -eq 0 ]
+}
+
+@test "fails when a pin is bumped and checksums.txt is not regenerated" {
+    sed -i.bak 's/^HELM_VERSION=.*/HELM_VERSION="v4.4.0"/' "$REPO/scripts/lib/versions.sh"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"checksums.txt has no checksum for https://get.helm.sh/helm-v4.4.0-linux-amd64.tar.gz"* ]]
+    [[ "$output" == *"checksums.txt has a line for https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz"* ]]
+}
+
+@test "passes once checksums.txt is regenerated after a bump" {
+    sed -i.bak 's/^SHELLCHECK_VERSION=.*/SHELLCHECK_VERSION="0.11.0"/' "$REPO/scripts/lib/versions.sh"
+    write_checksums
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when checksums.txt has a line no pin produces" {
+    printf '%s  %s\n' "$CHECKSUM" "https://example.com/old-tool.tar.gz" >>"$REPO/scripts/lib/checksums.txt"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"has a line for https://example.com/old-tool.tar.gz"* ]]
+}
+
+@test "fails when a checksums.txt hash is not 64 hex characters" {
+    sed -i.bak 's/^[0-9a-f]*  \(https:\/\/nodejs.org.*linux-x64.*\)$/abc123  \1/' "$REPO/scripts/lib/checksums.txt"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"checksums.txt has no checksum for https://nodejs.org/dist/v9.9.9/node-v9.9.9-linux-x64.tar.gz"* ]]
+}
+
+@test "fails when checksums.txt is missing" {
+    rm "$REPO/scripts/lib/checksums.txt"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/lib/checksums.txt is missing"* ]]
 }
 
 @test "ignores a commented-out tool action" {
