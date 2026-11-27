@@ -23,6 +23,16 @@
 #       [ "$status" -eq 0 ]
 #   }
 #
+# A test that creates or commits in a throwaway git repository calls
+# isolate_git_env from its own setup(), so the developer's global and
+# system git configuration (hooks, signing, templates) cannot change the
+# result:
+#
+#   setup() {
+#       isolate_git_env
+#       git init -q "$BATS_TEST_TMPDIR/repo"
+#   }
+#
 # mock_command's second argument is a literal shell command body, run
 # verbatim as the stub's own script - "$@" is available inside it the same
 # way it would be inside any shell function, so a stub can branch on the
@@ -89,4 +99,18 @@ mock_isolate_path() {
         ln -s "$real_path" "$MOCK_BIN_DIR/$tool"
     done
     PATH="$MOCK_BIN_DIR"
+}
+
+# Makes git ignore the developer's global and system configuration for the
+# rest of the test (a global core.hooksPath hook, commit signing and
+# templates would otherwise run inside throwaway test repositories), and
+# drops the variables git sets when bats runs inside a git hook, which would
+# otherwise point test repositories at the outer repository. Only exports
+# and unsets variables; safe to call repeatedly. Call from a test file's own
+# setup().
+isolate_git_env() {
+    export GIT_CONFIG_GLOBAL=/dev/null
+    export GIT_CONFIG_SYSTEM=/dev/null
+    export GIT_CONFIG_NOSYSTEM=1
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
 }

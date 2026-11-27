@@ -6,9 +6,12 @@
 # alongside a scripts/checks/ subtree so its own SCRIPT_DIR/REPO_ROOT
 # resolution (two levels up) lines up with the fixture repo's root.
 
+load '../../lib/testing.sh'
+
 SCRIPT_UNDER_TEST="$BATS_TEST_DIRNAME/../check_helm_chart_versions.bash"
 
 setup() {
+    isolate_git_env
     REPO_DIR="$BATS_TEST_TMPDIR/repo"
     mkdir -p "$REPO_DIR/scripts/checks"
     cp "$SCRIPT_UNDER_TEST" "$REPO_DIR/scripts/checks/check_helm_chart_versions.bash"

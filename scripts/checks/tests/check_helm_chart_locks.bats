@@ -12,6 +12,7 @@ load '../../lib/testing.sh'
 FIXTURE_REPO="$BATS_TEST_TMPDIR/repo"
 
 setup() {
+    isolate_git_env
     mkdir -p "$FIXTURE_REPO/scripts/checks" "$FIXTURE_REPO/scripts/helm" "$FIXTURE_REPO/.tools/bin"
     cp "$BATS_TEST_DIRNAME/../check_helm_chart_locks.bash" "$FIXTURE_REPO/scripts/checks/check_helm_chart_locks.bash"
     cp "$BATS_TEST_DIRNAME/../../helm/update_chart_locks.bash" "$FIXTURE_REPO/scripts/helm/update_chart_locks.bash"

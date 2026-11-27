@@ -158,7 +158,7 @@ change sets `skip_specs: true`.
   agent-card path callers in lungo (`agents/supervisors/recruiter/main.py`).
 - Repo root: `README.md` and `.github/workflows/README.md`.
 - CI: the unit and integration suites run against the new image and the new
-  bindings. `task helm:check-locks`, `task helm:check-version-bumps` and
+  bindings. `task helm:check-locks`, `task helm:check-versions` and
   `task locks:check` gate the Helm and lock changes.
 - Supply chain: the SDK and its new transitive dependencies are less than
   14 days old, which the repo's `exclude-newer = "14 days"` policy would
