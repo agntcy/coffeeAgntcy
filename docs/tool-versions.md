@@ -23,6 +23,9 @@ flowchart TD
     pin --> reusable[".github/workflows/docker-build-reusable.yaml"]
     reusable --> dui
     reusable --> dpy
+    pin --> pytest[".github/workflows/test-reusable.yaml"]
+    pytest --> uicompose
+    pytest --> pycompose
 
     pin --> syncnode["task tools:sync-node"]
     syncnode --> nodedetail["node-image.txt, engines, Node sentences"]
@@ -54,7 +57,7 @@ These pins stop at `.tools/bin`: actionlint, bats, shellcheck, shfmt, and task. 
 
 ## Node image
 
-`scripts/env.sh` exports `NODE_VERSION`. The corto and lungo UI services pass it into `docker/Dockerfile.ui`. `.github/workflows/fe-ci.yaml` passes it to `actions/setup-node`. `.github/workflows/docker-build-reusable.yaml` passes it only when the dockerfile is `docker/Dockerfile.ui`. `task tools:sync-node` writes `scripts/lib/node-image.txt`, the image digest, the `engines.node` floors, and the Node sentences. The file list is [node-version.md](node-version.md).
+`scripts/env.sh` exports `NODE_VERSION`. The corto and lungo UI services pass it into `docker/Dockerfile.ui`. `.github/workflows/fe-ci.yaml` passes it to `actions/setup-node`. `.github/workflows/docker-build-reusable.yaml` passes it only when the dockerfile is `docker/Dockerfile.ui`. `.github/workflows/test-reusable.yaml` exports it before pytest so the UI compose files interpolate during the integration tests. `task tools:sync-node` writes `scripts/lib/node-image.txt`, the image digest, the `engines.node` floors, and the Node sentences. The file list is [node-version.md](node-version.md).
 
 ## uv image
 
@@ -64,7 +67,7 @@ These pins stop at `.tools/bin`: actionlint, bats, shellcheck, shfmt, and task. 
 - `coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml`
 - `coffeeAGNTCY/coffee_agents/recruiter/docker/docker-compose.yaml`
 
-`.github/workflows/docker-build-reusable.yaml` passes `UV_VERSION` only when the dockerfile is `docker/Dockerfile.python-agent`. The `ARG` is declared before the first `FROM` and has no default, so a build without it fails. `python3.13-trixie-slim` stays a literal.
+`.github/workflows/docker-build-reusable.yaml` passes `UV_VERSION` only when the dockerfile is `docker/Dockerfile.python-agent`. `.github/workflows/test-reusable.yaml` exports it before pytest so those compose files interpolate during the integration tests. The `ARG` is declared before the first `FROM` and has no default, so a build without it fails. `python3.13-trixie-slim` stays a literal.
 
 `task tools:sync-uv` (`scripts/tools/update_uv_image.bash`) writes `scripts/lib/uv-image.txt` and the `@sha256:` on that `FROM` line. Both are the manifest-list digest of `astral/uv:<UV_VERSION>-python3.13-trixie-slim`. Renovate runs that script on a `versions.sh` bump and leaves the dir-ctl and dir-mcp `FROM` lines in the same Dockerfile managed.
 

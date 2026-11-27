@@ -6,6 +6,8 @@
 #
 # One function per versions.sh pin. Node, uv, Helm, the npm tools, the
 # OpenSpec skill stamps, and the tools that are installed only by setup.sh.
+# check_pytest_pins covers the Python test workflow, which exports both
+# NODE_VERSION and UV_VERSION for docker compose.
 #
 # Usage: scripts/checks/check_versions.bash
 set -euo pipefail
@@ -352,6 +354,31 @@ check_uv() {
     fi
 }
 
+# pytest runs docker compose, which interpolates both pins. The test
+# workflow has to export them from versions.sh or CI compose fails.
+check_pytest_pins() {
+    local tests=".github/workflows/test-reusable.yaml"
+    if [[ ! -f "$tests" ]]; then
+        report "$tests is missing; Python tests must export NODE_VERSION and UV_VERSION"
+        return 0
+    fi
+    if ! grep -Fq 'scripts/lib/versions.sh' "$tests"; then
+        report "$tests does not source scripts/lib/versions.sh"
+    fi
+    if ! grep -Fq "NODE_VERSION=$NODE_EXPANSION" "$tests"; then
+        report "$tests does not export NODE_VERSION from scripts/lib/versions.sh"
+    fi
+    if ! grep -Fq "UV_VERSION=$UV_EXPANSION" "$tests"; then
+        report "$tests does not export UV_VERSION from scripts/lib/versions.sh"
+    fi
+    if grep -Eq 'NODE_VERSION=[0-9]' "$tests"; then
+        report "$tests assigns NODE_VERSION a literal"
+    fi
+    if grep -Eq 'UV_VERSION=[0-9]' "$tests"; then
+        report "$tests assigns UV_VERSION a literal"
+    fi
+}
+
 check_helm() {
     if [[ ! -f "$HELM_WORKFLOW" ]]; then
         report "$HELM_WORKFLOW is missing"
@@ -437,6 +464,7 @@ check_single_installs() {
 
 check_node
 check_uv
+check_pytest_pins
 check_helm
 check_npm_pins
 check_openspec_stamps

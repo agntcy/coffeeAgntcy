@@ -85,6 +85,16 @@ jobs:
             echo "arg=UV_VERSION=${UV_VERSION}" >> "$GITHUB_OUTPUT"
           fi
 EOF
+    cat >"$REPO/.github/workflows/test-reusable.yaml" <<'EOF'
+jobs:
+  run-tests:
+    steps:
+      - name: Export image build pins
+        run: |
+          . scripts/lib/versions.sh
+          echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+EOF
     cat >"$REPO/.github/workflows/helm-package-reusable.yaml" <<'EOF'
 jobs:
   helm-package-and-push:
@@ -200,6 +210,21 @@ EOF
     run_check
     [ "$status" -eq 1 ]
     [[ "$output" == *"does not match"* ]]
+}
+
+@test "fails when Python tests do not export the image pins" {
+    cat >"$REPO/.github/workflows/test-reusable.yaml" <<'EOF'
+jobs:
+  run-tests:
+    steps:
+      - name: Run tests
+        run: uv run pytest
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"test-reusable.yaml does not source scripts/lib/versions.sh"* ]]
+    [[ "$output" == *"does not export NODE_VERSION"* ]]
+    [[ "$output" == *"does not export UV_VERSION"* ]]
 }
 
 @test "fails when a compose Python build drops UV_VERSION" {

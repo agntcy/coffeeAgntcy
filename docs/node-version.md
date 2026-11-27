@@ -69,7 +69,8 @@ flowchart TD
 These callers pass the same variable in. `docker/Dockerfile.ui` takes `ARG NODE_VERSION` with no default and uses it in `FROM node:${NODE_VERSION}-alpine@<digest>`. A build with the arg unset fails.
 
 - Local: `coffeeAGNTCY/coffee_agents/corto/docker-compose.yaml` and `coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml` pass `${NODE_VERSION}` from the environment set in step 2.
-- CI: `.github/workflows/docker-build-push.yaml` calls `.github/workflows/docker-build-reusable.yaml`, which sources `scripts/lib/versions.sh` and adds the build-arg only when the dockerfile is `docker/Dockerfile.ui`.
+- CI image build: `.github/workflows/docker-build-push.yaml` calls `.github/workflows/docker-build-reusable.yaml`, which sources `scripts/lib/versions.sh` and adds the build-arg only when the dockerfile is `docker/Dockerfile.ui`.
+- Python tests: `.github/workflows/test-reusable.yaml` sources `scripts/lib/versions.sh` and exports `NODE_VERSION` before pytest. The integration tests run `docker compose`, which interpolates the UI build arg from that environment.
 
 The `@sha256:` on that `FROM` line is not the variable. Step 6 writes it.
 

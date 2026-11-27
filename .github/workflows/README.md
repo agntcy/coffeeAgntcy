@@ -129,7 +129,7 @@ Orchestrates pytest for each changed agent project (`corto`, `lungo`, `recruiter
 
 ## test-reusable
 
-Runs `pytest` via `uv` for a single project directory and explicit path list.
+Runs `pytest` via `uv` for a single project directory and explicit path list. Before pytest it sources `scripts/lib/versions.sh` and exports `NODE_VERSION` and `UV_VERSION`, so the integration tests' `docker compose` calls can interpolate those build args.
 
 | Input | Description |
 |-------|-------------|

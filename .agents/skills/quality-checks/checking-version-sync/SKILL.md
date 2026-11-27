@@ -46,6 +46,9 @@ for the underlying rule.
 
 - `source scripts/env.sh` exports `NODE_VERSION` and `UV_VERSION` for
   local image builds. It does not export the other pins.
+- `.github/workflows/test-reusable.yaml` sources `scripts/lib/versions.sh`
+  and exports those two pins before pytest. `task versions:check` fails
+  when that export is missing or is a literal.
 - `task tools:sync-node` does not talk to the registry when
   `scripts/lib/node-image.txt` already records the current `NODE_VERSION`
   and the consumers already agree.

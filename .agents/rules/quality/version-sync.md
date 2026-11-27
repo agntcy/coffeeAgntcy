@@ -55,6 +55,11 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
 - Helm CI
   ([`.github/workflows/helm-package-reusable.yaml`](../../../.github/workflows/helm-package-reusable.yaml))
   sources `HELM_VERSION` and passes it without the leading `v`.
+- Python tests
+  ([`.github/workflows/test-reusable.yaml`](../../../.github/workflows/test-reusable.yaml))
+  source `scripts/lib/versions.sh` and export `NODE_VERSION` and
+  `UV_VERSION` before pytest. The integration tests run `docker compose`,
+  which reads those variables.
 - The npm tools lockfile records `OPENSPEC_VERSION` and
   `RENOVATE_VERSION`. Each OpenSpec skill `generatedBy` stamp equals
   `OPENSPEC_VERSION`.
