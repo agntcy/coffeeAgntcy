@@ -94,6 +94,10 @@ jobs:
           . scripts/lib/versions.sh
           echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"
           echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@sha # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
 EOF
     cat >"$REPO/.github/workflows/helm-package-reusable.yaml" <<'EOF'
 jobs:
@@ -141,7 +145,7 @@ run_check() {
 @test "passes when every pin reads versions.sh, including a buildx v4.3.0 comment" {
     run_check
     [ "$status" -eq 0 ]
-    [[ "$output" == *"Node consumers match NODE_VERSION ($PIN)"* ]]
+    [[ "$output" == *"All pinned tool versions match scripts/lib/versions.sh (node $PIN, uv 8.8.8, helm v4.3.0)"* ]]
 }
 
 @test "fails when a workflow sets a numeric node-version" {
@@ -227,6 +231,55 @@ EOF
     [[ "$output" == *"does not export UV_VERSION"* ]]
 }
 
+@test "fails when setup-uv installs uv without a version input" {
+    cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
+jobs:
+  ruff:
+    steps:
+      - run: |
+          . scripts/lib/versions.sh
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@sha # v10.2.0
+      - name: Run Ruff
+        run: uvx ruff check .
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"python-lint.yaml sets up uv without passing UV_VERSION"* ]]
+}
+
+@test "fails when setup-uv passes a literal version" {
+    cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
+jobs:
+  ruff:
+    steps:
+      - run: |
+          . scripts/lib/versions.sh
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+      - uses: astral-sh/setup-uv@sha # v10.2.0
+        with:
+          version: "0.12.23"
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"sets up uv without passing UV_VERSION"* ]]
+}
+
+@test "fails when setup-uv reads UV_VERSION but the workflow never exports it" {
+    cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
+jobs:
+  ruff:
+    steps:
+      - uses: astral-sh/setup-uv@sha # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses astral-sh/setup-uv without exporting UV_VERSION"* ]]
+}
+
 @test "fails when a compose Python build drops UV_VERSION" {
     cat >"$REPO/coffeeAGNTCY/coffee_agents/corto/docker-compose.yaml" <<'EOF'
 services:
@@ -259,6 +312,29 @@ EOF
     [[ "$output" == *"literal"* ]]
 }
 
+@test "passes when another action in the Helm workflow has a numeric version input" {
+    cat >"$REPO/.github/workflows/helm-package-reusable.yaml" <<'EOF'
+jobs:
+  helm-package-and-push:
+    steps:
+      - uses: docker/setup-buildx-action@sha # v4.3.0
+        with:
+          version: v0.21.0
+      - name: Read pinned Helm version
+        run: |
+          . scripts/lib/versions.sh
+          version="${HELM_VERSION#v}"
+      - uses: azure/setup-helm@sha
+        with:
+          version: ${{ steps.helm-version.outputs.version }}
+      - name: Package Helm Chart
+        run: |
+          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+EOF
+    run_check
+    [ "$status" -eq 0 ]
+}
+
 @test "fails when the npm lockfile disagrees with the openspec pin" {
     printf '{ "packages": { "": { "dependencies": { "@fission-ai/openspec": "0.0.1", "renovate": "%s" } } } }\n' "$RENOVATE_PIN" >"$REPO/scripts/lib/npm-tools/package-lock.json"
     run_check
@@ -279,6 +355,318 @@ EOF
     run_check
     [ "$status" -eq 1 ]
     [[ "$output" == *"numeric version"* ]]
+}
+
+@test "fails when a workflow uses an action that installs shellcheck" {
+    printf '%s\n' 'steps:' '  - uses: ludeeus/action-shellcheck@sha # v2.0.0' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses an action that installs shellcheck"* ]]
+}
+
+@test "fails when a workflow installs shellcheck with a package manager and no version" {
+    printf '%s\n' 'steps:' '  - run: sudo apt-get install -y shellcheck' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"installs shellcheck outside scripts/setup.sh"* ]]
+}
+
+@test "fails when a Dockerfile installs bats through npm" {
+    printf '%s\n' 'FROM scratch' 'RUN npm install -g bats' >"$REPO/docker/Dockerfile.extra"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Dockerfile.extra installs bats outside scripts/setup.sh"* ]]
+}
+
+@test "fails when a workflow go-installs task" {
+    printf '%s\n' 'steps:' '  - run: go install github.com/go-task/task/v3/cmd/task@latest' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lint.yaml installs task outside scripts/setup.sh"* ]]
+}
+
+@test "fails when a workflow runs the taskfile.dev install script" {
+    printf '%s\n' 'steps:' '  - run: curl -sL https://taskfile.dev/install.sh | sh' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"downloads a toolchain tool outside scripts/setup.sh"* ]]
+}
+
+@test "passes when a workflow installs unrelated packages or only mentions a tool in a comment" {
+    printf '%s\n' 'steps:' '  # do not apt-get install shellcheck here, setup.sh does it' '  - run: sudo apt-get install -y git curl' '  - run: pip install taskipy' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "ignores a commented-out tool action" {
+    printf '%s\n' 'steps:' '  # - uses: ludeeus/action-shellcheck@sha' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "ignores a local action whose name contains a tool name" {
+    printf '%s\n' 'steps:' '  - uses: ./.github/actions/run-shellcheck-via-task' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when a workflow uses arduino/setup-task" {
+    printf '%s\n' 'steps:' '  - uses: arduino/setup-task@sha # v2.0.0' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses an action that installs task"* ]]
+}
+
+@test "fails when an action name differs only by case" {
+    printf '%s\n' 'steps:' '  - uses: Ludeeus/Action-ShellCheck@sha' >"$REPO/.github/workflows/lint.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses an action that installs shellcheck"* ]]
+}
+
+@test "fails when a composite action under .github/actions uses a tool action" {
+    mkdir -p "$REPO/.github/actions/lint"
+    printf '%s\n' 'runs:' '  steps:' '    - uses: mig4/setup-bats@sha' >"$REPO/.github/actions/lint/action.yml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *".github/actions/lint/action.yml uses an action that installs bats"* ]]
+}
+
+@test "fails when a Dockerfile outside docker/ installs shellcheck" {
+    mkdir -p "$REPO/svc"
+    printf '%s\n' 'FROM scratch' 'RUN apk add shellcheck' >"$REPO/svc/app.Dockerfile"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"app.Dockerfile installs shellcheck outside scripts/setup.sh"* ]]
+}
+
+@test "fails when an inline flow-mapping setup-helm step passes a literal" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - { uses: azure/setup-helm@sha, with: { version: 4.3.0 } }' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml sets Helm version to a literal"* ]]
+}
+
+@test "fails when a setup-helm step lists with: before uses: and passes a literal" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - with:' '          version: "4.3"' '        uses: "azure/setup-helm@sha"' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml sets Helm version to a literal"* ]]
+}
+
+@test "fails when a setup-helm step has no version input" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - uses: azure/setup-helm@sha' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml calls azure/setup-helm without a version input"* ]]
+}
+
+@test "fails when setup-helm version is latest" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - uses: azure/setup-helm@sha' '        with:' '          version: latest' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml sets Helm version to something other than HELM_VERSION"* ]]
+}
+
+@test "fails when a workflow assigns HELM_VERSION a literal" {
+    printf '%s\n' 'env:' '  HELM_VERSION: v4.3.0' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml assigns HELM_VERSION a literal"* ]]
+}
+
+@test "fails when the Helm workflow only mentions versions.sh in a comment" {
+    printf '%s\n' '# . scripts/lib/versions.sh' 'jobs:' '  j:' '    steps:' '      - run: echo HELM_VERSION' >"$REPO/.github/workflows/helm-package-reusable.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"does not source scripts/lib/versions.sh"* ]]
+}
+
+@test "fails when setup-node has no node-version input" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: . scripts/lib/versions.sh; echo $NODE_VERSION' '      - uses: actions/setup-node@sha' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml calls actions/setup-node without a node-version input"* ]]
+}
+
+@test "fails when setup-node reads node-version-file" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: . scripts/lib/versions.sh; echo $NODE_VERSION' '      - uses: actions/setup-node@sha' '        with:' '          node-version-file: .nvmrc' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uses node-version-file for actions/setup-node"* ]]
+}
+
+@test "fails when setup-node gets a v-prefixed literal" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: . scripts/lib/versions.sh; echo $NODE_VERSION' '      - uses: actions/setup-node@sha' '        with:' '          node-version: v26.13.1' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml sets node-version to a literal"* ]]
+}
+
+@test "fails when setup-node reads a matrix value" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: . scripts/lib/versions.sh; echo $NODE_VERSION' '      - uses: actions/setup-node@sha' '        with:' '          node-version: ${{ matrix.node }}' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"other.yaml sets node-version to something other than NODE_VERSION"* ]]
+}
+
+@test "fails when a workflow installs Node through nvm at a literal version" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: nvm install 20.1.0' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"installs Node through a version manager"* ]]
+}
+
+@test "ignores a commented-out node-version literal" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      # node-version: "20"' '      - run: echo hi' >"$REPO/.github/workflows/other.yaml"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when a Dockerfile pins a numeric node tag behind --platform and a registry prefix" {
+    printf '%s\n' 'FROM --platform=$BUILDPLATFORM docker.io/library/node:22-alpine' >"$REPO/docker/Dockerfile.extra"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Dockerfile.extra pins a numeric node image tag"* ]]
+}
+
+@test "passes when another Node image variant carries its own digest" {
+    mkdir -p "$REPO/svc"
+    printf '%s\n' 'ARG NODE_VERSION' 'FROM node:${NODE_VERSION}-bookworm@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' >"$REPO/svc/Dockerfile"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when the pytest workflow exports the pins only in comments" {
+    printf '%s\n' 'jobs:' '  run-tests:' '    steps:' '      # . scripts/lib/versions.sh' '      # echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"' '      # echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"' >"$REPO/.github/workflows/test-reusable.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"test-reusable.yaml does not source scripts/lib/versions.sh"* ]]
+    [[ "$output" == *"does not export NODE_VERSION"* ]]
+    [[ "$output" == *"does not export UV_VERSION"* ]]
+}
+
+@test "fails when a compose file gives NODE_VERSION a default" {
+    cat >"$REPO/coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml" <<'EOF'
+services:
+  ui:
+    build:
+      dockerfile: docker/Dockerfile.ui
+      args:
+        NODE_VERSION: "${NODE_VERSION:-26.13.1}"
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"gives NODE_VERSION a default or a literal"* ]]
+}
+
+@test "fails when a compose file passes a list-form literal" {
+    cat >"$REPO/coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml" <<'EOF'
+services:
+  ui:
+    build:
+      dockerfile: docker/Dockerfile.ui
+      args:
+        - NODE_VERSION=26.13.1
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"gives NODE_VERSION a default or a literal"* ]]
+}
+
+@test "fails when one service in a compose file leaves out the build arg" {
+    cat >"$REPO/coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml" <<'EOF'
+services:
+  ui:
+    build:
+      dockerfile: docker/Dockerfile.ui
+      args:
+        NODE_VERSION: "${NODE_VERSION:?set it}"
+  ui2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docker-compose.yaml:8 builds docker/Dockerfile.ui without passing NODE_VERSION"* ]]
+}
+
+@test "fails when a compose build passes the arg without the :? guard" {
+    cat >"$REPO/coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml" <<'EOF'
+services:
+  ui:
+    build:
+      dockerfile: docker/Dockerfile.ui
+      args:
+        NODE_VERSION: "${NODE_VERSION}"
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"passes NODE_VERSION without \${NODE_VERSION:?...}"* ]]
+}
+
+@test "passes when the build args come before dockerfile in a compose build block" {
+    cat >"$REPO/coffeeAGNTCY/coffee_agents/lungo/docker-compose.yaml" <<'EOF'
+services:
+  ui:
+    build:
+      args:
+        NODE_VERSION: "${NODE_VERSION:?set it}"
+      dockerfile: docker/Dockerfile.ui
+EOF
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when docker-build-reusable assigns a quoted NODE_VERSION literal" {
+    printf '%s\n' 'jobs:' '  j:' '    steps:' '      - run: |' '          . scripts/lib/versions.sh' '          echo "arg=NODE_VERSION=${NODE_VERSION}" ; docker/Dockerfile.ui docker/Dockerfile.python-agent UV_VERSION=${UV_VERSION}' '          NODE_VERSION="26.13.1"' >"$REPO/.github/workflows/docker-build-reusable.yaml"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docker-build-reusable.yaml assigns NODE_VERSION a literal"* ]]
+}
+
+@test "fails when the root engines floor is missing and a dependency has one" {
+    printf '%s\n' '{' '  "packages": {' '    "": {' '      "engines": { "node": "^9.9.9" }' '    },' '    "node_modules/x": {' "      \"engines\": { \"node\": \">=$PIN\" }" '    }' '  }' '}' >"$REPO/coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lungo/frontend/package-lock.json has no root engines.node floor"* ]]
+}
+
+@test "fails when an OpenSpec skill has no generatedBy stamp" {
+    mkdir -p "$REPO/.agents/skills/openspec-explore"
+    printf -- '---\nname: x\n---\n' >"$REPO/.agents/skills/openspec-explore/SKILL.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"openspec-explore/SKILL.md is missing a generatedBy stamp"* ]]
+}
+
+@test "fails when an OpenSpec skill stamp is unquoted and stale" {
+    mkdir -p "$REPO/.agents/skills/openspec-explore"
+    printf -- '---\nmetadata:\n  generatedBy: 0.0.1\n---\n' >"$REPO/.agents/skills/openspec-explore/SKILL.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"generatedBy is 0.0.1, OPENSPEC_VERSION is $OPENSPEC_PIN"* ]]
+}
+
+@test "passes when an OpenSpec skill stamp is single-quoted and current" {
+    mkdir -p "$REPO/.agents/skills/openspec-explore"
+    printf -- "---\nmetadata:\n  generatedBy: '%s'\n---\n" "$OPENSPEC_PIN" >"$REPO/.agents/skills/openspec-explore/SKILL.md"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "reads the install sentence, not an earlier versionless Node.js mention" {
+    printf '%s\n' 'Node.js powers the UI.' "- **Node.js** $PIN (\`NODE_VERSION\` in \`scripts/lib/versions.sh\`) or higher" >"$REPO/TUTORIAL.md"
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when no line is a Node.js install sentence" {
+    printf '%s\n' "Node.js $PIN is used for the UI (\`NODE_VERSION\` in \`scripts/lib/versions.sh\`)." >"$REPO/TUTORIAL.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"TUTORIAL.md has no Node.js install sentence"* ]]
 }
 
 @test "fails when a doc states a different Node version" {

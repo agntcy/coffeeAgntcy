@@ -13,6 +13,7 @@ on:
       - '.github/workflows/helm-push.yaml'
       - '.github/workflows/helm-package-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - 'scripts/lib/versions.sh'
   workflow_dispatch:
     inputs:
       push:
@@ -91,7 +92,7 @@ jobs:
       run:
         shell: bash
     env:
-      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/helm-push.yaml", ".github/workflows/helm-package-reusable.yaml", ".github/actions/check-paths-have-changes"]'
+      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/helm-push.yaml", ".github/workflows/helm-package-reusable.yaml", ".github/actions/check-paths-have-changes", "scripts/lib/versions.sh"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

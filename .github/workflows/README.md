@@ -6,7 +6,7 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
-| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, markdown link integrity, pinned external references, Helm chart version-bump check, Helm chart lock sync, repo-operation-pipeline exceptions audit, uv.lock sync, bash test suite, bash test coverage (`task check:all`) | pull_request, push (main, tags), workflow_dispatch |
+| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, markdown link integrity, pinned external references, Helm chart version-bump check, Helm chart lock sync, repo-operation-pipeline exceptions audit, uv.lock sync, version sync, bash test suite, bash test coverage (`task check:all`) | pull_request, push (main, tags), workflow_dispatch |
 | [`ci-gate.yaml`](ci-gate.yaml) | Required status check: a pure collector with no check of its own - waits for/reports on every sibling workflow run on the same commit (including `checks.yaml`), including startup failures | pull_request, push (main, tags), workflow_dispatch |
 | [`docker-build-push.yaml`](docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`docker-build-reusable.yaml`](docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |

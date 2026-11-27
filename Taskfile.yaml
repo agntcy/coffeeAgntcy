@@ -305,6 +305,21 @@ tasks:
     cmds:
       - scripts/tools/update_node_version.bash
 
+  tools:sync-openspec:
+    desc: >-
+      Regenerate the OpenSpec skills so every generatedBy stamp matches
+      OPENSPEC_VERSION in scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sync-openspec
+      Example: task tools:sync-openspec
+      Run after bumping OPENSPEC_VERSION and refreshing the lockfile with
+      task tools:npm-lock. Installs the pinned openspec from the committed
+      lockfile into a temp dir (npm ci --ignore-scripts) and runs
+      openspec update. No network when every stamp already matches. Review
+      the skill diff. See scripts/tools/update_openspec_skills.bash.
+    cmds:
+      - scripts/tools/update_openspec_skills.bash
+
   tools:sync-uv:
     desc: >-
       Rewrite the Python agent uv image digest so it matches UV_VERSION

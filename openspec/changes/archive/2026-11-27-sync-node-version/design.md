@@ -54,6 +54,10 @@ See proposal.md for why. The constraints that shape the approach:
 - Folding Node into the shared application package catalog. That catalog
   is for npm and Python package pins, and its design leaves `engines`
   alone.
+- Re-fetching the image digest for a tag that did not change. The check
+  compares versions, so the digest in `scripts/lib/node-image.txt` stays
+  as written until `NODE_VERSION` changes. A new version changes the tag
+  and `task tools:sync-node` fetches the digest again.
 
 ## Decisions
 

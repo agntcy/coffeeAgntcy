@@ -3,7 +3,7 @@
 # lint+format, workflow file lint, workflow permission scoping, markdown
 # link integrity, pinned external references, the Helm chart version-bump
 # check, the Helm chart lock sync check, the repo-operation-pipeline
-# exceptions audit, uv.lock sync, Node version sync,
+# exceptions audit, uv.lock sync, version sync,
 # the bash test suite, and the bash test coverage audit - in parallel,
 # always running all of them regardless of earlier failures, then fails
 # if any did. Each check's output is captured to its own log file (so

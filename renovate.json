@@ -150,6 +150,7 @@
         "commands": [
           "scripts/tools/update_checksums.bash",
           "scripts/tools/update_npm_lock.bash",
+          "scripts/tools/update_openspec_skills.bash",
           "scripts/tools/update_node_version.bash",
           "scripts/tools/update_uv_image.bash"
         ],
@@ -157,6 +158,7 @@
         "fileFilters": [
           "scripts/lib/checksums.txt",
           "scripts/lib/npm-tools/package-lock.json",
+          ".agents/skills/openspec-*/SKILL.md",
           "scripts/lib/node-image.txt",
           "docker/Dockerfile.ui",
           "coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json",

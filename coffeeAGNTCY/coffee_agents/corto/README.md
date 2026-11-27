@@ -331,7 +331,14 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-The fastest way to get started is using Docker Compose to spin up the entire stack:
+The fastest way to get started is using Docker Compose to spin up the entire stack.
+
+Every `docker compose` command (including `down` and infra-only `up`) needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+```sh
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
+
+Then start the stack:
 ```sh
 docker compose up
 ```

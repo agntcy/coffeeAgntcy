@@ -35,9 +35,17 @@ jobs:
           cache: true
           cache-dependency-path: "**/*.sum"
 
+      - name: Export uv pin
+        run: |
+          # shellcheck source=scripts/lib/versions.sh
+          . scripts/lib/versions.sh
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+
       # TODO: Move uv setup to setup.sh
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
 
       - name: Bootstrap repo-local tooling
         run: ./scripts/setup.sh
@@ -50,10 +58,11 @@ jobs:
           ## Discovery
           RENOVATE_AUTODISCOVER: "true"
           RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
-          ## Post-upgrade tasks: allow exactly the checksum, lockfile, Node
-          ## consumer, and uv image regeneration and the frontend lint
-          ## autofix (see postUpgradeTasks in renovate.json), nothing else.
-          RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock|node_version|uv_image)\\.bash$", "^scripts/renovate/fix_frontend_lint\\.bash$"]'
+          ## Post-upgrade tasks: allow exactly the checksum, lockfile,
+          ## OpenSpec skill, Node consumer, and uv image regeneration and
+          ## the frontend lint autofix (see postUpgradeTasks in
+          ## renovate.json), nothing else.
+          RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock|openspec_skills|node_version|uv_image)\\.bash$", "^scripts/renovate/fix_frontend_lint\\.bash$"]'
           ## Project sync
           RENOVATE_PLATFORM_COMMIT: "enabled"
           RENOVATE_TOKEN: ${{ steps.app-token.outputs.token }}

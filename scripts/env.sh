@@ -17,17 +17,23 @@ export PATH="$_repo_root/.tools/bin:$_repo_root/.tools/node/bin:$_repo_root/.too
 # Export only NODE_VERSION and UV_VERSION. The other pins stay inside
 # this subshell so an image build can read those two pins without taking
 # the rest of the toolchain versions into the environment.
-NODE_VERSION="$(
-    # shellcheck source=scripts/lib/versions.sh
-    . "$_repo_root/scripts/lib/versions.sh"
-    printf '%s' "$NODE_VERSION"
-)"
-export NODE_VERSION
-UV_VERSION="$(
-    # shellcheck source=scripts/lib/versions.sh
-    . "$_repo_root/scripts/lib/versions.sh"
-    printf '%s' "$UV_VERSION"
-)"
-export UV_VERSION
+# When versions.sh is missing (sourced outside the repo, via the pwd
+# fallback), the pins are left alone instead of aborting a set -e shell or
+# exporting empty values.
+if [ -f "$_repo_root/scripts/lib/versions.sh" ]; then
+    NODE_VERSION="$(
+        # shellcheck source=scripts/lib/versions.sh
+        . "$_repo_root/scripts/lib/versions.sh"
+        printf '%s' "$NODE_VERSION"
+    )"
+    UV_VERSION="$(
+        # shellcheck source=scripts/lib/versions.sh
+        . "$_repo_root/scripts/lib/versions.sh"
+        printf '%s' "$UV_VERSION"
+    )"
+    # Both were assigned in this shell from the subshells' output.
+    # shellcheck disable=SC2031
+    export NODE_VERSION UV_VERSION
+fi
 unset -f _coffeeagntcy_repo_root
 unset _repo_root

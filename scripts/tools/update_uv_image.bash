@@ -32,6 +32,12 @@ die() {
     exit 1
 }
 
+# Scratch space for the rewrite. It is built here and copied over the
+# target with cat, so the Dockerfile keeps its own mode (mktemp files are
+# 0600 and mv would carry that onto it), and a die leaves nothing behind.
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
 dockerfile_digest() {
     local line
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -65,8 +71,7 @@ read_record() {
 }
 
 rewrite_dockerfile_digest() {
-    local digest="$1" tmp
-    tmp="$(mktemp)"
+    local digest="$1" tmp="$TMP_DIR/out"
     awk -v digest="$digest" '
         BEGIN { done = 0 }
         /^FROM / && index($0, "astral/uv:") > 0 {
@@ -77,7 +82,7 @@ rewrite_dockerfile_digest() {
         { print }
         END { if (done == 0) exit 2 }
     ' "$DOCKERFILE" >"$tmp" || die "$DOCKERFILE has no digest-pinned FROM astral/uv line"
-    mv "$tmp" "$DOCKERFILE"
+    cat "$tmp" >"$DOCKERFILE"
 }
 
 write_record() {
@@ -90,19 +95,29 @@ EOF
 }
 
 fetch_manifest_list_digest() {
-    local version="$1" token headers digest
+    local version="$1" token headers content_type digest
     token="$(
         curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:astral/uv:pull" |
-            sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
+            sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
     )"
     [[ -n "$token" ]] || die "Docker Hub token response had no token"
     headers="$(
-        curl -fsSL -D - -o /dev/null \
+        curl -fsSLI \
             -H "Authorization: Bearer ${token}" \
             -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json" \
-            "https://registry-1.docker.io/v2/astral/uv/manifests/${version}${TAG_SUFFIX}"
+            "https://registry-1.docker.io/v2/astral/uv/manifests/${version}${TAG_SUFFIX}" | tr -d '\r'
     )"
-    digest="$(printf '%s\n' "$headers" | awk 'tolower($1) == "docker-content-digest:" { print $2 }' | tr -d '\r' | head -n 1)"
+    # The registry may answer with a single-platform manifest even when the
+    # Accept header asks for a list, and -L can leave several response
+    # headers in the output. Read the last of each, and refuse anything but
+    # a manifest list or an OCI index: a single-platform digest would break
+    # a multi-arch build.
+    content_type="$(awk 'tolower($1) == "content-type:" { v = tolower($2) } END { print v }' <<<"$headers")"
+    case "$content_type" in
+        application/vnd.docker.distribution.manifest.list.v2+json* | application/vnd.oci.image.index.v1+json*) ;;
+        *) die "expected a manifest list or OCI index for astral/uv:${version}${TAG_SUFFIX}, got content-type: ${content_type:-<empty>}" ;;
+    esac
+    digest="$(awk 'tolower($1) == "docker-content-digest:" { v = $2 } END { print v }' <<<"$headers")"
     [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || die "no manifest-list digest for astral/uv:${version}${TAG_SUFFIX}"
     printf '%s' "$digest"
 }

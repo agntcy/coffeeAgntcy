@@ -9,7 +9,7 @@ description: >-
   states the Node version.
 ---
 
-# Node version sync
+# Version sync
 
 ## Rule
 
@@ -54,7 +54,14 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
   rewrites them. `python3.13-trixie-slim` stays a literal.
 - Helm CI
   ([`.github/workflows/helm-package-reusable.yaml`](../../../.github/workflows/helm-package-reusable.yaml))
-  sources `HELM_VERSION` and passes it without the leading `v`.
+  sources `HELM_VERSION` and passes it without the leading `v`. Only the
+  `azure/setup-helm` step's `version:` input is checked, so another
+  action's `version:` input in that file is not a Helm pin.
+- Every `astral-sh/setup-uv` step in `.github/workflows/` passes
+  `version: ${{ env.UV_VERSION }}`, and its workflow exports
+  `UV_VERSION` from `scripts/lib/versions.sh` first. A step with no
+  `version:` input or a literal one fails the check, because the action
+  would install its own choice of uv.
 - Python tests
   ([`.github/workflows/test-reusable.yaml`](../../../.github/workflows/test-reusable.yaml))
   source `scripts/lib/versions.sh` and export `NODE_VERSION` and
@@ -62,11 +69,56 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
   which reads those variables.
 - The npm tools lockfile records `OPENSPEC_VERSION` and
   `RENOVATE_VERSION`. Each OpenSpec skill `generatedBy` stamp equals
-  `OPENSPEC_VERSION`.
+  `OPENSPEC_VERSION`. After an openspec bump, `task tools:sync-openspec`
+  regenerates the stamps, and Renovate runs the same script.
 - actionlint, bats, shellcheck, shfmt, and task are installed only by
   `scripts/setup.sh` and `scripts/lib/assets.sh`, which read the
-  variables. A numeric install of one of them in a workflow or
-  Dockerfile fails the check.
+  variables. Any other install of one of them in a workflow or
+  Dockerfile fails the check, at any version: a package manager line
+  (`apt-get`, `apk`, `brew`, `pip`, `npm`, `go install`, ...) that names
+  it, the taskfile.dev install script, or a release download. So does a
+  `uses:` of an action that installs one of them (for example
+  `ludeeus/action-shellcheck`), whatever its tag, because it brings a
+  second copy. Comment lines are skipped.
+- The check compares versions. It does not notice a registry tag that
+  moves under the same version, so a digest file stays as written until
+  its version changes.
+
+How the check reads a file, so a wrong shape fails and a harmless one
+does not:
+
+- Full-line comments are dropped before any match. A comment can neither
+  satisfy a check (a `# . scripts/lib/versions.sh` line is not a source
+  step) nor trip one.
+- An action's version input is read per step. `actions/setup-node`
+  needs `node-version:` and `azure/setup-helm` needs `version:`, each as
+  `${{ env.<PIN> }}` or `${{ steps.<id>.outputs.<name> }}`. A missing
+  input, a literal (including `v26.13.1`), another expression such as a
+  matrix value, or `node-version-file:` fails. An inline flow mapping, a
+  `with:` block before `uses:`, a quoted action, and a different case of
+  the action name count. Every workflow is scanned, and so is any
+  `HELM_VERSION` or `NODE_VERSION` literal assignment. A version manager
+  install (`nvm install 20.1.0`) at a literal fails.
+- Every compose `build:` block that names `docker/Dockerfile.ui` or
+  `docker/Dockerfile.python-agent` passes its build arg as
+  `${VAR:?...}`, so a service that leaves it out is named. A default
+  (`:-`, `:=`) or a literal fails. The message is
+  `run: source "$(git rev-parse --show-toplevel)/scripts/env.sh"`, which
+  works from any directory. Docs that run `docker compose` or the
+  integration tests tell the reader to run that line first.
+- Any `FROM node:` or `image: node:` line (with `--platform` flags, a
+  `docker.io/library/` prefix, or quotes) must use `${NODE_VERSION}`.
+  Only `docker/Dockerfile.ui` must carry the digest in
+  `scripts/lib/node-image.txt`, because another Node variant has its own.
+- The root `engines.node` floor is the first one in a lockfile, before
+  any `node_modules/` entry. A root entry with no `>=` floor is an error,
+  never a dependency's floor.
+- Every OpenSpec skill has a `generatedBy` stamp, quoted or not.
+- The two digest generators accept only a manifest list or an OCI index,
+  read from the last response, and refuse a single-platform manifest.
+- A change to `scripts/lib/versions.sh` alone runs the Helm and image
+  build workflows on a pull request, because both list it in their path
+  filters.
 
 Renovate's dockerfile manager is disabled for the `astral/uv` package in
 `docker/Dockerfile.python-agent` only. The dir-ctl and dir-mcp `FROM`

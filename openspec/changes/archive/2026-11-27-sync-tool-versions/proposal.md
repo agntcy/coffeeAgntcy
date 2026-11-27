@@ -28,9 +28,11 @@ are forced to read it. Helm CI still passes a literal, and
   fails the check.
 - actionlint, bats, shellcheck, shfmt, and task have no install outside
   `scripts/setup.sh` and `scripts/lib/assets.sh`. The check fails if a
-  workflow or Dockerfile gains a numeric install of one of them.
+  workflow or Dockerfile gains an install of one of them, at any
+  version.
 - Refresh the uv image digest in the same Renovate pull request that
-  bumps `UV_VERSION`.
+  bumps `UV_VERSION`, and regenerate the OpenSpec skill stamps in the
+  one that bumps `OPENSPEC_VERSION`.
 - The `v` prefix examples in the pinned-tool-versions rule stop
   embedding the live shfmt and task versions.
 

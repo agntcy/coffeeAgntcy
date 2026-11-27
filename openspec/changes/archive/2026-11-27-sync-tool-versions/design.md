@@ -45,6 +45,10 @@ digest.
   the GitHub Action, not uv or Helm.
 - Rewriting changelog history or archived OpenSpec changes.
 - Generating the `v` prefix examples. They stop quoting live versions.
+- Re-fetching an image digest for a tag that did not change. The check
+  compares versions, so a digest recorded for `UV_VERSION` stays as
+  written until the version changes. A new version changes the tag and
+  the sync task fetches the digest again.
 
 ## Decisions
 
@@ -87,13 +91,21 @@ Helm pin.
 actionlint, bats, shellcheck, shfmt, and task have no second install.
 The check asserts `scripts/setup.sh` and `scripts/lib/assets.sh` still
 expand each variable, and fails if a workflow or Dockerfile line
-installs one of them with a numeric version.
+installs one of them anywhere else: a package manager line that names
+the tool, the taskfile.dev install script, or a release download. The
+rule does not depend on a version number, so `apt-get install shellcheck`
+fails too. Comment lines are skipped.
 
 The npm lockfile and the OpenSpec `generatedBy` stamps are literals
 that cannot source the shell file. The check compares them to
 `OPENSPEC_VERSION` and `RENOVATE_VERSION`. The existing
-`task tools:npm-lock` remains the lockfile fix. `openspec update`
-remains the stamp fix. Neither is copied into the uv generator.
+`task tools:npm-lock` remains the lockfile fix.
+`scripts/tools/update_openspec_skills.bash` (`task tools:sync-openspec`)
+is the stamp fix: it installs the pinned openspec from the committed
+lockfile into a temp dir and runs `openspec update`, and it does nothing
+when every stamp already matches. Renovate runs it after the lockfile
+generator, so an openspec bump arrives with its stamps. Neither is
+copied into the uv generator.
 
 The pinned-tool-versions sentence is reworded so a shfmt or task bump
 does not edit it.
@@ -124,6 +136,12 @@ check fails if the `FROM` line becomes a numeric tag.
   delta.
 
 ## Migration Plan
+
+The Python agent images move from uv 0.11.16 to `UV_VERSION` (0.12.23),
+a 0.x minor bump of the uv that runs `uv sync --locked` in every agent
+image. One image (lungo `brazil-farm`) was built on 0.12.23 and reports
+`uv 0.12.23`. The release notes list this under the breaking and
+migration block, with the CHANGELOG entry written at release time.
 
 `source scripts/env.sh` before `docker compose` or `docker build` of a
 Python agent image, the same step the UI image already requires. A

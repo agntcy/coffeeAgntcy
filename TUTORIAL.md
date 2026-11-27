@@ -121,7 +121,13 @@ NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
 
 ---
 ### 2. Launch the Demo Stack
-All workshop services are containerized - start everything with one command:
+All workshop services are containerized. Every `docker compose` command (including `down` and infra-only `up`) needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+
+```bash
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
+
+Then start everything with one command:
 
 ```bash
 docker compose up --build

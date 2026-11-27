@@ -63,6 +63,7 @@ bumps a version fails `setup.sh` (and the `assets.bats` test) until
 Renovate does this itself: a `postUpgradeTasks` entry in `renovate.json`
 reruns `scripts/tools/update_checksums.bash`,
 `scripts/tools/update_npm_lock.bash`,
+`scripts/tools/update_openspec_skills.bash`,
 `scripts/tools/update_node_version.bash`, and
 `scripts/tools/update_uv_image.bash` on every `versions.sh` bump (the
 self-hosted workflow allows exactly those commands, plus the frontend

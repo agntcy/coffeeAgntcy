@@ -63,6 +63,8 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
 
       - name: Apply uv overrides/constraints (if applicable)
         if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}

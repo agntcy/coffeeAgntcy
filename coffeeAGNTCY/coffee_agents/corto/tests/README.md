@@ -37,7 +37,11 @@ cp coffeeAGNTCY/coffee_agents/corto/.env.example .env
 # Set LLM settings required by agents
 ```
 
-3. Integration and LLM suites require Docker.
+3. Integration and LLM suites require Docker. They run `docker compose`, which needs the pinned image versions in the environment. Run this once per shell, from anywhere in the repo:
+
+```bash
+source "$(git rev-parse --show-toplevel)/scripts/env.sh"
+```
 
 ## Running tests
 

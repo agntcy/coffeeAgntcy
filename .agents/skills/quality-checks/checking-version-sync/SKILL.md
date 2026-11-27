@@ -37,7 +37,19 @@ for the underlying rule.
         docker buildx imagetools inspect node:<NODE_VERSION>-alpine
 - [ ] 4. For a numeric uv tag, a Helm version literal, a lockfile
         openspec or renovate version, or an OpenSpec generatedBy stamp
-        that disagrees, read the pin. For the uv digest, run:
+        that disagrees, read the pin. For a stale generatedBy stamp,
+        run: task tools:sync-openspec. For a tool install the check
+        reports "outside scripts/setup.sh" or an action that installs
+        actionlint, bats, shellcheck, shfmt, or task, replace the action
+        or install line with a task command (scripts/setup.sh installs
+        the tool at its pin). For a test-reusable.yaml message that it
+        does not source versions.sh or export NODE_VERSION or
+        UV_VERSION, restore the "Export image build pins" step in
+        .github/workflows/test-reusable.yaml (a comment copy of it does
+        not count). For a setup-uv step that reports
+        "without passing UV_VERSION", export UV_VERSION from
+        scripts/lib/versions.sh into $GITHUB_ENV and pass
+        version: ${{ env.UV_VERSION }}. For the uv digest, run:
         task tools:sync-uv
 - [ ] 5. Re-run task versions:check to confirm it's clean
 ```

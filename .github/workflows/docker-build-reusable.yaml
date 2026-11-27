@@ -87,7 +87,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Version build-arg for the image
-        id: node-build-arg
+        id: version-build-arg
         env:
           DOCKERFILE: ${{ inputs.dockerfile }}
         run: |
@@ -111,7 +111,7 @@ jobs:
           platforms: ${{ inputs.platforms }}
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}:${{ inputs.image_tag }}
           build-args: |
-            ${{ steps.node-build-arg.outputs.arg }}
+            ${{ steps.version-build-arg.outputs.arg }}
             BUILD_VERSION=${{ inputs.image_tag }}
             BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
             BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Fails when a Node install does not read NODE_VERSION from
-# scripts/lib/versions.sh, or when a consumer that cannot read the
-# variable (UI image digest, frontend engines.node, the docs that state
-# the Node version) disagrees with it.
+# Fails when any pin in scripts/lib/versions.sh has a second copy: a
+# literal Node, uv, or Helm install, an image digest, an engines.node
+# floor, a doc sentence, an npm lockfile version, or an OpenSpec skill
+# stamp that disagrees, or an install of a setup.sh-only tool outside
+# scripts/setup.sh.
 #
 # One function per versions.sh pin. Node, uv, Helm, the npm tools, the
 # OpenSpec skill stamps, and the tools that are installed only by setup.sh.
@@ -29,9 +30,6 @@ NPM_LOCK="scripts/lib/npm-tools/package-lock.json"
 MARKER='(`NODE_VERSION` in `scripts/lib/versions.sh`)'
 # shellcheck disable=SC2016
 NODE_EXPANSION='${NODE_VERSION}'
-# shellcheck disable=SC2016
-NODE_EXPANSION_OPEN='${NODE_VERSION'
-
 DOC_FILES=(
     "TUTORIAL.md"
     "coffeeAGNTCY/coffee_agents/corto/README.md"
@@ -54,15 +52,88 @@ report() {
     failed=1
 }
 
+# Prints every line of a file except full-line comments. Inline comments
+# stay: stripping from # on would break ${HELM_VERSION#v}. A whole-file
+# grep goes through this, so a comment cannot satisfy or trip a check.
+active_lines() {
+    grep -Ev '^[[:space:]]*#' "$1" || true
+}
+
+# has_active <file> <grep flag letters> <pattern>: succeeds when a
+# non-comment line of the file matches. The text goes through a variable,
+# not a pipe, because grep -q closing early would fail a pipefail pipeline.
+has_active() {
+    local file="$1" flags="$2" pattern="$3" text
+    text="$(active_lines "$file")"
+    grep -q"$flags" -- "$pattern" <<<"$text"
+}
+
+# check_action_version_input <file> <action> <input key> <VAR> <label> [forbidden key]
+# Every step that uses <action> in the workflow file must pass its <key>
+# input as ${{ env.VAR }} or ${{ steps.X.outputs.Y }}. A missing input, a
+# literal, any other expression, or the forbidden key (for example
+# node-version-file) fails. Steps are buffered, so an inline flow mapping,
+# a with: block before uses:, and a quoted action all count. Comment lines
+# are skipped and the action name is matched without regard to case.
+check_action_version_input() {
+    local file="$1" action="$2" key="$3" var="$4" label="$5" forbid="${6:-}" msg
+    while IFS= read -r msg; do
+        [[ -n "$msg" ]] && report "$msg"
+    done < <(awk -v action="$action" -v key="$key" -v var="$var" -v label="$label" -v forbid="$forbid" -v q="'" '
+        BEGIN {
+            allowed = "^\\$\\{\\{[[:space:]]*(steps\\.[A-Za-z0-9_-]+\\.outputs\\.[A-Za-z0-9_-]+|env\\." var ")[[:space:]]*\\}\\}"
+            literal = "^[\"" q "]?v?[0-9]"
+            keyre = "(^|[^A-Za-z0-9_-])" key ":[[:space:]]*"
+            usesre = "uses:[[:space:]]*[\"" q "]?" tolower(action) "@"
+            step_indent = -1
+        }
+        function flush_step() {
+            if (has_action) {
+                if (has_forbid) {
+                    print FILENAME " uses " forbid " for " action " instead of " var ". Source scripts/lib/versions.sh and pass " var "."
+                } else if (!has_key) {
+                    print FILENAME " calls " action " without a " key " input. Pass " var " from scripts/lib/versions.sh."
+                } else if (value !~ allowed) {
+                    if (value ~ literal) {
+                        print FILENAME " sets " label " to a literal. Source scripts/lib/versions.sh and pass " var "."
+                    } else {
+                        print FILENAME " sets " label " to something other than " var ". Source scripts/lib/versions.sh and pass " var "."
+                    }
+                }
+            }
+            has_action = 0; has_key = 0; has_forbid = 0; value = ""; step_indent = -1
+        }
+        /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+        {
+            match($0, /^[[:space:]]*/)
+            indent = RLENGTH
+            if ($0 ~ /^[[:space:]]*-[[:space:]]/ && (step_indent < 0 || indent <= step_indent)) {
+                flush_step()
+                step_indent = indent
+            } else if (step_indent >= 0 && indent <= step_indent) {
+                flush_step()
+            }
+            if (step_indent >= 0) {
+                if (tolower($0) ~ usesre) has_action = 1
+                if (forbid != "" && index($0, forbid ":") > 0) has_forbid = 1
+                if (match($0, keyre)) {
+                    has_key = 1
+                    value = substr($0, RSTART + RLENGTH)
+                }
+            }
+        }
+        END { flush_step() }
+    ' "$file")
+}
+
 first_node_semver() {
     local file="$1" line
     while IFS= read -r line || [[ -n "$line" ]]; do
-        if [[ "$line" == *"Node.js"* ]]; then
-            if [[ "$line" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
-                printf '%s' "${BASH_REMATCH[0]}"
-                return 0
-            fi
-            return 1
+        # The install sentence has Node.js, a semver, and " or higher". An
+        # earlier versionless Node.js mention is not the sentence.
+        if [[ "$line" == *"Node.js"* && "$line" == *" or higher"* && "$line" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            printf '%s' "${BASH_REMATCH[0]}"
+            return 0
         fi
     done <"$file"
     return 1
@@ -71,7 +142,10 @@ first_node_semver() {
 first_node_engine() {
     local file="$1" line
     while IFS= read -r line || [[ -n "$line" ]]; do
-        if [[ "$line" =~ \"node\":\ \"(>=[0-9]+\.[0-9]+\.[0-9]+)\" ]]; then
+        # The root floor comes before the first dependency. Past that point
+        # a match would be a dependency's engines.node, not ours.
+        [[ "$line" == *'"node_modules/'* ]] && return 1
+        if [[ "$line" =~ \"node\":[[:space:]]*\"(>=[0-9]+\.[0-9]+\.[0-9]+)\" ]]; then
             printf '%s' "${BASH_REMATCH[1]}"
             return 0
         fi
@@ -115,38 +189,49 @@ check_workflows() {
     }
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
-        grep -q 'node-version:' "$file" || continue
-        if grep -Eq 'node-version:[[:space:]]*["'\'']?[0-9]' "$file"; then
-            report "$file sets node-version to a literal. Source scripts/lib/versions.sh and pass NODE_VERSION."
+        if has_active "$file" E '(node-version:|uses:[[:space:]]*["'\'']?[Aa]ctions/setup-node@)'; then
+            check_action_version_input "$file" actions/setup-node node-version NODE_VERSION node-version node-version-file
+            if ! has_active "$file" F 'scripts/lib/versions.sh'; then
+                report "$file sets node-version without sourcing scripts/lib/versions.sh"
+            fi
+            if ! has_active "$file" F 'NODE_VERSION'; then
+                report "$file sets node-version without reading NODE_VERSION"
+            fi
         fi
-        if ! grep -Fq 'scripts/lib/versions.sh' "$file"; then
-            report "$file sets node-version without sourcing scripts/lib/versions.sh"
-        fi
-        if ! grep -Fq 'NODE_VERSION' "$file"; then
-            report "$file sets node-version without reading NODE_VERSION"
+        # A version manager at a literal version is a second Node install.
+        if has_active "$file" E '(^|[^A-Za-z0-9_-])(nvm|fnm|asdf|volta)[[:space:]]+(install|use)[[:space:]]+(node[[:space:]@]+)?["'\'']?v?[0-9]'; then
+            report "$file installs Node through a version manager at a literal version. Read NODE_VERSION from scripts/lib/versions.sh."
         fi
     done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -not -path '*/node_modules/*' | sort)
 }
 
 check_images() {
     local digest="$1" file line found
+    # FROM may carry flags (--platform=...) and a registry prefix, and a
+    # compose image: line may be quoted.
+    local node_image_re='^[[:space:]]*([Ff][Rr][Oo][Mm][[:space:]]+(--[^[:space:]]+[[:space:]]+)*|image:[[:space:]]*["'\'']?)(docker\.io/)?(library/)?node[:@]'
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         found=0
         while IFS= read -r line || [[ -n "$line" ]]; do
-            [[ "$line" =~ ^[[:space:]]*FROM[[:space:]]+node: || "$line" =~ ^[[:space:]]*image:[[:space:]]*[\"\']?node: ]] || continue
+            [[ "$line" =~ $node_image_re ]] || continue
             found=1
             if [[ "$line" =~ node:[0-9] ]]; then
                 report "$file pins a numeric node image tag. Use ${NODE_EXPANSION} from scripts/lib/versions.sh."
             elif [[ "$line" != *"$NODE_EXPANSION"* ]]; then
                 report "$file has a node image that does not use ${NODE_EXPANSION}"
             fi
-            if [[ "$line" =~ @(sha256:[0-9a-f]{64}) ]]; then
-                if [[ "${BASH_REMATCH[1]}" != "$digest" ]]; then
-                    report "$file digest ${BASH_REMATCH[1]} does not match $NODE_IMAGE_FILE ($digest)"
+            # Only the UI image carries the recorded Alpine digest. Another
+            # Node image (a different variant) has its own digest, and
+            # pins:check already requires it to be immutable.
+            if [[ "${file#./}" == "docker/Dockerfile.ui" ]]; then
+                if [[ "$line" =~ @(sha256:[0-9a-f]{64}) ]]; then
+                    if [[ "${BASH_REMATCH[1]}" != "$digest" ]]; then
+                        report "$file digest ${BASH_REMATCH[1]} does not match $NODE_IMAGE_FILE ($digest)"
+                    fi
+                else
+                    report "$file node image has no @sha256 digest"
                 fi
-            else
-                report "$file node image has no @sha256 digest"
             fi
         done <"$file"
         if [[ "${file#./}" == "docker/Dockerfile.ui" && "$found" -eq 0 ]]; then
@@ -155,21 +240,55 @@ check_images() {
     done < <(find . -type f \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' -o -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/.tools/*' | sort)
 }
 
+# check_compose_args <file> <dockerfile> <VAR>
+# Every build: block of a compose file that names <dockerfile> must pass
+# <VAR> as a build arg through ${VAR:?...}, so a missing variable fails
+# the build instead of falling back to a second copy. A default (:- or
+# :=) or a literal anywhere in the file's active lines fails too. Blocks
+# are matched one by one, so a service that leaves the arg out is named
+# even when another service in the same file has it.
+check_compose_args() {
+    local file="$1" dockerfile="$2" var="$3" msg
+    has_active "$file" F "$dockerfile" || return 0
+    if has_active "$file" E "\\\$\\{${var}:?[-=]|${var}[[:space:]]*[=:][[:space:]]*[\"']?v?[0-9]"; then
+        report "$file gives $var a default or a literal. Pass it with \${$var:?...} only."
+    fi
+    while IFS= read -r msg; do
+        [[ -n "$msg" ]] && report "$msg"
+    done < <(awk -v df="$dockerfile" -v var="$var" '
+        function flush_block() {
+            if (in_build && has_df) {
+                if (!has_var) print FILENAME ":" build_line " builds " df " without passing " var
+                else if (!has_guard) print FILENAME ":" build_line " passes " var " without ${" var ":?...}"
+            }
+            in_build = 0; has_df = 0; has_var = 0; has_guard = 0
+        }
+        /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+        {
+            match($0, /^[[:space:]]*/)
+            indent = RLENGTH
+            if (in_build && indent <= build_indent) flush_block()
+            if (!in_build && $0 ~ /^[[:space:]]*build:[[:space:]]*$/) {
+                in_build = 1; build_indent = indent; build_line = NR
+                next
+            }
+            if (in_build) {
+                if (index($0, "dockerfile:") > 0 && index($0, df) > 0) has_df = 1
+                if ($0 ~ (var "[[:space:]]*(:|=)")) {
+                    has_var = 1
+                    if (index($0, "${" var ":?") > 0) has_guard = 1
+                }
+            }
+        }
+        END { flush_block() }
+    ' "$file")
+}
+
 check_ui_callers() {
     local file
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
-        grep -Fq 'docker/Dockerfile.ui' "$file" || continue
-        if ! grep -Fq 'NODE_VERSION' "$file"; then
-            report "$file builds docker/Dockerfile.ui without passing NODE_VERSION"
-            continue
-        fi
-        if grep -Eq 'NODE_VERSION:[[:space:]]*["'\'']?[0-9]+\.[0-9]+\.[0-9]+' "$file"; then
-            report "$file assigns NODE_VERSION a literal. Pass the variable."
-        fi
-        if ! grep -Fq "$NODE_EXPANSION_OPEN" "$file"; then
-            report "$file mentions NODE_VERSION but does not expand ${NODE_EXPANSION}"
-        fi
+        check_compose_args "$file" docker/Dockerfile.ui NODE_VERSION
     done < <(find . -type f \( -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/.tools/*' | sort)
 
     local reusable=".github/workflows/docker-build-reusable.yaml"
@@ -177,16 +296,16 @@ check_ui_callers() {
         report "$reusable is missing; CI UI builds must inject NODE_VERSION"
         return 0
     fi
-    if ! grep -Fq 'scripts/lib/versions.sh' "$reusable"; then
+    if ! has_active "$reusable" F 'scripts/lib/versions.sh'; then
         report "$reusable does not source scripts/lib/versions.sh"
     fi
-    if ! grep -Fq 'docker/Dockerfile.ui' "$reusable"; then
+    if ! has_active "$reusable" F 'docker/Dockerfile.ui'; then
         report "$reusable does not limit the Node build-arg to docker/Dockerfile.ui"
     fi
-    if ! grep -Fq "NODE_VERSION=$NODE_EXPANSION" "$reusable"; then
+    if ! has_active "$reusable" F "NODE_VERSION=$NODE_EXPANSION"; then
         report "$reusable does not pass NODE_VERSION from scripts/lib/versions.sh"
     fi
-    if grep -Eq 'NODE_VERSION=[0-9]' "$reusable"; then
+    if has_active "$reusable" E 'NODE_VERSION=["'\'']?v?[0-9]'; then
         report "$reusable assigns NODE_VERSION a literal"
     fi
 }
@@ -198,10 +317,10 @@ check_setup() {
         return 0
     fi
     # shellcheck disable=SC2016
-    if ! grep -Fq '$NODE_VERSION' "$setup" && ! grep -Fq '${NODE_VERSION}' "$setup"; then
+    if ! has_active "$setup" F '$NODE_VERSION' && ! has_active "$setup" F '${NODE_VERSION}'; then
         report "$setup no longer installs Node from NODE_VERSION"
     fi
-    if grep -Eq 'node-v[0-9]' "$setup"; then
+    if has_active "$setup" E 'node-v[0-9]'; then
         report "$setup hardcodes a node-v<version> directory"
     fi
 }
@@ -260,9 +379,6 @@ check_node() {
 
 # shellcheck disable=SC2016
 UV_EXPANSION='${UV_VERSION}'
-# shellcheck disable=SC2016
-UV_EXPANSION_OPEN='${UV_VERSION'
-
 check_uv_record() {
     UV_RECORD_VERSION=""
     UV_RECORD_DIGEST=""
@@ -325,17 +441,7 @@ check_uv() {
 
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
-        grep -Fq 'docker/Dockerfile.python-agent' "$file" || continue
-        if ! grep -Fq 'UV_VERSION' "$file"; then
-            report "$file builds docker/Dockerfile.python-agent without passing UV_VERSION"
-            continue
-        fi
-        if grep -Eq 'UV_VERSION:[[:space:]]*["'\'']?[0-9]+\.[0-9]+\.[0-9]+' "$file"; then
-            report "$file assigns UV_VERSION a literal. Pass the variable."
-        fi
-        if ! grep -Fq "$UV_EXPANSION_OPEN" "$file"; then
-            report "$file mentions UV_VERSION but does not expand ${UV_EXPANSION}"
-        fi
+        check_compose_args "$file" docker/Dockerfile.python-agent UV_VERSION
     done < <(find . -type f \( -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) -not -path '*/.git/*' -not -path '*/node_modules/*' -not -path '*/.tools/*' | sort)
 
     local reusable=".github/workflows/docker-build-reusable.yaml"
@@ -343,15 +449,52 @@ check_uv() {
         report "$reusable is missing; CI Python image builds must inject UV_VERSION"
         return 0
     fi
-    if ! grep -Fq 'docker/Dockerfile.python-agent' "$reusable"; then
+    if ! has_active "$reusable" F 'docker/Dockerfile.python-agent'; then
         report "$reusable does not limit the uv build-arg to docker/Dockerfile.python-agent"
     fi
-    if ! grep -Fq "UV_VERSION=$UV_EXPANSION" "$reusable"; then
+    if ! has_active "$reusable" F "UV_VERSION=$UV_EXPANSION"; then
         report "$reusable does not pass UV_VERSION from scripts/lib/versions.sh"
     fi
-    if grep -Eq 'UV_VERSION=[0-9]' "$reusable"; then
+    if has_active "$reusable" E 'UV_VERSION=["'\'']?v?[0-9]'; then
         report "$reusable assigns UV_VERSION a literal"
     fi
+}
+
+# astral-sh/setup-uv installs the uv CLI that CI runs. Without a version
+# input it picks its own, so every use passes UV_VERSION from the job env,
+# and the workflow exports it from versions.sh first.
+check_setup_uv() {
+    local file line in_step ok msg
+    local version_re='version:[[:space:]]*\$\{\{[[:space:]]*env\.UV_VERSION[[:space:]]*\}\}'
+    msg=" sets up uv without passing UV_VERSION. Export it from scripts/lib/versions.sh and pass version: \${{ env.UV_VERSION }}."
+    while IFS= read -r file; do
+        [[ -n "$file" ]] || continue
+        has_active "$file" E 'uses:[[:space:]]*astral-sh/setup-uv@' || continue
+        if ! has_active "$file" F "UV_VERSION=$UV_EXPANSION"; then
+            report "$file uses astral-sh/setup-uv without exporting UV_VERSION from scripts/lib/versions.sh"
+        fi
+        in_step=0
+        ok=0
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            if [[ "$line" =~ ^[[:space:]]*-[[:space:]] ]]; then
+                if [[ "$in_step" -eq 1 && "$ok" -eq 0 ]]; then
+                    report "$file$msg"
+                fi
+                in_step=0
+            fi
+            if [[ "$line" =~ uses:[[:space:]]*astral-sh/setup-uv@ ]]; then
+                in_step=1
+                ok=0
+            fi
+            if [[ "$in_step" -eq 1 && "$line" =~ $version_re ]]; then
+                ok=1
+            fi
+        done <"$file"
+        if [[ "$in_step" -eq 1 && "$ok" -eq 0 ]]; then
+            report "$file$msg"
+        fi
+    done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -not -path '*/node_modules/*' 2>/dev/null | sort)
 }
 
 # pytest runs docker compose, which interpolates both pins. The test
@@ -362,19 +505,19 @@ check_pytest_pins() {
         report "$tests is missing; Python tests must export NODE_VERSION and UV_VERSION"
         return 0
     fi
-    if ! grep -Fq 'scripts/lib/versions.sh' "$tests"; then
+    if ! has_active "$tests" E '^[[:space:]]*(\.|source)[[:space:]]+scripts/lib/versions\.sh'; then
         report "$tests does not source scripts/lib/versions.sh"
     fi
-    if ! grep -Fq "NODE_VERSION=$NODE_EXPANSION" "$tests"; then
+    if ! has_active "$tests" F "NODE_VERSION=$NODE_EXPANSION"; then
         report "$tests does not export NODE_VERSION from scripts/lib/versions.sh"
     fi
-    if ! grep -Fq "UV_VERSION=$UV_EXPANSION" "$tests"; then
+    if ! has_active "$tests" F "UV_VERSION=$UV_EXPANSION"; then
         report "$tests does not export UV_VERSION from scripts/lib/versions.sh"
     fi
-    if grep -Eq 'NODE_VERSION=[0-9]' "$tests"; then
+    if has_active "$tests" E 'NODE_VERSION=["'\'']?v?[0-9]'; then
         report "$tests assigns NODE_VERSION a literal"
     fi
-    if grep -Eq 'UV_VERSION=[0-9]' "$tests"; then
+    if has_active "$tests" E 'UV_VERSION=["'\'']?v?[0-9]'; then
         report "$tests assigns UV_VERSION a literal"
     fi
 }
@@ -384,19 +527,25 @@ check_helm() {
         report "$HELM_WORKFLOW is missing"
         return 0
     fi
-    if ! grep -Fq 'scripts/lib/versions.sh' "$HELM_WORKFLOW"; then
+    if ! has_active "$HELM_WORKFLOW" F 'scripts/lib/versions.sh'; then
         report "$HELM_WORKFLOW does not source scripts/lib/versions.sh"
     fi
-    if ! grep -Fq 'HELM_VERSION' "$HELM_WORKFLOW"; then
+    if ! has_active "$HELM_WORKFLOW" F 'HELM_VERSION'; then
         report "$HELM_WORKFLOW does not read HELM_VERSION"
     fi
-    local line
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        if [[ "$line" =~ version:[[:space:]]*[\"\']?v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            report "$HELM_WORKFLOW sets Helm version to a literal. Source scripts/lib/versions.sh and pass HELM_VERSION."
+    # Only the azure/setup-helm step's version: input is the Helm pin.
+    # Other actions (setup-buildx and the like) have their own version:
+    # input. Every workflow is scanned, not only the Helm one.
+    local file
+    while IFS= read -r file; do
+        [[ -n "$file" ]] || continue
+        if has_active "$file" E 'HELM_VERSION[[:space:]]*[:=][[:space:]]*["'\'']?v?[0-9]'; then
+            report "$file assigns HELM_VERSION a literal. Source scripts/lib/versions.sh."
         fi
-    done <"$HELM_WORKFLOW"
+        if has_active "$file" E 'uses:[[:space:]]*["'\'']?[Aa]zure/setup-helm@'; then
+            check_action_version_input "$file" azure/setup-helm version HELM_VERSION "Helm version"
+        fi
+    done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -not -path '*/node_modules/*' | sort)
 }
 
 check_npm_pins() {
@@ -428,42 +577,78 @@ check_npm_pins() {
 
 check_openspec_stamps() {
     [[ -d .agents/skills ]] || return 0
-    local file line
+    local file line found
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
+        found=0
         while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ "$line" =~ generatedBy:\ \"([^\"]+)\" ]]; then
+            # Quoted, single-quoted, or bare. A missing stamp is reported below.
+            if [[ "$line" =~ generatedBy:[[:space:]]*[\"\']?([^\"\'[:space:]]+)[\"\']? ]]; then
+                found=1
                 if [[ "${BASH_REMATCH[1]}" != "$OPENSPEC_VERSION" ]]; then
                     report "$file generatedBy is ${BASH_REMATCH[1]}, OPENSPEC_VERSION is $OPENSPEC_VERSION"
                 fi
             fi
         done <"$file"
+        [[ "$found" -eq 1 ]] || report "$file is missing a generatedBy stamp"
     done < <(find .agents/skills -type f -path '*/openspec-*/SKILL.md' | sort)
 }
 
 check_single_installs() {
-    local setup="scripts/setup.sh" assets="scripts/lib/assets.sh" var file line
+    local setup="scripts/setup.sh" assets="scripts/lib/assets.sh" var file line action tool
     for var in ACTIONLINT_VERSION BATS_VERSION SHELLCHECK_VERSION SHFMT_VERSION TASK_VERSION; do
-        if [[ ! -f "$setup" ]] || ! grep -Fq "$var" "$setup"; then
+        if [[ ! -f "$setup" ]] || ! has_active "$setup" F "$var"; then
             report "$setup does not install from $var"
         fi
-        if [[ ! -f "$assets" ]] || ! grep -Fq "$var" "$assets"; then
+        if [[ ! -f "$assets" ]] || ! has_active "$assets" F "$var"; then
             report "$assets does not install from $var"
         fi
     done
+    # Any install of these tools outside scripts/setup.sh is a second copy,
+    # at any version: a package manager line naming the tool, or a download
+    # of its installer or release.
+    local tools='shellcheck|actionlint|shfmt|bats-core|bats|go-task|task'
+    local pm_re="(apt-get|apt|apk|brew|dnf|yum|pip3?|pipx|npm|npx|go|cargo)[[:space:]]+(install|add|i)[[:space:]]+(.*[[:space:]/@=])?($tools)([[:space:]@=:]|\$)"
+    local download_re='taskfile\.dev/install\.sh|github\.com/(koalaman/shellcheck|rhysd/actionlint|mvdan/sh|bats-core/bats-core|go-task/task)/(releases|archive)'
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         while IFS= read -r line || [[ -n "$line" ]]; do
+            # A comment that mentions an install is not an install.
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            # An action for one of these tools brings its own copy, whatever
+            # its tag or the case of its name. CI runs them through task
+            # from scripts/setup.sh. A local ./ action is the repo's own.
+            if [[ "$line" =~ (^|[[:space:]{,])uses:[[:space:]]*[\"\']?([^[:space:]\"\'@#,}]+) ]]; then
+                action="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+                if [[ "$action" != ./* && "$action" =~ (shellcheck|actionlint|shfmt|bats|go-task|setup-task) ]]; then
+                    tool="${BASH_REMATCH[1]}"
+                    [[ "$tool" == "setup-task" ]] && tool="task"
+                    report "$file uses an action that installs ${tool}. Run it through task from scripts/setup.sh."
+                    continue
+                fi
+            fi
+            if [[ "$line" =~ $pm_re ]]; then
+                report "$file installs ${BASH_REMATCH[4]} outside scripts/setup.sh. Run it through task from scripts/setup.sh."
+                continue
+            fi
+            if [[ "$line" =~ $download_re ]]; then
+                report "$file downloads a toolchain tool outside scripts/setup.sh. Run it through task from scripts/setup.sh."
+                continue
+            fi
             [[ "$line" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || continue
             if [[ "$line" == *"shellcheck"* || "$line" == *"actionlint"* || "$line" == *"shfmt"* || "$line" == *"bats-core"* || "$line" == *"go-task/task"* ]]; then
                 report "$file installs a toolchain tool at a numeric version. Read scripts/lib/versions.sh."
             fi
         done <"$file"
-    done < <(find .github/workflows docker -type f \( -name '*.yml' -o -name '*.yaml' -o -name 'Dockerfile' -o -name 'Dockerfile.*' \) -not -path '*/node_modules/*' 2>/dev/null | sort)
+    done < <(find . \( -name .git -o -name node_modules -o -name .tools -o -name .venv \) -prune -o -type f \
+        \( -path './.github/workflows/*.yml' -o -path './.github/workflows/*.yaml' \
+        -o -path './.github/actions/*.yml' -o -path './.github/actions/*.yaml' \
+        -o -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) -print 2>/dev/null | sort)
 }
 
 check_node
 check_uv
+check_setup_uv
 check_pytest_pins
 check_helm
 check_npm_pins
@@ -473,4 +658,4 @@ check_single_installs
 if [[ "$failed" -ne 0 ]]; then
     exit 1
 fi
-echo "Node consumers match NODE_VERSION ($NODE_VERSION)."
+echo "All pinned tool versions match scripts/lib/versions.sh (node $NODE_VERSION, uv $UV_VERSION, helm $HELM_VERSION)."
