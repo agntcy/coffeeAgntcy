@@ -195,17 +195,19 @@ tasks:
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
-      shellcheck, shfmt, bats, uv, helm, node, openspec, renovate) to the pinned
-      versions in scripts/lib/versions.sh.
+      shellcheck, shfmt, bats, uv, helm, node, openspec, renovate, dir-mcp) to the
+      pinned versions in scripts/lib/versions.sh.
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh
       Installs into .tools/bin/, .tools/bats/, .tools/node/ and .tools/npm/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate (bats, uv and helm are still installed). Every
-      downloaded archive is verified against the SHA-256 pinned in
-      scripts/lib/checksums.txt. See scripts/setup.sh.
+      node/openspec/renovate/dir-mcp (bats, uv and helm are still installed).
+      Every downloaded archive or binary is verified against the SHA-256
+      pinned in scripts/lib/checksums.txt. dir-mcp has no --version, so its
+      installed version is recorded in .tools/stamps/dir-mcp and compared
+      with the pin. See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
 
@@ -268,6 +270,7 @@ tasks:
       Example: task tools:checksums
       Run after bumping or adding a pin in scripts/lib/versions.sh;
       setup.sh refuses any archive whose URL has no matching line.
+      dir-mcp's sigstore bundles are verified before its hashes are recorded.
       Downloads every archive (a few hundred MB), so it takes a while.
       Review the diff against upstream's published checksums. See
       scripts/tools/update_checksums.bash.
@@ -287,6 +290,23 @@ tasks:
       lockfile diff. See scripts/tools/update_npm_lock.bash.
     cmds:
       - scripts/tools/update_npm_lock.bash
+
+  tools:sigstore-lock:
+    desc: >-
+      Regenerate scripts/lib/sigstore/requirements.txt (the hash-pinned
+      sigstore verifier) for the sigstore version pinned in
+      scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:sigstore-lock
+      Example: task tools:sigstore-lock
+      Run after bumping SIGSTORE_VERSION, before task tools:checksums, which
+      refuses to run while the file's sigstore pin differs from the pin in
+      versions.sh. Needs network access. Every package, transitive ones
+      included, is held to a release at least 14 days old (uv --exclude-newer)
+      and uv config files are ignored. Review the requirements diff. See
+      scripts/tools/update_sigstore_lock.bash.
+    cmds:
+      - scripts/tools/update_sigstore_lock.bash
 
   tools:versions:
     desc: >-

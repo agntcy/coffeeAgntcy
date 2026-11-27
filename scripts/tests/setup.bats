@@ -71,6 +71,11 @@ build_fixture_assets() {
     printf '#!/usr/bin/env bash\necho "v%s"\n' "$SHFMT_VERSION" >"$ASSETS/shfmt"
     chmod +x "$ASSETS/shfmt"
 
+    # dir-mcp: a raw binary like shfmt, but a stdio MCP server with no
+    # --version, so the fixture is just a tiny executable script.
+    printf '#!/usr/bin/env bash\necho "dir-mcp fixture"\n' >"$ASSETS/dir-mcp"
+    chmod +x "$ASSETS/dir-mcp"
+
     # uv: tar.gz containing uv-<triple>/uv, the triple computed by the same
     # platform.sh setup.sh uses.
     # shellcheck disable=SC1091
@@ -152,9 +157,10 @@ write_fixture_checksums() {
     arch="$(detect_arch_gnu)"
     local file tool
     : >"$FIXTURE_ROOT/scripts/lib/checksums.txt"
-    for tool in actionlint bats helm node shellcheck shfmt task uv; do
+    for tool in actionlint bats dir-mcp helm node shellcheck shfmt task uv; do
         case "$tool" in
             bats) file="$ASSETS/bats-core.tar.gz" ;;
+            dir-mcp) file="$ASSETS/dir-mcp" ;;
             shfmt) file="$ASSETS/shfmt" ;;
             *) file="$ASSETS/$tool.tar.gz" ;;
         esac
@@ -176,6 +182,7 @@ case \"\$url\" in
     *go-task/task*) cat '$ASSETS/task.tar.gz' ;;
     *actionlint*) cat '$ASSETS/actionlint.tar.gz' ;;
     *shellcheck*) cat '$ASSETS/shellcheck.tar.gz' ;;
+    *agntcy/dir-mcp*) cat '$ASSETS/dir-mcp' ;;
     *mvdan/sh*) cat '$ASSETS/shfmt' ;;
     *astral-sh/uv*) cat '$ASSETS/uv.tar.gz' ;;
     *get.helm.sh*) cat '$ASSETS/helm.tar.gz' ;;
@@ -207,6 +214,12 @@ seed_all_installed_except() {
     [[ "$skip" == *" shellcheck "* ]] || {
         printf '#!/usr/bin/env bash\necho "version: %s"\n' "$SHELLCHECK_VERSION" >"$bin/shellcheck"
         chmod +x "$bin/shellcheck"
+    }
+    [[ "$skip" == *" dir-mcp "* ]] || {
+        printf '#!/usr/bin/env bash\necho "dir-mcp fixture"\n' >"$bin/dir-mcp"
+        chmod +x "$bin/dir-mcp"
+        mkdir -p "$FIXTURE_ROOT/.tools/stamps"
+        printf '%s\n' "$DIR_MCP_VERSION" >"$FIXTURE_ROOT/.tools/stamps/dir-mcp"
     }
     [[ "$skip" == *" shfmt "* ]] || {
         printf '#!/usr/bin/env bash\necho "v%s"\n' "$SHFMT_VERSION" >"$bin/shfmt"
@@ -272,6 +285,10 @@ seed_all_installed_except() {
     [ -x "$FIXTURE_ROOT/.tools/bin/openspec" ]
     [ "$("$FIXTURE_ROOT/.tools/bin/openspec" --version)" = "$OPENSPEC_VERSION" ]
 
+    [ -x "$FIXTURE_ROOT/.tools/bin/dir-mcp" ]
+    cmp "$ASSETS/dir-mcp" "$FIXTURE_ROOT/.tools/bin/dir-mcp"
+    [ "$(cat "$FIXTURE_ROOT/.tools/stamps/dir-mcp")" = "$DIR_MCP_VERSION" ]
+
     grep -q "go-task/task" "$CURL_LOG"
     grep -q "nodejs.org" "$CURL_LOG"
     [ -x "$FIXTURE_ROOT/.tools/bin/renovate" ]
@@ -289,6 +306,7 @@ seed_all_installed_except() {
     [[ "$output" == *"task: already installed"* ]]
     [[ "$output" == *"actionlint: already installed"* ]]
     [[ "$output" == *"shellcheck: already installed"* ]]
+    [[ "$output" == *"dir-mcp: already installed"* ]]
     [[ "$output" == *"shfmt: already installed"* ]]
     [[ "$output" == *"uv: already installed"* ]]
     [[ "$output" == *"helm: already installed"* ]]
@@ -368,4 +386,58 @@ seed_all_installed_except() {
 
     [[ "$output" == *"openspec/renovate: installing"* ]]
     [ "$("$FIXTURE_ROOT/.tools/bin/renovate" --version)" = "$RENOVATE_VERSION" ]
+}
+
+@test "dir-mcp already installed at the pinned version is not fetched again" {
+    seed_all_installed_except
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"dir-mcp: already installed"* ]]
+    ! grep -q "dir-mcp" "$CURL_LOG"
+}
+
+@test "a dir-mcp stamp naming another version reinstalls it and rewrites the stamp" {
+    seed_all_installed_except
+    printf '0.0.1\n' >"$FIXTURE_ROOT/.tools/stamps/dir-mcp"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"dir-mcp: installing $DIR_MCP_VERSION"* ]]
+    grep -q "dir-mcp" "$CURL_LOG"
+    [ "$(cat "$FIXTURE_ROOT/.tools/stamps/dir-mcp")" = "$DIR_MCP_VERSION" ]
+}
+
+@test "a dir-mcp binary without a stamp is reinstalled and stamped" {
+    seed_all_installed_except
+    rm "$FIXTURE_ROOT/.tools/stamps/dir-mcp"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"dir-mcp: installing $DIR_MCP_VERSION"* ]]
+    [ "$(cat "$FIXTURE_ROOT/.tools/stamps/dir-mcp")" = "$DIR_MCP_VERSION" ]
+}
+
+@test "a dir-mcp download whose checksum does not match the pin is rejected" {
+    seed_all_installed_except dir-mcp
+    printf 'tampered\n' >"$ASSETS/dir-mcp"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -ne 0 ]
+
+    [[ "$output" == *"checksum mismatch"* ]]
+    [ ! -e "$FIXTURE_ROOT/.tools/bin/dir-mcp" ]
+    [ ! -e "$FIXTURE_ROOT/.tools/stamps/dir-mcp" ]
+}
+
+@test "--lint-only does not install or fetch dir-mcp" {
+    run "$FIXTURE_ROOT/scripts/setup.sh" --lint-only
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"dir-mcp: skipped (--lint-only)"* ]]
+    [ ! -e "$FIXTURE_ROOT/.tools/bin/dir-mcp" ]
+    ! grep -q "dir-mcp" "$CURL_LOG"
 }

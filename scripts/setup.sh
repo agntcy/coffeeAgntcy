@@ -9,13 +9,16 @@
 #   ./scripts/setup.sh
 #   source scripts/env.sh   # put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH for this shell session
 #
+# The full setup also installs dir-mcp (the Directory MCP server) into
+# .tools/bin, with a version stamp in .tools/stamps.
+#
 # Tools install in dependency order (node before the npm-installed
 # openspec and renovate), not alphabetically; the pins in
 # scripts/lib/versions.sh are the alphabetical list.
 #
 # CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
-# required workflow runs openspec or renovate, so CI skips the
-# node/openspec/renovate install and only bootstraps the lint binaries
+# required workflow runs openspec, renovate or dir-mcp, so CI skips the
+# node/openspec/renovate/dir-mcp install and only bootstraps the lint binaries
 # (task, actionlint, shellcheck, shfmt) plus bats (needed by the bash test
 # suite, which does run under --lint-only), uv (needed by the uv.lock
 # sync check) and helm (needed by the Chart.lock sync check).
@@ -26,6 +29,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BIN_DIR="$REPO_ROOT/.tools/bin"
 NODE_DIR="$REPO_ROOT/.tools/node"
 BATS_DIR="$REPO_ROOT/.tools/bats"
+STAMPS_DIR="$REPO_ROOT/.tools/stamps"
 
 LINT_ONLY=0
 if [[ "${1:-}" == "--lint-only" ]]; then
@@ -111,6 +115,30 @@ else
     install "$TMP_DIR/shfmt" "$BIN_DIR/shfmt"
     rm -rf "$TMP_DIR"
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
+fi
+
+# dir-mcp (the Directory MCP server) ships as a single raw binary, like shfmt.
+# Installed only by the full setup, not under --lint-only: the lint-only CI
+# bootstrap never runs it. It is a stdio MCP server with no --version output,
+# so there is nothing to compare against the pin; a stamp file
+# (.tools/stamps/dir-mcp, holding the installed version) stands in for
+# version_matches. The stamp is written only after a successful install, so
+# a failed fetch never leaves one behind.
+if [ "$LINT_ONLY" -eq 0 ]; then
+    if [ -x "$BIN_DIR/dir-mcp" ] && [ "$(cat "$STAMPS_DIR/dir-mcp" 2>/dev/null || true)" = "$DIR_MCP_VERSION" ]; then
+        echo "dir-mcp: already installed ($DIR_MCP_VERSION)"
+    else
+        echo "dir-mcp: installing $DIR_MCP_VERSION into $BIN_DIR ..."
+        TMP_DIR="$(mktemp -d)"
+        FETCH_VERIFIED "$(asset_url dir-mcp "$OS" "$ARCH_GNU")" >"$TMP_DIR/dir-mcp"
+        install "$TMP_DIR/dir-mcp" "$BIN_DIR/dir-mcp"
+        rm -rf "$TMP_DIR"
+        mkdir -p "$STAMPS_DIR"
+        printf '%s\n' "$DIR_MCP_VERSION" >"$STAMPS_DIR/dir-mcp"
+        echo "dir-mcp: installed ($DIR_MCP_VERSION)"
+    fi
+else
+    echo "dir-mcp: skipped (--lint-only)"
 fi
 
 # uv ships as a tar.gz holding uv-<triple>/uv (plus uvx). Installed

@@ -2,11 +2,11 @@
 name: setup-repo-tooling
 description: >-
   Bootstraps this repo's toolchain (task, actionlint, shellcheck, shfmt,
-  bats, uv, helm, node, openspec, renovate) into repo-local .tools/bin,
+  bats, uv, helm, node, openspec, renovate, dir-mcp) into repo-local .tools/bin,
   .tools/bats/bin and .tools/node/bin directories and puts them on PATH
   for the session. Use before running any other task in this repo, or
   whenever `task`, `actionlint`, `shellcheck`, `shfmt`, `bats`, `uv`, `helm`,
-  `node`, `npm`, `openspec`, or `renovate` are reported as not found.
+  `node`, `npm`, `openspec`, `renovate`, or `dir-mcp` are reported as not found.
 ---
 
 # Set up repo tooling
@@ -18,7 +18,7 @@ Before doing anything else in this repo, or when a command fails with
 command not found` / `shfmt: command not found` / `bats: command not
 found` / `uv: command not found` / `helm: command not found` / `node: command not found` / `npm:
 command not found` / `openspec: command not found` / `renovate: command
-not found`.
+not found` / `dir-mcp: command not found`.
 
 This skill is the one deliberate exception to the script -> Taskfile task
 -> skill hierarchy described in
@@ -33,12 +33,12 @@ because `task` itself doesn't exist yet on a fresh clone - bootstrapping it
 from `scripts/lib/versions.sh`); `scripts/setup.sh` installs them.
 
 `scripts/setup.sh` installs `task`, `actionlint`, `shellcheck`, `shfmt`,
-`bats`, `uv`, `helm`, `node`, `openspec`, and `renovate` into `.tools/` - inside this repo only, never the
+`bats`, `uv`, `helm`, `node`, `openspec`, `renovate`, and `dir-mcp` into `.tools/` - inside this repo only, never the
 user's global PATH, shell profile, or home directory - and is safe to
 re-run any time (it's a no-op if everything is already present at its
 pinned version, per
 [`.agents/rules/meta/pinned-tool-versions.md`](../../../rules/meta/pinned-tool-versions.md)).
-Every archive it downloads is verified against the SHA-256 pinned in
+Every archive or binary it downloads is verified against the SHA-256 pinned in
 [`scripts/lib/checksums.txt`](../../../../scripts/lib/checksums.txt) before
 it is unpacked; a mismatch or a missing pin aborts the install (refresh the
 pins with `task tools:checksums` - see the `manage-repo-tooling` skill).
@@ -61,6 +61,13 @@ and `.tools/node/bin` on PATH to cover it. `bats` likewise ships as a
 `bin/` + `libexec/` + `lib/` tree, so it lands in `.tools/bats/`, whose
 `bin/` `scripts/env.sh` also puts on PATH.
 
+`dir-mcp` (the Directory MCP server the recruiter agent launches, found with
+`shutil.which("dir-mcp")`) is a single raw binary installed into
+`.tools/bin/dir-mcp` by the full setup only; `--lint-only` skips it
+(`dir-mcp: skipped (--lint-only)`). It has no `--version`, so setup records
+the installed version in `.tools/stamps/dir-mcp` and reinstalls when that
+stamp is missing or differs from the pin.
+
 ## Steps
 
 ```
@@ -75,7 +82,7 @@ entry point runs the identical idempotent script.
 
 ## Rules
 
-- Never hand-install `task`/`actionlint`/`shellcheck`/`shfmt`/`bats`/`uv`/`helm`/`node` some
+- Never hand-install `task`/`actionlint`/`shellcheck`/`shfmt`/`bats`/`uv`/`helm`/`node`/`dir-mcp` some
   other way (Homebrew, apt, nvm, a differently pinned curl command) -
   always go through `scripts/setup.sh` so the version pinned in
   [`scripts/lib/versions.sh`](../../../../scripts/lib/versions.sh) is what

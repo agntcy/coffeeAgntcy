@@ -30,7 +30,7 @@ source "$REPO_ROOT/scripts/lib/platform.sh"
 
 OS="$(detect_os)"
 ARCH="$(detect_arch_gnu)"
-CHECKSUMS_FILE="$REPO_ROOT/scripts/lib/checksums.txt"
+: "${CHECKSUMS_FILE:=$REPO_ROOT/scripts/lib/checksums.txt}"
 LOCK_FILE="$REPO_ROOT/scripts/lib/npm-tools/package-lock.json"
 
 # hash_of <tool>: the pinned hash for this machine, or "-".
@@ -53,6 +53,6 @@ hash_of() {
 
 while IFS= read -r var; do
     value="${!var}"
-    tool="$(tr '[:upper:]' '[:lower:]' <<<"${var%_VERSION}")"
+    tool="$(tr '[:upper:]_' '[:lower:]-' <<<"${var%_VERSION}")"
     printf '%s %s %s\n' "$tool" "${value#v}" "$(hash_of "$tool")"
 done < <(sed -n 's/^\([A-Z_]*_VERSION\)=.*/\1/p' "$VERSIONS_FILE" | LC_ALL=C sort) | column -t

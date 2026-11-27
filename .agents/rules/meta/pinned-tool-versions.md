@@ -3,13 +3,14 @@ name: pinned-tool-versions
 description: >-
   scripts/lib/versions.sh is the single source of truth for every tool
   version this repo installs locally into .tools/bin/ (the npm tools'
-  package.json is generated from it, next to a committed lockfile); scripts/setup.sh's
-  install-or-skip check for each tool must compare the installed version
-  against that pin, not just whether the binary exists, and every archive
-  it downloads must match a SHA-256 pinned in scripts/lib/checksums.txt.
-  Apply whenever
-  adding, updating, or removing a pinned tool - see the
-  `manage-repo-tooling` skill for the checklists this backs.
+  package.json is generated from it, next to a committed lockfile);
+  scripts/setup.sh's install-or-skip check for each tool must compare the
+  installed version against that pin (or the recorded install stamp for a
+  tool that cannot report its version), not just whether the binary exists,
+  and every archive or binary it downloads must match a SHA-256 pinned in
+  scripts/lib/checksums.txt. Apply whenever adding, updating, or removing a
+  pinned tool - see the `manage-repo-tooling` skill for the checklists this
+  backs.
 ---
 
 # Pinned tool versions
@@ -26,7 +27,10 @@ is not committed but generated from those variables
 [`scripts/setup.sh`](../../../scripts/setup.sh)'s install-or-skip check for
 each tool must compare the *installed* version against that pin (via
 `version_matches`, not just `[ -x "$BIN_DIR/$tool" ]`) and reinstall on any
-mismatch.
+mismatch. A tool whose binary cannot report its own version (`dir-mcp`) is the
+exception: `setup.sh` records the installed version in
+`.tools/stamps/<tool>` and compares that record with the pin instead,
+reinstalling when it is missing or differs.
 
 Every archive `setup.sh` downloads directly is also pinned by SHA-256, in
 [`scripts/lib/checksums.txt`](../../../scripts/lib/checksums.txt) (one
@@ -35,7 +39,15 @@ fetches through `FETCH_VERIFIED` (in
 [`scripts/lib/fetch.sh`](../../../scripts/lib/fetch.sh)), which fails closed
 on a mismatch or on a URL with no pinned line. The URLs themselves come from
 [`scripts/lib/assets.sh`](../../../scripts/lib/assets.sh), shared with the
-generator, so the two cannot drift. Regenerate with `task tools:checksums`.
+generator, so the two cannot drift. Regenerate with `task tools:checksums`,
+which first verifies each `dir-mcp` asset against its published sigstore
+bundle (signer: the dir-mcp release workflow at the pinned tag) using a
+hash-pinned verifier, so only signature-verified assets get a pinned hash.
+The verifier's requirements file is regenerated with
+`task tools:sigstore-lock` (`--exclude-newer "14 days"`, so even its
+transitive packages are at least two weeks old), and the verifier's venv is
+created with `--no-python-downloads`, so a machine without a suitable
+Python fails loudly instead of fetching an unpinned interpreter.
 npm tools are installed with `npm ci --ignore-scripts` from the committed
 [`package-lock.json`](../../../scripts/lib/npm-tools/package-lock.json), so
 every transitive package is integrity-checked; `npm ci` fails if the lockfile
@@ -61,9 +73,10 @@ Renovate bumps versions but cannot compute hashes - a Renovate PR that
 bumps a version fails `setup.sh` (and the `assets.bats` test) until
 `task tools:checksums` is run on that branch and its output reviewed.
 Renovate does this itself: a `postUpgradeTasks` entry in `renovate.json`
-reruns `scripts/tools/update_checksums.bash` and
+reruns `scripts/tools/update_sigstore_lock.bash` (first),
+`scripts/tools/update_checksums.bash` and
 `scripts/tools/update_npm_lock.bash` on every `versions.sh` bump (the
-self-hosted workflow allows exactly those two commands via
+self-hosted workflow allows exactly those three commands via
 `RENOVATE_ALLOWED_COMMANDS`). Hashes computed that way are
 trust-on-first-use at bump time, so the PR diff is where a reviewer
 cross-checks them.
@@ -73,15 +86,17 @@ cross-checks them.
 - A new tool's install block needs the same `[ -x "$BIN_DIR/$tool" ] &&
   version_matches "<extracted version>" "$TOOL_VERSION"` guard as every
   existing one - copy the shape of an existing block, not just an
-  existence check, or a future version bump on that tool will silently
-  no-op.
+  existence check (or, for a tool without a version flag, the stamp
+  comparison), or a future version bump on that tool will silently no-op.
 - After bumping openspec or renovate, run `task tools:npm-lock` and commit the
   lockfile diff (it uses the repo's own npm, never a global one).
-- After bumping or adding a directly downloaded pin, run `task tools:checksums` first, review
-  the diff (cross-check against the upstream project's published
-  checksums where it has any), and commit `checksums.txt` with the bump.
+- After bumping or adding a directly downloaded pin, run
+  `task tools:checksums` first, review the diff (cross-check against the
+  upstream project's published checksums where it has any), and commit
+  `checksums.txt` with the bump.
 - After bumping a pin, actually run `task setup` (not just edit the file)
-  and confirm the tool's `--version`/`-version` output changed.
+  and confirm the tool's `--version`/`-version` output changed (for `dir-mcp`,
+  confirm `.tools/stamps/dir-mcp` holds the new version).
 - None of "update a pin" / "add a tool" / "remove a tool" gets a dedicated
   CI check - they're one-shot maintenance actions, not standing
   invariants, matching the "purely generative, one-shot actions" exception

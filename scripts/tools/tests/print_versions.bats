@@ -42,5 +42,34 @@ FIXTURE
     [ "$status" -eq 0 ]
     [[ "$output" == *"task"*"$TASK_VERSION"*"$expected"* || "$output" == *"task"*"${TASK_VERSION#v}"*"$expected"* ]]
     [[ "$output" == *"renovate"*"$RENOVATE_VERSION"*"sha512-"* ]]
-    [[ "$output" != *" - "* ]]
+    # Every downloaded tool has a real hash. A row ending in "-" has no
+    # trailing space, so match the third column of each tool's row.
+    local tool hash
+    for tool in "${ASSET_TOOLS[@]}"; do
+        hash="$(awk -v t="$tool" '$1 == t {print $3}' <<<"$output")"
+        [ -n "$hash" ] || {
+            echo "no row for $tool" >&2
+            return 1
+        }
+        [ "$hash" != "-" ] || {
+            echo "$tool has no pinned hash" >&2
+            return 1
+        }
+    done
+}
+
+@test "a multi-word pin is named with hyphens and its hash is looked up through asset_url" {
+    # shellcheck disable=SC1091
+    source "$BATS_TEST_DIRNAME/../../lib/platform.sh"
+    # shellcheck disable=SC1091
+    source "$BATS_TEST_DIRNAME/../../lib/assets.sh"
+    DIR_MCP_VERSION="9.9.9-mcp.1"
+    local url
+    url="$(asset_url dir-mcp "$(detect_os)" "$(detect_arch_gnu)")"
+    printf 'DIR_MCP_VERSION="9.9.9-mcp.1"\n' >"$BATS_TEST_TMPDIR/versions.sh"
+    printf '%s  %s\n' "$(printf 'a%.0s' {1..64})" "$url" >"$BATS_TEST_TMPDIR/checksums.txt"
+
+    VERSIONS_FILE="$BATS_TEST_TMPDIR/versions.sh" CHECKSUMS_FILE="$BATS_TEST_TMPDIR/checksums.txt" run "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "${lines[0]}" =~ ^dir-mcp\ +9\.9\.9-mcp\.1\ +a{64}$ ]]
 }

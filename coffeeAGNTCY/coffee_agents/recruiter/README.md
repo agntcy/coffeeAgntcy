@@ -95,6 +95,17 @@ Directory stack uses **AGNTCY Directory v1.8.0** (`ghcr.io/agntcy/dir-apiserver:
 docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
+**Running the recruiter outside Docker (local `dir-mcp` binary):**
+
+The recruiter looks up the `dir-mcp` binary with `shutil.which("dir-mcp")`, so it must be on `PATH`. From the repository root, `task setup` installs the pinned, checksum-verified binary into `.tools/bin/dir-mcp`, and `source scripts/env.sh` puts it on `PATH` for the current shell:
+
+```bash
+task setup
+source scripts/env.sh
+```
+
+As a fallback, download the asset `mcp-server-<os>-<arch>` from <https://github.com/agntcy/dir-mcp/releases>, save it as `dir-mcp`, make it executable and put it on `PATH`.
+
 #### Tests
 
 The Directory related tests need the Directory CLI.  
@@ -217,6 +228,8 @@ To manually start the required Directory services:
 # Start directory services (Postgres + Zot + API; include dir-mcp-server if using MCP docker mode)
 docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
+
+Tests that run the MCP toolset from a local binary (not Docker) need `dir-mcp` on `PATH`: run `task setup` and `source scripts/env.sh` from the repository root (see [Agent Directory Service](#agent-directory-service) above), or use the manual download described there.
 
 ### Test directories
 

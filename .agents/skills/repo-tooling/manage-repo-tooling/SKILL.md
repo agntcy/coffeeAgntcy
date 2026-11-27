@@ -26,9 +26,9 @@ pinned hash for this machine).
 
 ```
 - [ ] 1. Edit the <TOOL>_VERSION in scripts/lib/versions.sh - the single source of truth, for every tool including openspec and renovate.
-- [ ] 2. For a downloaded tool: run task tools:checksums; for openspec/renovate: run task tools:npm-lock. Then review the scripts/lib/checksums.txt diff (cross-check against the upstream project's published checksums where it has any). setup.sh rejects any archive whose URL has no pinned SHA-256, so skipping this makes step 3 fail.
+- [ ] 2. For a downloaded tool: run task tools:checksums; for openspec/renovate: run task tools:npm-lock; for sigstore: run task tools:sigstore-lock first, then task tools:checksums (it refuses to run while scripts/lib/sigstore/requirements.txt pins another sigstore version). Then review the scripts/lib/checksums.txt diff (cross-check against the upstream project's published checksums where it has any). setup.sh rejects any archive whose URL has no pinned SHA-256, so skipping this makes step 3 fail.
 - [ ] 3. Run: task setup (or ./scripts/setup.sh). It compares the installed version against the pin and reinstalls on any mismatch, so this actually picks up the bump - it isn't a no-op just because a binary already exists.
-- [ ] 4. Confirm: <tool> --version (or -version) matches the new pin.
+- [ ] 4. Confirm: <tool> --version (or -version) matches the new pin (dir-mcp has no --version: check that .tools/stamps/dir-mcp holds the new version).
 - [ ] 5. Run: task check:all - a version bump can change lint/format output (shellcheck/shfmt/actionlint findings can shift between versions).
 ```
 
@@ -36,7 +36,7 @@ pinned hash for this machine).
 
 ```
 - [ ] 1. Add <TOOL>_VERSION, with its `# renovate:` annotation line above it, to scripts/lib/versions.sh in alphabetical position (the install blocks in scripts/setup.sh stay in dependency order instead).
-- [ ] 2. Add an install block to scripts/setup.sh, matching the shape of however the tool distributes itself: an official install script piped to sh (like task), a static binary release fetched via FETCH_VERIFIED + scripts/lib/platform.sh's OS/arch detection (like actionlint/shellcheck/shfmt) (also add its URL to asset_url and its name to ASSET_TOOLS in scripts/lib/assets.sh, then run task tools:checksums), or an npm package: add its pin to versions.sh, its entry to write_npm_tools_package_json in scripts/lib/npm_tools.sh, run task tools:npm-lock, and extend the existing npm ci block in setup.sh (like openspec/renovate - its version check and symlink, don't add a second npm install). Guard it the same way every existing block is guarded - see the pinned-tool-versions rule.
+- [ ] 2. Add an install block to scripts/setup.sh, matching the shape of however the tool distributes itself: an official install script piped to sh (like task), a static binary release fetched via FETCH_VERIFIED + scripts/lib/platform.sh's OS/arch detection (like actionlint/shellcheck/shfmt) (also add its URL to asset_url and its name to ASSET_TOOLS in scripts/lib/assets.sh, then run task tools:checksums), or an npm package: add its pin to versions.sh, its entry to write_npm_tools_package_json in scripts/lib/npm_tools.sh, run task tools:npm-lock, and extend the existing npm ci block in setup.sh (like openspec/renovate - its version check and symlink, don't add a second npm install). Guard it the same way every existing block is guarded - see the pinned-tool-versions rule; for a binary that cannot report its version, record the installed version in .tools/stamps/<tool> and compare that (like dir-mcp).
 - [ ] 3. Wire whatever new script/task actually needs the tool - see the add-repo-operation skill if this is for a brand-new operation.
 - [ ] 4. Update every place the toolchain is named: CONTRIBUTING.md, AGENTS.md, .agents/skills/repo-tooling/setup-repo-tooling/SKILL.md's tool list, Taskfile.yaml's setup task description.
 - [ ] 5. Simulate a fresh clone: move .tools/ aside (mv .tools /tmp/tools-bak), run task setup, confirm it installs cleanly, then remove the backup once confirmed.
