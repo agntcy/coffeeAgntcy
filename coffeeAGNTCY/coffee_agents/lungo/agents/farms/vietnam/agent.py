@@ -56,6 +56,11 @@ else:
 # Each sub-agent has a specific role and a description that the root agent
 # uses to determine when to delegate. The description field is crucial for
 # ADK's automatic delegation mechanism.
+#
+# The sub-agents are leaf specialists: they answer and never transfer. ADK
+# lets an agent transfer to its parent and peers by default, which made the
+# coordinator and the specialists bounce a request between each other until
+# one of them ended the loop, often with the general agent's fallback.
 
 inventory_agent = Agent(
     name="inventory_agent",
@@ -66,6 +71,8 @@ Return a random yield estimate for the coffee farm in Vietnam. Make sure the est
 Respond with ONLY the yield estimate number and unit (e.g., "45,000 pounds"). Do not add any other text or explanation.
 If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.""",
     tools=[],
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
 )
 
 orders_agent = Agent(
@@ -84,6 +91,8 @@ Let me know if you need anything else!
 
 Order Data: {'12345': {'status': 'processing', 'estimated_delivery': '2 business days'}, '67890': {'status': 'shipped', 'tracking_number': 'ABCDEF123'}}""",
     tools=[],
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
 )
 
 general_agent = Agent(
@@ -92,6 +101,8 @@ general_agent = Agent(
     description="Fallback agent for unclear, general, or off-topic queries that don't relate to inventory or orders. Delegate to this agent when the user's request doesn't fit inventory or order categories.",
     instruction='Respond with exactly this message and nothing else: "I\'m designed to help with inventory and order-related questions. Could you please rephrase your request?"',
     tools=[],
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
 )
 
 # ============================================================================
