@@ -69,7 +69,7 @@ These pins stop at `.tools/bin`: actionlint, bats, shellcheck, shfmt, and task. 
 
 `.github/workflows/docker-build-reusable.yaml` passes `UV_VERSION` only when the dockerfile is `docker/Dockerfile.python-agent`. `.github/workflows/test-reusable.yaml` exports it before pytest so those compose files interpolate during the integration tests. The `ARG` is declared before the first `FROM` and has no default, so a build without it fails. `python3.13-trixie-slim` stays a literal.
 
-The uv CLI that CI itself runs comes from `astral-sh/setup-uv` in `.github/workflows/test-reusable.yaml`, `.github/workflows/python-lint.yaml`, and `.github/workflows/renovate.yaml`. Each workflow exports `UV_VERSION` from `scripts/lib/versions.sh` into the job env and passes `version: ${{ env.UV_VERSION }}`. `task versions:check` fails a `setup-uv` step with no version or a literal one.
+The uv CLI that CI itself runs comes from `astral-sh/setup-uv` in `.github/workflows/test-reusable.yaml`, `.github/workflows/python-lint.yaml`, and `.github/workflows/renovate.yaml`. Each workflow reads `UV_VERSION` from `scripts/lib/versions.sh` in an earlier step, writes it to a step output, and passes `version: ${{ steps.<id>.outputs.UV_VERSION }}`, because editors cannot see a variable set through `GITHUB_ENV`. `test-reusable.yaml` also exports it into the job env, because pytest's `docker compose` interpolates it. The check also accepts `version: ${{ env.UV_VERSION }}`. `task versions:check` fails a `setup-uv` step with no version or a literal one.
 
 Python agent images used uv 0.11.16 before this pin took over the `FROM` line. They now build on `UV_VERSION`, so the uv that runs `uv sync --locked` is a newer 0.x minor. Mention it in the release notes migration block.
 

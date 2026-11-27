@@ -47,14 +47,18 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # pytest starts docker compose, which interpolates NODE_VERSION and
-      # UV_VERSION. Later steps in this job inherit the exported pins.
+      # UV_VERSION. Later steps in this job inherit the exported pins. The
+      # uv pin is also a step output, which the setup-uv step reads because
+      # editors cannot see variables set through GITHUB_ENV.
       - name: Export image build pins
+        id: pins
         working-directory: ${{ github.workspace }}
         run: |
           # shellcheck source=scripts/lib/versions.sh
           . scripts/lib/versions.sh
           echo "NODE_VERSION=${NODE_VERSION}" >> "$GITHUB_ENV"
           echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_ENV"
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -64,7 +68,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: ${{ env.UV_VERSION }}
+          version: ${{ steps.pins.outputs.UV_VERSION }}
 
       - name: Apply uv overrides/constraints (if applicable)
         if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}

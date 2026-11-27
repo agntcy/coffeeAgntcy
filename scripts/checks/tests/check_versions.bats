@@ -249,6 +249,41 @@ EOF
     [[ "$output" == *"python-lint.yaml sets up uv without passing UV_VERSION"* ]]
 }
 
+@test "passes when setup-uv reads UV_VERSION from a step output" {
+    cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
+jobs:
+  ruff:
+    steps:
+      - id: pins
+        run: |
+          . scripts/lib/versions.sh
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_OUTPUT"
+      - uses: astral-sh/setup-uv@sha # v10.2.0
+        with:
+          version: ${{ steps.pins.outputs.UV_VERSION }}
+EOF
+    run_check
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when setup-uv reads a step output other than UV_VERSION" {
+    cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
+jobs:
+  ruff:
+    steps:
+      - id: pins
+        run: |
+          . scripts/lib/versions.sh
+          echo "UV_VERSION=${UV_VERSION}" >> "$GITHUB_OUTPUT"
+      - uses: astral-sh/setup-uv@sha # v10.2.0
+        with:
+          version: ${{ steps.pins.outputs.OTHER }}
+EOF
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"sets up uv without passing UV_VERSION"* ]]
+}
+
 @test "fails when setup-uv passes a literal version" {
     cat >"$REPO/.github/workflows/python-lint.yaml" <<'EOF'
 jobs:

@@ -461,12 +461,13 @@ check_uv() {
 }
 
 # astral-sh/setup-uv installs the uv CLI that CI runs. Without a version
-# input it picks its own, so every use passes UV_VERSION from the job env,
-# and the workflow exports it from versions.sh first.
+# input it picks its own, so every use passes UV_VERSION, either from the
+# job env or from an earlier step's output, and the workflow exports it
+# from versions.sh first.
 check_setup_uv() {
     local file line in_step ok msg
-    local version_re='version:[[:space:]]*\$\{\{[[:space:]]*env\.UV_VERSION[[:space:]]*\}\}'
-    msg=" sets up uv without passing UV_VERSION. Export it from scripts/lib/versions.sh and pass version: \${{ env.UV_VERSION }}."
+    local version_re='version:[[:space:]]*\$\{\{[[:space:]]*(env\.UV_VERSION|steps\.[A-Za-z0-9_-]+\.outputs\.UV_VERSION)[[:space:]]*\}\}'
+    msg=" sets up uv without passing UV_VERSION. Export it from scripts/lib/versions.sh and pass version: \${{ env.UV_VERSION }} or \${{ steps.<id>.outputs.UV_VERSION }}."
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         has_active "$file" E 'uses:[[:space:]]*astral-sh/setup-uv@' || continue

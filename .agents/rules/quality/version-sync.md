@@ -58,7 +58,8 @@ The same check covers the other pins. The map of every pin is [docs/tool-version
   `azure/setup-helm` step's `version:` input is checked, so another
   action's `version:` input in that file is not a Helm pin.
 - Every `astral-sh/setup-uv` step in `.github/workflows/` passes
-  `version: ${{ env.UV_VERSION }}`, and its workflow exports
+  `version: ${{ env.UV_VERSION }}` (or
+  `${{ steps.<id>.outputs.UV_VERSION }}`), and its workflow exports
   `UV_VERSION` from `scripts/lib/versions.sh` first. A step with no
   `version:` input or a literal one fails the check, because the action
   would install its own choice of uv.
