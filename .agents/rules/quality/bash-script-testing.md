@@ -78,6 +78,10 @@ script first.
   header comment for the exact usage shape, and
   [`scripts/ci-gate/tests/wait-for-sibling-runs.bats`](../../../scripts/ci-gate/tests/wait-for-sibling-runs.bats)
   for a worked example mocking a real external command (`gh`).
+- A test that creates or commits in a throwaway git repository calls
+  `isolate_git_env` (also in `scripts/lib/testing.sh`) from `setup()`, so
+  the developer's global git hooks, signing and templates cannot change the
+  result.
 - To run the whole suite: `task tests:bash` (wraps
   [scripts/checks/check_bash_tests.bash](../../../scripts/checks/check_bash_tests.bash),
   see [Taskfile.yaml](../../../Taskfile.yaml)). To audit that every

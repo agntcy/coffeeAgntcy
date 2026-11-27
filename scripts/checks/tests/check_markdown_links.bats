@@ -9,9 +9,12 @@
 # staged via `git add` (verified empirically that `git ls-files` already
 # shows staged-but-uncommitted files, so no commit is needed).
 
+load '../../lib/testing.sh'
+
 FIXTURE_REPO="$BATS_TEST_TMPDIR/repo"
 
 setup() {
+    isolate_git_env
     mkdir -p "$FIXTURE_REPO/scripts/checks"
     cp "$BATS_TEST_DIRNAME/../check_markdown_links.bash" \
         "$FIXTURE_REPO/scripts/checks/check_markdown_links.bash"

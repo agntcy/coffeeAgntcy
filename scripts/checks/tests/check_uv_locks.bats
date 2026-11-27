@@ -10,6 +10,7 @@ load '../../lib/testing.sh'
 FIXTURE_REPO="$BATS_TEST_TMPDIR/repo"
 
 setup() {
+    isolate_git_env
     mkdir -p "$FIXTURE_REPO/scripts/checks" "$FIXTURE_REPO/.tools/bin"
     cp "$BATS_TEST_DIRNAME/../check_uv_locks.bash" "$FIXTURE_REPO/scripts/checks/check_uv_locks.bash"
     chmod +x "$FIXTURE_REPO/scripts/checks/check_uv_locks.bash"

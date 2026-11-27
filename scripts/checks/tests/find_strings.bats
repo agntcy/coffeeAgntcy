@@ -13,11 +13,14 @@
 # fallback branch for free; git-initializing it first gives the git-aware
 # branch instead.
 
+load '../../lib/testing.sh'
+
 bats_require_minimum_version 1.5.0
 
 SCRIPT="$BATS_TEST_DIRNAME/../find_strings.bash"
 
 setup() {
+    isolate_git_env
     cd "$BATS_TEST_TMPDIR" || exit 1
 }
 

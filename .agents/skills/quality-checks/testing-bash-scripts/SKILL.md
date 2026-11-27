@@ -80,3 +80,8 @@ for the underlying rule.
   use `mock_isolate_path <tool> ...` (also in `scripts/lib/testing.sh`):
   it symlinks each named tool from the real `PATH` into the mock bin
   directory, then restricts `PATH` to *only* that directory.
+- A test that creates or commits in a throwaway git repository calls
+  `isolate_git_env` (also in `scripts/lib/testing.sh`) from `setup()`: it
+  makes git ignore the developer's global and system configuration (hooks,
+  signing, templates), which would otherwise make the test fail on
+  machines that have them.
